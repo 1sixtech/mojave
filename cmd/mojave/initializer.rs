@@ -223,7 +223,6 @@ pub async fn init_full_node_rpc_api(
     )
     .await;
 
-<<<<<<< HEAD
     let http_addr = get_http_socket_addr(opts);
     let sequencer_addr = get_sequencer_socket_addr(full_node_opts);
     let authrpc_addr = get_authrpc_socket_addr(opts);
@@ -239,24 +238,6 @@ pub async fn init_full_node_rpc_api(
     let rpc_api = mojave_networking::rpc::full_node::start_api(
         http_addr,
         authrpc_addr,
-||||||| parent of 8669a84 (chore: update with new ethrex)
-    let rpc_api = ethrex_rpc::start_api(
-        get_http_socket_addr(opts),
-        get_authrpc_socket_addr(opts),
-=======
-    // Create SyncClient
-    let sync_client = SyncClient::new();
-
-    let http_addr = get_http_socket_addr(opts);
-    let authrpc_addr = get_authrpc_socket_addr(opts);
-    let jwt_secret = read_jwtsecret_file(&opts.authrpc_jwtsecret);
-    let client_version = get_client_version();
-    // let valid_delegation_addresses = get_valid_delegation_addresses(opts);
-
-    let rpc_api = mojave_networking::rpc::start_api(
-        http_addr,
-        authrpc_addr,
->>>>>>> 8669a84 (chore: update with new ethrex)
         store,
         blockchain,
         jwt_secret,
@@ -266,13 +247,8 @@ pub async fn init_full_node_rpc_api(
         peer_handler,
         client_version,
         rollup_store,
-<<<<<<< HEAD
         mojave_client,
         eth_client,
-||||||| parent of 8669a84 (chore: update with new ethrex)
-=======
-        sync_client,
->>>>>>> 8669a84 (chore: update with new ethrex)
     );
 
     // let rpc_api = ethrex_rpc::start_api(
@@ -293,7 +269,6 @@ pub async fn init_full_node_rpc_api(
 
     tracker.spawn(rpc_api);
 }
-<<<<<<< HEAD
 
 #[allow(clippy::too_many_arguments)]
 pub async fn init_sequencer_rpc_api(
@@ -372,27 +347,3 @@ pub async fn init_rollup_store(data_dir: &str) -> StoreRollup {
         .expect("Failed to init rollup store");
     rollup_store
 }
-||||||| parent of 8669a84 (chore: update with new ethrex)
-=======
-
-pub async fn init_rollup_store(data_dir: &str) -> StoreRollup {
-    cfg_if::cfg_if! {
-        if #[cfg(feature = "sql")] {
-            let engine_type = EngineTypeRollup::SQL;
-        } else if #[cfg(feature = "redb")] {
-            let engine_type = EngineTypeRollup::RedB;
-        } else if #[cfg(feature = "libmdbx")] {
-            let engine_type = EngineTypeRollup::Libmdbx;
-        } else {
-            let engine_type = EngineTypeRollup::InMemory;
-        }
-    }
-    let rollup_store =
-        StoreRollup::new(data_dir, engine_type).expect("Failed to create StoreRollup");
-    rollup_store
-        .init()
-        .await
-        .expect("Failed to init rollup store");
-    rollup_store
-}
->>>>>>> 8669a84 (chore: update with new ethrex)
