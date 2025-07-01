@@ -13,7 +13,7 @@ impl SyncClient {
     /// Forward the transaction.
     pub async fn forward_transaction(
         &self,
-        transaction: SendRawTransactionRequest,
+        transaction: &SendRawTransactionRequest,
     ) -> Result<Value, RpcErr> {
         unimplemented!()
     }
