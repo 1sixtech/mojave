@@ -611,6 +611,7 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "assert-json-diff"
 version = "2.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -643,6 +644,31 @@ dependencies = [
 ]
 
 [[package]]
+||||||| parent of 8669a84 (chore: update with new ethrex)
+=======
+name = "async-stream"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b5a71a6f37880a80d1d7f19efd781e4b5de42c88f0722cc13bcb6cc2cfe8476"
+dependencies = [
+ "async-stream-impl",
+ "futures-core",
+ "pin-project-lite",
+]
+
+[[package]]
+name = "async-stream-impl"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c7c24de15d275a1ecfd47a380fb4d5ec9bfe0933f309ed5e705b775596a3574d"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.104",
+]
+
+[[package]]
+>>>>>>> 8669a84 (chore: update with new ethrex)
 name = "async-trait"
 version = "0.1.88"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2317,9 +2343,10 @@ dependencies = [
  "clap",
  "clap_complete",
  "directories",
- "ethrex-blockchain 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
- "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-blockchain",
+ "ethrex-common",
  "ethrex-l2",
+<<<<<<< HEAD
 <<<<<<< HEAD
  "ethrex-l2-common",
  "ethrex-l2-rpc",
@@ -2340,10 +2367,24 @@ dependencies = [
  "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
  "ethrex-rpc 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
 >>>>>>> 4f10323 (Add 'networking' crate)
+||||||| parent of 8669a84 (chore: update with new ethrex)
+ "ethrex-l2-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-metrics 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-p2p 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-rpc 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+=======
+ "ethrex-l2-common",
+ "ethrex-l2-rpc",
+ "ethrex-metrics",
+ "ethrex-p2p",
+ "ethrex-rlp",
+ "ethrex-rpc",
+>>>>>>> 8669a84 (chore: update with new ethrex)
  "ethrex-sdk",
- "ethrex-storage 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
- "ethrex-storage-rollup 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
- "ethrex-vm 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-storage",
+ "ethrex-storage-rollup",
+ "ethrex-vm",
  "eyre",
  "hex",
  "itertools 0.14.0",
@@ -2370,11 +2411,11 @@ source = "git+https://github.com/1sixtech/ethrex?rev=d62fcc5accaaa13b9909af04071
 dependencies = [
  "bytes",
  "cfg-if",
- "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
- "ethrex-metrics 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
- "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
- "ethrex-storage 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
- "ethrex-vm 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
+ "ethrex-common",
+ "ethrex-metrics",
+ "ethrex-rlp",
+ "ethrex-storage",
+ "ethrex-vm",
  "k256 0.13.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "secp256k1",
  "sha3",
@@ -2387,6 +2428,7 @@ dependencies = [
 [[package]]
 name = "ethrex-common"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/1sixtech/ethrex?rev=d62fcc5accaaa13b9909af04071379219dc6a0b1#d62fcc5accaaa13b9909af04071379219dc6a0b1"
 dependencies = [
  "bytes",
@@ -2395,6 +2437,51 @@ dependencies = [
  "ethereum-types 0.15.1",
  "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
  "ethrex-trie 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+||||||| parent of 8669a84 (chore: update with new ethrex)
+source = "git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d#3f65132f7fb6d206f189754ace88340184811e7d"
+dependencies = [
+ "bytes",
+ "c-kzg",
+ "crc32fast",
+ "ethereum-types 0.15.1",
+ "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
+ "ethrex-trie 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
+ "hex",
+ "k256 0.13.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "keccak-hash",
+ "lazy_static",
+ "once_cell",
+ "rayon",
+ "secp256k1",
+ "serde",
+ "serde_json",
+ "sha3",
+ "thiserror 2.0.12",
+ "tinyvec",
+ "tracing",
+]
+
+[[package]]
+name = "ethrex-common"
+version = "0.1.0"
+source = "git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f#5a39b693d285690b479657d69b0939f03bd5075f"
+dependencies = [
+ "bytes",
+ "c-kzg",
+ "crc32fast",
+ "ethereum-types 0.15.1",
+ "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-trie 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+=======
+source = "git+https://github.com/1sixtech/ethrex?rev=d62fcc5accaaa13b9909af04071379219dc6a0b1#d62fcc5accaaa13b9909af04071379219dc6a0b1"
+dependencies = [
+ "bytes",
+ "c-kzg",
+ "crc32fast",
+ "ethereum-types 0.15.1",
+ "ethrex-rlp",
+ "ethrex-trie",
+>>>>>>> 8669a84 (chore: update with new ethrex)
  "hex",
  "k256 0.13.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "keccak-hash",
@@ -2418,7 +2505,7 @@ dependencies = [
  "bytes",
  "envy",
  "ethereum-types 0.15.1",
- "ethrex-rpc 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-rpc",
  "hex",
  "jsonwebtoken 9.3.1",
  "keccak-hash",
@@ -2444,19 +2531,19 @@ dependencies = [
  "envy",
  "ethereum-types 0.15.1",
  "ethers",
- "ethrex-blockchain 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
- "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-blockchain",
+ "ethrex-common",
  "ethrex-dev",
- "ethrex-l2-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
- "ethrex-levm 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
- "ethrex-metrics 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
- "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
- "ethrex-rpc 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-l2-common",
+ "ethrex-levm",
+ "ethrex-metrics",
+ "ethrex-rlp",
+ "ethrex-rpc",
  "ethrex-sdk",
- "ethrex-storage 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
- "ethrex-storage-rollup 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
- "ethrex-trie 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
- "ethrex-vm 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-storage",
+ "ethrex-storage-rollup",
+ "ethrex-trie",
+ "ethrex-vm",
  "hex",
  "jsonwebtoken 9.3.1",
  "keccak-hash",
@@ -2484,11 +2571,11 @@ source = "git+https://github.com/1sixtech/ethrex?rev=d62fcc5accaaa13b9909af04071
 dependencies = [
  "bytes",
  "ethereum-types 0.15.1",
- "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
- "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
- "ethrex-storage 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
- "ethrex-trie 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
- "ethrex-vm 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
+ "ethrex-common",
+ "ethrex-rlp",
+ "ethrex-storage",
+ "ethrex-trie",
+ "ethrex-vm",
  "keccak-hash",
  "lazy_static",
  "serde",
@@ -2528,8 +2615,8 @@ dependencies = [
  "bytes",
  "datatest-stable",
  "derive_more 1.0.0",
- "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
- "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-common",
+ "ethrex-rlp",
  "k256 0.13.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "keccak-hash",
  "kzg-rs",
@@ -2565,6 +2652,7 @@ dependencies = [
 [[package]]
 name = "ethrex-p2p"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/1sixtech/ethrex?rev=d62fcc5accaaa13b9909af04071379219dc6a0b1#d62fcc5accaaa13b9909af04071379219dc6a0b1"
 dependencies = [
  "aes",
@@ -2577,6 +2665,65 @@ dependencies = [
  "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
  "ethrex-storage 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
  "ethrex-trie 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+||||||| parent of 8669a84 (chore: update with new ethrex)
+source = "git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d#3f65132f7fb6d206f189754ace88340184811e7d"
+dependencies = [
+ "aes",
+ "bytes",
+ "concat-kdf",
+ "ctr",
+ "ethereum-types 0.15.1",
+ "ethrex-blockchain 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
+ "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
+ "ethrex-storage 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
+ "ethrex-trie 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
+ "futures",
+ "hex",
+ "hmac",
+ "k256 0.13.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lazy_static",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+ "sha3",
+ "snap",
+ "thiserror 2.0.12",
+ "tokio",
+ "tokio-stream",
+ "tokio-util",
+ "tracing",
+]
+
+[[package]]
+name = "ethrex-p2p"
+version = "0.1.0"
+source = "git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f#5a39b693d285690b479657d69b0939f03bd5075f"
+dependencies = [
+ "aes",
+ "bytes",
+ "concat-kdf",
+ "ctr",
+ "ethereum-types 0.15.1",
+ "ethrex-blockchain 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-storage 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-trie 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+=======
+source = "git+https://github.com/1sixtech/ethrex?rev=d62fcc5accaaa13b9909af04071379219dc6a0b1#d62fcc5accaaa13b9909af04071379219dc6a0b1"
+dependencies = [
+ "aes",
+ "bytes",
+ "concat-kdf",
+ "ctr",
+ "ethereum-types 0.15.1",
+ "ethrex-blockchain",
+ "ethrex-common",
+ "ethrex-rlp",
+ "ethrex-storage",
+ "ethrex-trie",
+>>>>>>> 8669a84 (chore: update with new ethrex)
  "futures",
  "hex",
  "hmac",
@@ -2597,13 +2744,68 @@ dependencies = [
 [[package]]
 name = "ethrex-prover"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/1sixtech/ethrex?rev=d62fcc5accaaa13b9909af04071379219dc6a0b1#d62fcc5accaaa13b9909af04071379219dc6a0b1"
 dependencies = [
  "bincode",
+||||||| parent of 8669a84 (chore: update with new ethrex)
+source = "git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d#3f65132f7fb6d206f189754ace88340184811e7d"
+dependencies = [
+ "bytes",
+ "ethereum-types 0.15.1",
+ "hex",
+ "lazy_static",
+ "snap",
+ "thiserror 2.0.12",
+ "tinyvec",
+]
+
+[[package]]
+name = "ethrex-rlp"
+version = "0.1.0"
+source = "git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f#5a39b693d285690b479657d69b0939f03bd5075f"
+dependencies = [
+ "bytes",
+ "ethereum-types 0.15.1",
+ "hex",
+ "lazy_static",
+ "snap",
+ "thiserror 2.0.12",
+ "tinyvec",
+]
+
+[[package]]
+name = "ethrex-rpc"
+version = "0.1.0"
+source = "git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d#3f65132f7fb6d206f189754ace88340184811e7d"
+dependencies = [
+ "axum",
+ "axum-extra",
+=======
+source = "git+https://github.com/1sixtech/ethrex?rev=d62fcc5accaaa13b9909af04071379219dc6a0b1#d62fcc5accaaa13b9909af04071379219dc6a0b1"
+dependencies = [
+ "bytes",
+ "ethereum-types 0.15.1",
+ "hex",
+ "lazy_static",
+ "snap",
+ "thiserror 2.0.12",
+ "tinyvec",
+]
+
+[[package]]
+name = "ethrex-rpc"
+version = "0.1.0"
+source = "git+https://github.com/1sixtech/ethrex?rev=d62fcc5accaaa13b9909af04071379219dc6a0b1#d62fcc5accaaa13b9909af04071379219dc6a0b1"
+dependencies = [
+ "axum 0.8.4",
+ "axum-extra",
+>>>>>>> 8669a84 (chore: update with new ethrex)
  "bytes",
  "cfg-if",
  "clap",
  "ethereum-types 0.15.1",
+<<<<<<< HEAD
  "ethrex-blockchain",
  "ethrex-common",
  "ethrex-l2",
@@ -2612,6 +2814,21 @@ dependencies = [
  "ethrex-sdk",
  "ethrex-storage",
  "ethrex-vm",
+||||||| parent of 8669a84 (chore: update with new ethrex)
+ "ethrex-blockchain 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
+ "ethrex-p2p 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
+ "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
+ "ethrex-storage 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
+ "ethrex-vm 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
+=======
+ "ethrex-blockchain",
+ "ethrex-common",
+ "ethrex-p2p",
+ "ethrex-rlp",
+ "ethrex-storage",
+ "ethrex-vm",
+>>>>>>> 8669a84 (chore: update with new ethrex)
  "hex",
  "kzg-rs",
  "serde",
@@ -2619,6 +2836,7 @@ dependencies = [
  "thiserror 2.0.12",
  "tokio",
  "tokio-util",
+<<<<<<< HEAD
  "tracing",
  "tracing-subscriber",
  "vergen-git2",
@@ -2671,6 +2889,49 @@ dependencies = [
  "tokio",
  "tokio-util",
  "tower-http 0.6.6",
+||||||| parent of 8669a84 (chore: update with new ethrex)
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "ethrex-rpc"
+version = "0.1.0"
+source = "git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f#5a39b693d285690b479657d69b0939f03bd5075f"
+dependencies = [
+ "axum",
+ "axum-extra",
+ "bytes",
+ "cfg-if",
+ "envy",
+ "ethereum-types 0.15.1",
+ "ethrex-blockchain 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-l2-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-p2p 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-storage 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-storage-rollup 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-vm 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "hex",
+ "jsonwebtoken 9.3.1",
+ "k256 0.13.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "keccak-hash",
+ "rand 0.8.5",
+ "reqwest 0.12.20",
+ "secp256k1",
+ "serde",
+ "serde_json",
+ "sha2",
+ "sha3",
+ "thiserror 2.0.12",
+ "tokio",
+ "tokio-util",
+ "tower-http",
+=======
+ "tower-http 0.6.6",
+>>>>>>> 8669a84 (chore: update with new ethrex)
  "tracing",
  "tracing-subscriber",
 ]
@@ -2703,6 +2964,7 @@ dependencies = [
 [[package]]
 name = "ethrex-storage"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/1sixtech/ethrex?rev=d62fcc5accaaa13b9909af04071379219dc6a0b1#d62fcc5accaaa13b9909af04071379219dc6a0b1"
 dependencies = [
  "anyhow",
@@ -2713,6 +2975,50 @@ dependencies = [
  "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
  "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
  "ethrex-trie 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+||||||| parent of 8669a84 (chore: update with new ethrex)
+source = "git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d#3f65132f7fb6d206f189754ace88340184811e7d"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bincode",
+ "bytes",
+ "ethereum-types 0.15.1",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
+ "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
+ "ethrex-trie 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
+ "hex",
+ "serde",
+ "serde_json",
+ "sha3",
+ "thiserror 2.0.12",
+ "tracing",
+]
+
+[[package]]
+name = "ethrex-storage"
+version = "0.1.0"
+source = "git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f#5a39b693d285690b479657d69b0939f03bd5075f"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bincode",
+ "bytes",
+ "ethereum-types 0.15.1",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-trie 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+=======
+source = "git+https://github.com/1sixtech/ethrex?rev=d62fcc5accaaa13b9909af04071379219dc6a0b1#d62fcc5accaaa13b9909af04071379219dc6a0b1"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bincode",
+ "bytes",
+ "ethereum-types 0.15.1",
+ "ethrex-common",
+ "ethrex-rlp",
+ "ethrex-trie",
+>>>>>>> 8669a84 (chore: update with new ethrex)
  "hex",
  "libmdbx",
  "serde",
@@ -2749,6 +3055,7 @@ dependencies = [
 [[package]]
 name = "ethrex-trie"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/1sixtech/ethrex?rev=d62fcc5accaaa13b9909af04071379219dc6a0b1#d62fcc5accaaa13b9909af04071379219dc6a0b1"
 dependencies = [
  "anyhow",
@@ -2756,6 +3063,43 @@ dependencies = [
  "digest 0.10.7",
  "ethereum-types 0.15.1",
  "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+||||||| parent of 8669a84 (chore: update with new ethrex)
+source = "git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d#3f65132f7fb6d206f189754ace88340184811e7d"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "digest 0.10.7",
+ "ethereum-types 0.15.1",
+ "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
+ "hex",
+ "lazy_static",
+ "serde",
+ "serde_json",
+ "sha3",
+ "smallvec",
+ "thiserror 2.0.12",
+ "tracing",
+]
+
+[[package]]
+name = "ethrex-trie"
+version = "0.1.0"
+source = "git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f#5a39b693d285690b479657d69b0939f03bd5075f"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "digest 0.10.7",
+ "ethereum-types 0.15.1",
+ "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+=======
+source = "git+https://github.com/1sixtech/ethrex?rev=d62fcc5accaaa13b9909af04071379219dc6a0b1#d62fcc5accaaa13b9909af04071379219dc6a0b1"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "digest 0.10.7",
+ "ethereum-types 0.15.1",
+ "ethrex-rlp",
+>>>>>>> 8669a84 (chore: update with new ethrex)
  "hex",
  "lazy_static",
  "libmdbx",
@@ -2770,6 +3114,7 @@ dependencies = [
 [[package]]
 name = "ethrex-vm"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/1sixtech/ethrex?rev=d62fcc5accaaa13b9909af04071379219dc6a0b1#d62fcc5accaaa13b9909af04071379219dc6a0b1"
 dependencies = [
  "bincode",
@@ -2782,6 +3127,59 @@ dependencies = [
  "ethrex-levm 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
  "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
  "ethrex-trie 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+||||||| parent of 8669a84 (chore: update with new ethrex)
+source = "git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d#3f65132f7fb6d206f189754ace88340184811e7d"
+dependencies = [
+ "bincode",
+ "bytes",
+ "cfg-if",
+ "derive_more 1.0.0",
+ "dyn-clone",
+ "ethereum-types 0.15.1",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
+ "ethrex-levm 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
+ "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
+ "ethrex-trie 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
+ "hex",
+ "lazy_static",
+ "revm",
+ "revm-inspectors",
+ "revm-primitives",
+ "serde",
+ "sha3",
+ "thiserror 2.0.12",
+ "tracing",
+]
+
+[[package]]
+name = "ethrex-vm"
+version = "0.1.0"
+source = "git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f#5a39b693d285690b479657d69b0939f03bd5075f"
+dependencies = [
+ "bincode",
+ "bytes",
+ "cfg-if",
+ "derive_more 1.0.0",
+ "dyn-clone",
+ "ethereum-types 0.15.1",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-levm 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-trie 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+=======
+source = "git+https://github.com/1sixtech/ethrex?rev=d62fcc5accaaa13b9909af04071379219dc6a0b1#d62fcc5accaaa13b9909af04071379219dc6a0b1"
+dependencies = [
+ "bincode",
+ "bytes",
+ "cfg-if",
+ "derive_more 1.0.0",
+ "dyn-clone",
+ "ethereum-types 0.15.1",
+ "ethrex-common",
+ "ethrex-levm",
+ "ethrex-rlp",
+ "ethrex-trie",
+>>>>>>> 8669a84 (chore: update with new ethrex)
  "hex",
  "lazy_static",
  "revm",
@@ -4478,15 +4876,15 @@ dependencies = [
  "cfg-if",
  "clap",
  "ethrex",
- "ethrex-blockchain 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
- "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-blockchain",
+ "ethrex-common",
  "ethrex-l2",
- "ethrex-metrics 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
- "ethrex-p2p 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
- "ethrex-rpc 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
- "ethrex-storage 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
- "ethrex-storage-rollup 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
- "ethrex-vm 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-metrics",
+ "ethrex-p2p",
+ "ethrex-rpc",
+ "ethrex-storage",
+ "ethrex-storage-rollup",
+ "ethrex-vm",
  "k256 0.13.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static",
  "local-ip-address",
@@ -4594,17 +4992,17 @@ dependencies = [
 name = "mojave-networking"
 version = "0.1.0"
 dependencies = [
- "axum",
- "ethrex-blockchain 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
- "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
- "ethrex-p2p 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
- "ethrex-rpc 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
- "ethrex-storage 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
- "ethrex-storage-rollup 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
+ "axum 0.8.4",
+ "ethrex-blockchain",
+ "ethrex-common",
+ "ethrex-p2p",
+ "ethrex-rpc",
+ "ethrex-storage",
+ "ethrex-storage-rollup",
  "hex",
  "serde_json",
  "tokio",
- "tower-http",
+ "tower-http 0.6.6",
  "tracing",
  "tracing-subscriber",
 ]
@@ -5482,6 +5880,7 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "prost"
 version = "0.12.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5505,6 +5904,32 @@ dependencies = [
 ]
 
 [[package]]
+||||||| parent of 8669a84 (chore: update with new ethrex)
+=======
+name = "prost"
+version = "0.12.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "deb1435c188b76130da55f17a466d252ff7b1418b2ad3e037d127b94e3411f29"
+dependencies = [
+ "bytes",
+ "prost-derive",
+]
+
+[[package]]
+name = "prost-derive"
+version = "0.12.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81bddcdb20abf9501610992b6759a4c888aef7d1a7247ef75e2404275ac24af1"
+dependencies = [
+ "anyhow",
+ "itertools 0.10.5",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.104",
+]
+
+[[package]]
+>>>>>>> 8669a84 (chore: update with new ethrex)
 name = "protobuf"
 version = "2.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6048,6 +6473,7 @@ dependencies = [
 
 [[package]]
 name = "rustix"
+<<<<<<< HEAD
 version = "0.38.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fdb5bc1ae2baa591800df16c9ca78619bf65c0488b41b96ccec5d11220d8c154"
@@ -6061,6 +6487,22 @@ dependencies = [
 
 [[package]]
 name = "rustix"
+||||||| parent of 8669a84 (chore: update with new ethrex)
+=======
+version = "0.38.44"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fdb5bc1ae2baa591800df16c9ca78619bf65c0488b41b96ccec5d11220d8c154"
+dependencies = [
+ "bitflags 2.9.1",
+ "errno",
+ "libc",
+ "linux-raw-sys 0.4.15",
+ "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "rustix"
+>>>>>>> 8669a84 (chore: update with new ethrex)
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c71e83d6afe7ff64890ec6b71d6a69bb8a610ab78ce364b3352876bb4c801266"
@@ -8442,13 +8884,13 @@ name = "zkvm_interface"
 version = "0.1.0"
 source = "git+https://github.com/1sixtech/ethrex?rev=d62fcc5accaaa13b9909af04071379219dc6a0b1#d62fcc5accaaa13b9909af04071379219dc6a0b1"
 dependencies = [
- "ethrex-blockchain 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
- "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
- "ethrex-l2-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
- "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
- "ethrex-storage 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
- "ethrex-trie 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
- "ethrex-vm 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=5a39b693d285690b479657d69b0939f03bd5075f)",
+ "ethrex-blockchain",
+ "ethrex-common",
+ "ethrex-l2-common",
+ "ethrex-rlp",
+ "ethrex-storage",
+ "ethrex-trie",
+ "ethrex-vm",
  "keccak-hash",
  "kzg-rs",
  "serde",

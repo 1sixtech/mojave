@@ -5,6 +5,11 @@ use serde_json::Value;
 pub struct SyncClient {}
 
 impl SyncClient {
+    /// new
+    pub fn new() -> Self {
+        Self {}
+    }
+
     /// Check if the current node is running as a sequencer.
     pub async fn is_sequencer(&self) -> bool {
         unimplemented!()
@@ -13,7 +18,7 @@ impl SyncClient {
     /// Forward the transaction.
     pub async fn forward_transaction(
         &self,
-        transaction: &SendRawTransactionRequest,
+        _transaction: &SendRawTransactionRequest,
     ) -> Result<Value, RpcErr> {
         unimplemented!()
     }
@@ -21,5 +26,11 @@ impl SyncClient {
     /// Broadcast the block.
     pub async fn broadcast_block(&self) -> Result<(), RpcErr> {
         unimplemented!()
+    }
+}
+
+impl Default for SyncClient {
+    fn default() -> Self {
+        Self::new()
     }
 }

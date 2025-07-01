@@ -34,10 +34,10 @@ impl RpcHandler for SendRawTransactionRequest {
                     .add_transaction_to_pool(self.to_transaction())
                     .await
             }?;
-            serde_json::to_value(format!("{:#x}", hash))
+            serde_json::to_value(format!("{hash:#x}"))
                 .map_err(|error| RpcErr::Internal(error.to_string()))
         } else {
-            context.sync_client.forward_transaction(&self).await
+            context.sync_client.forward_transaction(self).await
         }
     }
 }
