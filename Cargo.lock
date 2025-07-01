@@ -4601,6 +4601,7 @@ dependencies = [
  "ethrex-rpc 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
  "ethrex-storage 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
  "ethrex-storage-rollup 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=3f65132f7fb6d206f189754ace88340184811e7d)",
+ "hex",
  "serde_json",
  "tokio",
  "tower-http",
@@ -6889,6 +6890,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0bf256ce5efdfa370213c1dabab5935a12e49f2c58d15e9eac2870d3b4f27263"
 dependencies = [
  "futures-core",
+]
+
+[[package]]
+name = "syncer"
+version = "0.1.0"
+dependencies = [
+ "tokio",
 ]
 
 [[package]]
