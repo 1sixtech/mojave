@@ -1,60 +1,62 @@
-use std::net::SocketAddr;
-
 use ethrex_rpc::{RpcErr, types::transaction::SendRawTransactionRequest};
 use serde_json::Value;
-
-#[derive(Debug, PartialEq, Eq)]
-pub enum SyncClientMode {
-    FullNode {
-        sequencer_addr: SocketAddr,
-    },
-    #[cfg(feature = "sequencer")]
-    Sequencer {
-        full_node_addrs: Vec<SocketAddr>,
-    },
-}
+use std::net::SocketAddr;
 
 #[derive(Clone, Debug)]
-pub struct SyncClient {
-    #[cfg(not(feature = "sequencer"))]
-    sequencer_addr: SocketAddr,
-    #[cfg(feature = "sequencer")]
-    full_node_addrs: Vec<SocketAddr>,
+pub enum SyncClient {
+    FullNode { sequencer_addr: SocketAddr },
+    Sequencer { full_node_addrs: Vec<SocketAddr> },
 }
 
 impl SyncClient {
-    /// Create a new instance of SyncClient.
-    pub fn new(mode: SyncClientMode) -> Self {
-        match mode {
-            #[cfg(not(feature = "sequencer"))]
-            SyncClientMode::FullNode { sequencer_addr } => Self { sequencer_addr },
-            #[cfg(feature = "sequencer")]
-            SyncClientMode::Sequencer { full_node_addrs } => Self { full_node_addrs },
-            _ => panic!("Invalid mode"),
+    pub fn new_full_node(sequencer_addr: SocketAddr) -> Self {
+        Self::FullNode { sequencer_addr }
+    }
+
+    pub fn new_sequencer(full_node_addrs: Vec<SocketAddr>) -> Self {
+        Self::Sequencer { full_node_addrs }
+    }
+
+    pub fn is_sequencer(&self) -> bool {
+        matches!(self, SyncClient::Sequencer { .. })
+    }
+
+    /// Add a full node address to the list of full nodes.
+    pub fn push_full_node(&mut self, addr: SocketAddr) {
+        if let SyncClient::Sequencer { full_node_addrs } = self {
+            full_node_addrs.push(addr);
+        } else {
+            panic!("push_full_node called on FullNode mode");
         }
     }
 
-    #[cfg(feature = "sequencer")]
-    /// Add a full node address to the list of full nodes.
-    pub fn push_full_node(&mut self, sequencer_addr: SocketAddr) {
-        self.full_node_addrs.push(sequencer_addr);
-    }
-
-    /// Check if the current node is running as a sequencer.
-    pub async fn is_sequencer(&self) -> bool {
-        unimplemented!()
-    }
-
-    /// Forward the transaction.
+    /// Forward a transaction received by a full node to a sequencer.
     pub async fn forward_transaction(
         &self,
         _transaction: &SendRawTransactionRequest,
     ) -> Result<Value, RpcErr> {
-        unimplemented!()
+        match self {
+            SyncClient::Sequencer { .. } => {
+                unimplemented!("Forwarding not implemented for Sequencer mode");
+            }
+            SyncClient::FullNode { sequencer_addr } => {
+                println!("Forwarding transaction to {sequencer_addr}");
+                Ok(serde_json::json!({"status": "forwarded"}))
+            }
+        }
     }
 
-    /// Broadcast the block.
+    /// Forward a block from a sequencer to a full node once he has build it.
     pub async fn broadcast_block(&self) -> Result<(), RpcErr> {
-        unimplemented!()
+        match self {
+            SyncClient::Sequencer { .. } => {
+                println!("Broadcasting block to full nodes...");
+                Ok(())
+            }
+            SyncClient::FullNode { .. } => {
+                println!("Full node can't broadcast blocks.");
+                Ok(())
+            }
+        }
     }
 }

@@ -17,7 +17,7 @@ impl RpcHandler for SendRawTransactionRequest {
     }
 
     async fn handle(&self, context: RpcApiContext) -> Result<Value, RpcErr> {
-        if context.sync_client.is_sequencer().await {
+        if context.sync_client.is_sequencer() {
             let hash = if let SendRawTransactionRequest::EIP4844(wrapped_blob_tx) = self {
                 context
                     .l1_context
