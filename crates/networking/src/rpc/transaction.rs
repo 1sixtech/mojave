@@ -1,5 +1,7 @@
+use crate::rpc::utils::RpcErr;
+
 use super::{RpcApiContext, RpcHandler};
-use ethrex_rpc::{RpcErr, types::transaction::SendRawTransactionRequest};
+use ethrex_rpc::types::transaction::SendRawTransactionRequest;
 use serde_json::Value;
 
 impl RpcHandler for SendRawTransactionRequest {
@@ -7,10 +9,12 @@ impl RpcHandler for SendRawTransactionRequest {
         let data = get_transaction_data(params)?;
 
         let transaction = SendRawTransactionRequest::decode_canonical(&data)
-            .map_err(|error| RpcErr::BadParams(error.to_string()))?;
+            .map_err(|error| RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(error.to_string())))?;
 
         if matches!(transaction, SendRawTransactionRequest::PrivilegedL2(_)) {
-            return Err(RpcErr::BadParams("Invalid transaction type".to_string()));
+            return Err(RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(
+                "Invalid transaction type".to_string(),
+            )));
         }
 
         Ok(transaction)
@@ -35,7 +39,7 @@ impl RpcHandler for SendRawTransactionRequest {
                     .await
             }?;
             serde_json::to_value(format!("{hash:#x}"))
-                .map_err(|error| RpcErr::Internal(error.to_string()))
+                .map_err(|error| RpcErr::EthrexRPC(ethrex_rpc::RpcErr::Internal(error.to_string())))
         } else {
             context.sync_client.forward_transaction(self).await
         }
@@ -43,19 +47,26 @@ impl RpcHandler for SendRawTransactionRequest {
 }
 
 fn get_transaction_data(rpc_req_params: &Option<Vec<Value>>) -> Result<Vec<u8>, RpcErr> {
-    let params = rpc_req_params
-        .as_ref()
-        .ok_or(RpcErr::BadParams("No params provided".to_owned()))?;
+    let params =
+        rpc_req_params
+            .as_ref()
+            .ok_or(RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(
+                "No params provided".to_owned(),
+            )))?;
     if params.len() != 1 {
-        return Err(RpcErr::BadParams(format!(
+        return Err(RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(format!(
             "Expected one param and {} were provided",
             params.len()
-        )));
+        ))));
     };
 
     let str_data = serde_json::from_value::<String>(params[0].clone())?;
-    let str_data = str_data
-        .strip_prefix("0x")
-        .ok_or(RpcErr::BadParams("Params are note 0x prefixed".to_owned()))?;
-    hex::decode(str_data).map_err(|error| RpcErr::BadParams(error.to_string()))
+    let str_data =
+        str_data
+            .strip_prefix("0x")
+            .ok_or(RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(
+                "Params are note 0x prefixed".to_owned(),
+            )))?;
+    hex::decode(str_data)
+        .map_err(|error| RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(error.to_string())))
 }

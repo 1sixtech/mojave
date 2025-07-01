@@ -1,6 +1,8 @@
-use ethrex_rpc::{RpcErr, types::transaction::SendRawTransactionRequest};
+use ethrex_rpc::types::transaction::SendRawTransactionRequest;
 use serde_json::Value;
 use std::net::SocketAddr;
+
+use crate::rpc::utils::RpcErr;
 
 #[derive(Clone, Debug)]
 pub enum SyncClient {

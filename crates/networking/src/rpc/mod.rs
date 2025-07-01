@@ -535,3 +535,21 @@ mod tests {
         sequencer_client.send_broadcast_block(&block).await.unwrap();
     }
 }
+
+pub fn rpc_response<E>(id: RpcRequestId, res: Result<Value, E>) -> Result<Value, RpcErr>
+where
+    E: Into<RpcErrorMetadata>,
+{
+    Ok(match res {
+        Ok(result) => serde_json::to_value(RpcSuccessResponse {
+            id,
+            jsonrpc: "2.0".to_string(),
+            result,
+        }),
+        Err(error) => serde_json::to_value(RpcErrorResponse {
+            id,
+            jsonrpc: "2.0".to_string(),
+            error: error.into(),
+        }),
+    }?)
+}
