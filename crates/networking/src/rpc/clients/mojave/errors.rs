@@ -14,6 +14,8 @@ pub enum MojaveClientError {
     ParseUrlError(String),
     #[error("Forward Transaction Error: {0}")]
     ForwardTransactionError(#[from] ForwardTransactionError),
+    #[error("Missing signing key in environment variable PRIVATE_KEY")]
+    MissingSigningKey,
 }
 
 #[derive(Debug, thiserror::Error)]

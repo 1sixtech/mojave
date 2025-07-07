@@ -18,7 +18,7 @@ pub enum RpcRequestWrapper {
     Multiple(Vec<RpcRequest>),
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SignedBlock {
     pub block: Block,
     pub signature: String,
@@ -42,6 +42,7 @@ mod tests {
 
     use super::*;
 
+    use ctor::ctor;
     use ethrex_common::{
         Address, Bloom, Bytes, H256, U256,
         types::{Block, BlockBody, BlockHeader, EIP1559Transaction, Signable, TxKind, TxType},
@@ -56,6 +57,17 @@ mod tests {
         str::FromStr,
         time::{Duration, SystemTime, UNIX_EPOCH},
     };
+
+    #[ctor]
+    fn test_setup() {
+        unsafe {
+            std::env::set_var(
+                "PRIVATE_KEY",
+                "433887ac4e37c40872643b0f77a5919db9c47b0ad64650ed5a79dd05bbd6f197",
+            )
+        };
+        println!("PRIVATE_KEY initialized for all tests");
+    }
 
     #[test]
     fn test_rpc_request_wrapper_single() {

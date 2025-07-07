@@ -39,9 +39,13 @@ k256 = { workspace = true, features = ["ecdh"] }
 
 reqwest = { workspace = true }
 ed25519-dalek = "2.1.1"
-rand = { version = "0.9.1", features = ["std"], optional = true }
+rand = { version = "0.8.5", features = ["std"], optional = true }
 
 
 [dev-dependencies]
 mockito = "0.31"
 ethrex-rlp = { workspace = true }
+ctor = "0.4.2"
+
+[features]
+rand = ["dep:rand"]

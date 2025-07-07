@@ -1,5 +1,5 @@
 use crate::rpc::{
-    RpcHandler,
+    RpcHandler, SignedBlock,
     full_node::{RpcApiContextFullNode, types::ordered_block::OrderedBlock},
     utils::RpcErr,
 };
@@ -8,14 +8,19 @@ use ethrex_common::types::{Block, BlockBody, Transaction};
 use ethrex_rpc::{clients::eth::BlockByNumber, types::block::RpcBlock};
 use serde_json::Value;
 
+#[derive(Debug)]
 pub struct BroadcastBlockRequest {
     block: Block,
+    signature: String,
 }
 
 impl RpcHandler<RpcApiContextFullNode> for BroadcastBlockRequest {
     fn parse(params: &Option<Vec<Value>>) -> Result<Self, RpcErr> {
-        let block = get_block_data(params)?;
-        Ok(Self { block })
+        let signed_block = get_block_data(params)?;
+        Ok(Self {
+            block: signed_block.block,
+            signature: signed_block.signature,
+        })
     }
 
     async fn handle(&self, context: RpcApiContextFullNode) -> Result<Value, RpcErr> {
@@ -38,46 +43,37 @@ impl RpcHandler<RpcApiContextFullNode> for BroadcastBlockRequest {
     }
 }
 
-fn rpc_block_to_block(rpc_block: RpcBlock) -> Block {
-    match rpc_block.body {
-        ethrex_rpc::types::block::BlockBodyWrapper::Full(full_block_body) => {
-            // transform RPCBlock to normal block
-            let transactions: Vec<Transaction> = full_block_body
-                .transactions
-                .iter()
-                .map(|b| b.tx.clone())
-                .collect();
-
-            Block::new(
-                rpc_block.header,
-                BlockBody {
-                    ommers: full_block_body.uncles,
-                    transactions,
-                    withdrawals: Some(full_block_body.withdrawals),
-                },
-            )
-        }
-        ethrex_rpc::types::block::BlockBodyWrapper::OnlyHashes(..) => {
-            unreachable!()
-        }
-    }
-}
-
-fn get_block_data(req: &Option<Vec<Value>>) -> Result<Block, RpcErr> {
+fn get_block_data(req: &Option<Vec<Value>>) -> Result<SignedBlock, RpcErr> {
     let params = req
         .as_ref()
         .ok_or(RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(
             "No params provided".to_owned(),
         )))?;
-    if params.len() != 1 {
+
+    if params.len() < 1 || params.len() > 2 {
         return Err(RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(format!(
-            "Expected one param and {} were provided",
+            "Expected 1 or 2 params and {} were provided",
             params.len()
         ))));
     };
 
-    let block = serde_json::from_value::<Block>(params[0].clone())?;
-    Ok(block)
+    let block_value = params[0].get("block").ok_or_else(|| {
+        RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(
+            "Missing 'block' field".to_string(),
+        ))
+    })?;
+    let block = serde_json::from_value::<Block>(block_value.clone()).map_err(|e| {
+        RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(format!(
+            "Block deserialization error: {e}"
+        )))
+    })?;
+
+    let signature = params[0]
+        .get("signature")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string())
+        .unwrap_or_default();
+    Ok(SignedBlock { block, signature })
 }
 
 #[cfg(test)]
@@ -89,6 +85,13 @@ mod tests {
     };
 
     use serde_json::json;
+
+    fn create_signed_block() -> SignedBlock {
+        SignedBlock {
+            block: create_test_block(),
+            signature: "test_signature".to_string(),
+        }
+    }
 
     fn create_test_block() -> Block {
         Block {
@@ -126,14 +129,17 @@ mod tests {
 
     #[test]
     fn test_get_block_data_success() {
-        let block = create_test_block();
-        let block_json = serde_json::to_value(block.clone()).unwrap();
+        let signed_block = create_signed_block();
+        let block_json = serde_json::to_value(signed_block.clone()).unwrap();
         let params = Some(vec![block_json]);
 
         let result = get_block_data(&params);
         assert!(result.is_ok());
         let parsed_block = result.unwrap();
-        assert_eq!(parsed_block.header.number, block.header.number);
+        assert_eq!(
+            parsed_block.block.header.number,
+            signed_block.block.header.number
+        );
     }
 
     #[test]
@@ -153,7 +159,7 @@ mod tests {
         let result = get_block_data(&params);
         assert!(result.is_err());
         if let Err(RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(msg))) = result {
-            assert_eq!(msg, "Expected one param and 0 were provided");
+            assert_eq!(msg, "Expected 1 or 2 params and 0 were provided");
         } else {
             panic!("Expected BadParams error");
         }
@@ -161,14 +167,18 @@ mod tests {
 
     #[test]
     fn test_get_block_data_too_many_params() {
-        let block = create_test_block();
-        let block_json = serde_json::to_value(block).unwrap();
-        let params = Some(vec![block_json.clone(), block_json]);
+        let block = create_signed_block();
+        let block_json = serde_json::to_value(block.block).unwrap();
+        let params = Some(vec![
+            block_json.clone(),
+            json!("signature"),
+            json!("extra_param"),
+        ]);
 
         let result = get_block_data(&params);
         assert!(result.is_err());
         if let Err(RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(msg))) = result {
-            assert_eq!(msg, "Expected one param and 2 were provided");
+            assert_eq!(msg, "Expected 1 or 2 params and 3 were provided");
         } else {
             panic!("Expected BadParams error");
         }
@@ -190,7 +200,7 @@ mod tests {
 
     #[test]
     fn test_broadcast_block_request_parse_success() {
-        let block = create_test_block();
+        let block = create_signed_block();
         let block_json = serde_json::to_value(block).unwrap();
         let params = Some(vec![block_json]);
 

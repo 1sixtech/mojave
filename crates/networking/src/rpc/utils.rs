@@ -235,6 +235,7 @@ pub mod test_utils {
     use ethrex_storage::{EngineType, Store};
     use ethrex_storage_rollup::{EngineTypeRollup, StoreRollup};
     use k256::ecdsa::SigningKey;
+    use secp256k1::rand;
     use tokio::sync::oneshot::Receiver;
 
     use crate::rpc::{
