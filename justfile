@@ -38,6 +38,13 @@ sequencer:
 		--proof-coordinator.l1-private-key {{PROOF_COORDINATOR_L1_PRIVATE_KEY}}
 
 
+generate-key-pair:
+	export $(cat .env | xargs)
+
+	cargo build --bin mojave
+
+	cargo run --features generate-key-pair --bin mojave generate-key-pair
+
 # Fix some issues
 fix flags="":
 	cargo fix --allow-staged --all-targets {{flags}}

@@ -17,6 +17,7 @@ metrics = ["ethrex-blockchain/metrics", "ethrex-l2/metrics", "ethrex/metrics"]
 sql = ["ethrex/rollup_storage_sql"]
 redb = ["ethrex/rollup_storage_redb"]
 libmdbx = ["ethrex/rollup_storage_libmdbx"]
+generate-key-pair = ["rand"]
 
 [dependencies]
 # ours
@@ -52,6 +53,10 @@ secp256k1 = { workspace = true, features = [
   "rand",
 ] }
 
+ed25519-dalek = { version= "2.1.1", features = ["rand_core"] }
+rand = { version = "0.8.5", optional = true, features = ["std"] }
+hex = "0.4.3"
+
 serde_json = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 
@@ -60,3 +65,4 @@ tokio-util = { workspace = true }
 # logging
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
+rand_core = "0.9.3"

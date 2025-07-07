@@ -4,7 +4,8 @@ pub mod sequencer;
 pub mod utils;
 
 use crate::rpc::utils::{RpcErr, RpcRequest};
-use serde::Deserialize;
+use ethrex_common::types::Block;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::time::Duration;
 
@@ -15,6 +16,12 @@ pub const FILTER_DURATION: Duration = Duration::from_secs(300);
 pub enum RpcRequestWrapper {
     Single(RpcRequest),
     Multiple(Vec<RpcRequest>),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SignedBlock {
+    pub block: Block,
+    pub signature: String,
 }
 
 #[allow(async_fn_in_trait)]

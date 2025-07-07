@@ -1,14 +1,17 @@
+use ed25519_dalek::{Signer, SigningKey};
 use ethrex_common::{H256, types::Block};
 use futures::{
     FutureExt,
     future::{Fuse, select_ok},
 };
+use k256::ecdsa::signature::SignerMut;
 use reqwest::Url;
 use serde::Deserialize;
 use serde_json::json;
 use std::{pin::Pin, sync::Arc};
 
 use crate::rpc::{
+    SignedBlock,
     clients::mojave::errors::{ForwardTransactionError, MojaveClientError},
     utils::{RpcErrorResponse, RpcRequest, RpcRequestId, RpcSuccessResponse},
 };
@@ -126,11 +129,15 @@ impl Client {
     }
 
     pub async fn send_broadcast_block(&self, block: &Block) -> Result<(), MojaveClientError> {
+        let params = SignedBlock {
+            block: block.clone(),
+            signature: "".to_owned(), // Mojave does not require a signature for broadcasting blocks
+        };
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
             jsonrpc: "2.0".to_string(),
             method: "mojave_sendBroadcastBlock".to_string(),
-            params: Some(vec![json!(block)]),
+            params: Some(vec![json!(params)]),
         };
 
         match self.send_request_race(request).await {

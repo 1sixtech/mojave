@@ -40,6 +40,9 @@ pub enum Command {
         #[command(flatten)]
         sequencer_opts: SequencerOpts,
     },
+    #[cfg(feature = "generate-key-pair")]
+    #[command(name = "generate-key-pair", about = "Show help information")]
+    GenerateKeyPair {},
 }
 
 impl Command {
@@ -222,6 +225,36 @@ impl Command {
                         tracing::info!("Server shutting down!");
                     }
                 }
+            }
+            #[cfg(feature = "generate-key-pair")]
+            Command::GenerateKeyPair {} => {
+                println!("Generating key pair...");
+                use ed25519_dalek::SigningKey;
+                use rand::rngs::OsRng;
+                use std::{fs, fs::OpenOptions, io::Write};
+
+                let mut csprng = OsRng;
+                let signing_key: SigningKey = SigningKey::generate(&mut csprng);
+                let verifying_key = signing_key.verifying_key();
+
+                let public_hex = hex::encode(verifying_key.as_bytes());
+                let secret_hex = hex::encode(signing_key.to_bytes());
+
+                println!("public key: {}", public_hex);
+                println!("private key: {}", secret_hex);
+
+                let mut env_file = OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(".env")
+                    .expect("failed to open .env");
+
+                writeln!(
+                    env_file,
+                    "PUBLIC_KEY={}\nPRIVATE_KEY={}\n",
+                    public_hex, secret_hex
+                )
+                .expect("failed to write to .env");
             }
         }
         Ok(())
