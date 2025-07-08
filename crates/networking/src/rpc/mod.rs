@@ -4,6 +4,7 @@ pub mod sequencer;
 pub mod utils;
 
 use crate::rpc::utils::{RpcErr, RpcRequest};
+use ed25519_dalek::ed25519::SignatureBytes;
 use ethrex_common::types::Block;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -21,7 +22,8 @@ pub enum RpcRequestWrapper {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SignedBlock {
     pub block: Block,
-    pub signature: String,
+    #[serde(with = "serde_bytes")]
+    pub signature: SignatureBytes,
 }
 
 #[allow(async_fn_in_trait)]

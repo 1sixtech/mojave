@@ -146,7 +146,7 @@ impl Client {
 
         let params = SignedBlock {
             block: block.clone(),
-            signature: signature.to_string(),
+            signature: signature.to_bytes(),
         };
 
         let request = RpcRequest {

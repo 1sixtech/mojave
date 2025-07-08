@@ -6,12 +6,15 @@ use crate::rpc::{
 
 use ethrex_common::types::{Block, BlockBody, Transaction};
 use ethrex_rpc::{clients::eth::BlockByNumber, types::block::RpcBlock};
+use std::env;
+
+use ed25519_dalek::{Signature, Verifier, VerifyingKey, ed25519::SignatureBytes};
 use serde_json::Value;
 
 #[derive(Debug)]
 pub struct BroadcastBlockRequest {
     block: Block,
-    signature: String,
+    signature: SignatureBytes,
 }
 
 impl RpcHandler<RpcApiContextFullNode> for BroadcastBlockRequest {
@@ -24,6 +27,9 @@ impl RpcHandler<RpcApiContextFullNode> for BroadcastBlockRequest {
     }
 
     async fn handle(&self, context: RpcApiContextFullNode) -> Result<Value, RpcErr> {
+        // Verify the signature before processing the block
+        verifying_signature(&self.block, &self.signature)?;
+
         let latest_block_number = context.l1_context.storage.get_latest_block_number().await? + 1;
         for block_number in latest_block_number..self.block.header.number {
             let block = context
@@ -34,12 +40,77 @@ impl RpcHandler<RpcApiContextFullNode> for BroadcastBlockRequest {
 
             context.block_queue.push(OrderedBlock(block)).await;
         }
+        // Verify the signature before broadcasting
 
         context
             .block_queue
             .push(OrderedBlock(self.block.clone()))
             .await;
         Ok(Value::Null)
+    }
+}
+
+fn verifying_signature(block: &Block, signature_bytes: &SignatureBytes) -> Result<(), RpcErr> {
+    let public = env::var("PUBLIC_KEY").map_err(|_| {
+        RpcErr::EthrexRPC(ethrex_rpc::RpcErr::Internal(
+            "Missing PUBLIC_KEY environment variable".to_string(),
+        ))
+    })?;
+
+    let bytes = hex::decode(public).map_err(|_| {
+        RpcErr::EthrexRPC(ethrex_rpc::RpcErr::Internal(
+            "Invalid PUBLIC_KEY format".to_string(),
+        ))
+    })?;
+
+    let hash = block.hash();
+
+    let verifying_key =
+        VerifyingKey::from_bytes(<&[u8; 32]>::try_from(bytes.as_slice()).map_err(|_| {
+            RpcErr::EthrexRPC(ethrex_rpc::RpcErr::Internal(
+                "Failed to convert PUBLIC_KEY to [u8; 32]".to_string(),
+            ))
+        })?)
+        .map_err(|_| {
+            RpcErr::EthrexRPC(ethrex_rpc::RpcErr::Internal(
+                "Failed to create VerifyingKey from PUBLIC_KEY".to_string(),
+            ))
+        })?;
+
+    let signature = Signature::from_bytes(signature_bytes);
+
+    verifying_key
+        .verify(hash.as_bytes(), &signature)
+        .map_err(|_| {
+            RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(
+                "Signature verification failed".to_string(),
+            ))
+        })?;
+    Ok(())
+}
+
+fn rpc_block_to_block(rpc_block: RpcBlock) -> Block {
+    match rpc_block.body {
+        ethrex_rpc::types::block::BlockBodyWrapper::Full(full_block_body) => {
+            // transform RPCBlock to normal block
+            let transactions: Vec<Transaction> = full_block_body
+                .transactions
+                .iter()
+                .map(|b| b.tx.clone())
+                .collect();
+
+            Block::new(
+                rpc_block.header,
+                BlockBody {
+                    ommers: full_block_body.uncles,
+                    transactions,
+                    withdrawals: Some(full_block_body.withdrawals),
+                },
+            )
+        }
+        ethrex_rpc::types::block::BlockBodyWrapper::OnlyHashes(..) => {
+            unreachable!()
+        }
     }
 }
 
@@ -68,28 +139,61 @@ fn get_block_data(req: &Option<Vec<Value>>) -> Result<SignedBlock, RpcErr> {
         )))
     })?;
 
-    let signature = params[0]
-        .get("signature")
-        .and_then(|v| v.as_str())
-        .map(|s| s.to_string())
-        .unwrap_or_default();
+    let signature_value = params.get(0).and_then(|v| v.get("signature"));
+    let array = signature_value.and_then(|v| v.as_array()).ok_or_else(|| {
+        RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(
+            "Invalid or missing signature array".to_string(),
+        ))
+    })?;
+    let mut signature = [0u8; Signature::BYTE_SIZE];
+    for (i, v) in array.iter().enumerate() {
+        signature[i] = v.as_u64().ok_or_else(|| {
+            RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(
+                "Invalid signature byte".to_string(),
+            ))
+        })? as u8;
+    }
+
     Ok(SignedBlock { block, signature })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ctor::ctor;
+    use ed25519_dalek::SigningKey;
     use ethrex_common::{
         Address, Bloom, Bytes, H256, U256,
         types::{Block, BlockBody, BlockHeader},
     };
 
+    use k256::ecdsa::signature::SignerMut;
     use serde_json::json;
 
+    #[ctor]
+    fn test_setup() {
+        unsafe {
+            std::env::set_var(
+                "PUBLIC_KEY",
+                "624eba5dd4b00f5293c09cf8bdf5508f7edcb5a59836d608da5150bec7110582",
+            )
+        };
+        println!("PUBLIC_KEY initialized for all tests");
+    }
+
     fn create_signed_block() -> SignedBlock {
+        let block = create_test_block();
+        let hash = block.hash();
+        let secret = "433887ac4e37c40872643b0f77a5919db9c47b0ad64650ed5a79dd05bbd6f197";
+        let private_key_bytes = hex::decode(secret).expect("Failed to decode private key from hex");
+        let private_key_array: [u8; 32] = private_key_bytes
+            .try_into()
+            .expect("invalid length for private key");
+        let mut signing_key = SigningKey::from_bytes(&private_key_array);
+        let signature: Signature = signing_key.sign(hash.as_bytes());
         SignedBlock {
-            block: create_test_block(),
-            signature: "test_signature".to_string(),
+            block: block,
+            signature: signature.to_bytes(),
         }
     }
 
@@ -268,6 +372,173 @@ mod tests {
                     "Failed to deserialize RpcBlock: {e}. The function rpc_block_to_block exists and compiles correctly.",
                 );
             }
+        }
+    }
+
+    #[test]
+    fn test_verifying_signature_success() {
+        let block = create_signed_block();
+        let result = verifying_signature(&block.block, &block.signature);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_verifying_signature_invalid_signature() {
+        let block = create_test_block();
+        let invalid_signature = [0u8; 64]; // Invalid signature bytes
+
+        let result = verifying_signature(&block, &invalid_signature);
+        assert!(result.is_err());
+        if let Err(RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(msg))) = result {
+            assert_eq!(msg, "Signature verification failed");
+        } else {
+            panic!("Expected BadParams error for signature verification failure");
+        }
+    }
+
+    #[test]
+    fn test_verifying_signature_wrong_signature() {
+        let block = create_test_block();
+        let different_block = Block {
+            header: BlockHeader {
+                number: 2u64, // Different from the original block
+                ..block.header.clone()
+            },
+            ..block.clone()
+        };
+
+        // Create signature for different block
+        let different_hash = different_block.hash();
+        let secret = "433887ac4e37c40872643b0f77a5919db9c47b0ad64650ed5a79dd05bbd6f197";
+        let private_key_bytes = hex::decode(secret).expect("Failed to decode private key from hex");
+        let private_key_array: [u8; 32] = private_key_bytes
+            .try_into()
+            .expect("invalid length for private key");
+        let mut signing_key = SigningKey::from_bytes(&private_key_array);
+        let signature: Signature = signing_key.sign(different_hash.as_bytes());
+
+        // Try to verify signature of different block against original block
+        let result = verifying_signature(&block, &signature.to_bytes());
+        assert!(result.is_err());
+        if let Err(RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(msg))) = result {
+            assert_eq!(msg, "Signature verification failed");
+        } else {
+            panic!("Expected BadParams error for signature verification failure");
+        }
+    }
+
+    #[test]
+    fn test_verifying_signature_missing_public_key() {
+        let block = create_test_block();
+        let signature = [0u8; 64];
+
+        // Temporarily remove PUBLIC_KEY
+        let original_key = std::env::var("PUBLIC_KEY").ok();
+        unsafe {
+            std::env::remove_var("PUBLIC_KEY");
+        }
+
+        let result = verifying_signature(&block, &signature);
+
+        // Restore PUBLIC_KEY if it existed
+        if let Some(key) = original_key {
+            unsafe {
+                std::env::set_var("PUBLIC_KEY", key);
+            }
+        }
+
+        assert!(result.is_err());
+        if let Err(RpcErr::EthrexRPC(ethrex_rpc::RpcErr::Internal(msg))) = result {
+            assert_eq!(msg, "Missing PUBLIC_KEY environment variable");
+        } else {
+            panic!("Expected Internal error for missing PUBLIC_KEY");
+        }
+    }
+
+    #[test]
+    fn test_verifying_signature_invalid_public_key_format() {
+        let block = create_test_block();
+        let signature = [0u8; 64];
+
+        // Set invalid PUBLIC_KEY
+        let original_key = std::env::var("PUBLIC_KEY").ok();
+        unsafe {
+            std::env::set_var("PUBLIC_KEY", "invalid_hex");
+        }
+
+        let result = verifying_signature(&block, &signature);
+
+        // Restore original PUBLIC_KEY
+        if let Some(key) = original_key {
+            unsafe {
+                std::env::set_var("PUBLIC_KEY", key);
+            }
+        }
+
+        assert!(result.is_err());
+        if let Err(RpcErr::EthrexRPC(ethrex_rpc::RpcErr::Internal(msg))) = result {
+            assert_eq!(msg, "Invalid PUBLIC_KEY format");
+        } else {
+            panic!("Expected Internal error for invalid PUBLIC_KEY format");
+        }
+    }
+
+    #[test]
+    fn test_verifying_signature_wrong_public_key_length() {
+        let block = create_test_block();
+        let signature = [0u8; 64];
+
+        // Set PUBLIC_KEY with wrong length (too short)
+        let original_key = std::env::var("PUBLIC_KEY").ok();
+        unsafe {
+            std::env::set_var("PUBLIC_KEY", "1234567890abcdef"); // Only 16 hex chars = 8 bytes, need 32 bytes
+        }
+
+        let result = verifying_signature(&block, &signature);
+
+        // Restore original PUBLIC_KEY
+        if let Some(key) = original_key {
+            unsafe {
+                std::env::set_var("PUBLIC_KEY", key);
+            }
+        }
+
+        assert!(result.is_err());
+        if let Err(RpcErr::EthrexRPC(ethrex_rpc::RpcErr::Internal(msg))) = result {
+            assert_eq!(msg, "Failed to convert PUBLIC_KEY to [u8; 32]");
+        } else {
+            panic!("Expected Internal error for wrong PUBLIC_KEY length");
+        }
+    }
+
+    #[test]
+    fn test_verifying_signature_invalid_verifying_key() {
+        let block = create_test_block();
+        let signature = [0u8; 64];
+
+        // Set PUBLIC_KEY with correct length but invalid key data
+        let original_key = std::env::var("PUBLIC_KEY").ok();
+        unsafe {
+            std::env::set_var(
+                "PUBLIC_KEY",
+                "0000000000000000000000000000000000000000000000000000000000000002",
+            ); // All zeros
+        }
+
+        let result = verifying_signature(&block, &signature);
+
+        // Restore original PUBLIC_KEY
+        if let Some(key) = original_key {
+            unsafe {
+                std::env::set_var("PUBLIC_KEY", key);
+            }
+        }
+
+        assert!(result.is_err());
+        if let Err(RpcErr::EthrexRPC(ethrex_rpc::RpcErr::Internal(msg))) = result {
+            assert_eq!(msg, "Failed to create VerifyingKey from PUBLIC_KEY");
+        } else {
+            panic!("Expected Internal error for invalid VerifyingKey");
         }
     }
 }
