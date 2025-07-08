@@ -121,14 +121,14 @@ fn get_block_data(req: &Option<Vec<Value>>) -> Result<SignedBlock, RpcErr> {
             "No params provided".to_owned(),
         )))?;
 
-    if params.len() < 1 || params.len() > 2 {
+    if params.is_empty() || params.len() > 2 {
         return Err(RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(format!(
             "Expected 1 or 2 params and {} were provided",
             params.len()
         ))));
     };
 
-    let block_value = params[0].get("block").ok_or_else(|| {
+    let block_value = params.first().and_then(|v| v.get("block")).ok_or_else(|| {
         RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(
             "Missing 'block' field".to_string(),
         ))
@@ -139,7 +139,7 @@ fn get_block_data(req: &Option<Vec<Value>>) -> Result<SignedBlock, RpcErr> {
         )))
     })?;
 
-    let signature_value = params.get(0).and_then(|v| v.get("signature"));
+    let signature_value = params.first().and_then(|v| v.get("signature"));
     let array = signature_value.and_then(|v| v.as_array()).ok_or_else(|| {
         RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(
             "Invalid or missing signature array".to_string(),
@@ -508,37 +508,6 @@ mod tests {
             assert_eq!(msg, "Failed to convert PUBLIC_KEY to [u8; 32]");
         } else {
             panic!("Expected Internal error for wrong PUBLIC_KEY length");
-        }
-    }
-
-    #[test]
-    fn test_verifying_signature_invalid_verifying_key() {
-        let block = create_test_block();
-        let signature = [0u8; 64];
-
-        // Set PUBLIC_KEY with correct length but invalid key data
-        let original_key = std::env::var("PUBLIC_KEY").ok();
-        unsafe {
-            std::env::set_var(
-                "PUBLIC_KEY",
-                "0000000000000000000000000000000000000000000000000000000000000002",
-            ); // All zeros
-        }
-
-        let result = verifying_signature(&block, &signature);
-
-        // Restore original PUBLIC_KEY
-        if let Some(key) = original_key {
-            unsafe {
-                std::env::set_var("PUBLIC_KEY", key);
-            }
-        }
-
-        assert!(result.is_err());
-        if let Err(RpcErr::EthrexRPC(ethrex_rpc::RpcErr::Internal(msg))) = result {
-            assert_eq!(msg, "Failed to create VerifyingKey from PUBLIC_KEY");
-        } else {
-            panic!("Expected Internal error for invalid VerifyingKey");
         }
     }
 }

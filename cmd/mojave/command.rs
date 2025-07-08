@@ -240,9 +240,6 @@ impl Command {
                 let public_hex = hex::encode(verifying_key.as_bytes());
                 let secret_hex = hex::encode(signing_key.to_bytes());
 
-                println!("public key: {}", public_hex);
-                println!("private key: {}", secret_hex);
-
                 let mut env_file = OpenOptions::new()
                     .create(true)
                     .append(true)
