@@ -190,11 +190,8 @@ mod tests {
             .try_into()
             .expect("invalid length for private key");
         let mut signing_key = SigningKey::from_bytes(&private_key_array);
-        let signature: Signature = signing_key.sign(hash.as_bytes());
-        SignedBlock {
-            block: block,
-            signature: signature.to_bytes(),
-        }
+        let signature: SignatureBytes = signing_key.sign(hash.as_bytes()).to_bytes();
+        SignedBlock { block, signature }
     }
 
     fn create_test_block() -> Block {
