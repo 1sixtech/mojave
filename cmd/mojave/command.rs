@@ -231,7 +231,7 @@ impl Command {
                 println!("Generating key pair...");
                 use ed25519_dalek::SigningKey;
                 use rand::rngs::OsRng;
-                use std::{fs, fs::OpenOptions, io::Write};
+                use std::{fs::OpenOptions, io::Write};
 
                 let mut csprng = OsRng;
                 let signing_key: SigningKey = SigningKey::generate(&mut csprng);
@@ -248,8 +248,7 @@ impl Command {
 
                 writeln!(
                     env_file,
-                    "PUBLIC_KEY={}\nPRIVATE_KEY={}\n",
-                    public_hex, secret_hex
+                    "PUBLIC_KEY={public_hex}\nPRIVATE_KEY={secret_hex}\n"
                 )
                 .expect("failed to write to .env");
             }
