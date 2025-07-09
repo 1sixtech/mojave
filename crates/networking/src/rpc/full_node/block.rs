@@ -51,42 +51,36 @@ impl RpcHandler<RpcApiContextFullNode> for BroadcastBlockRequest {
 }
 
 fn verifying_signature(block: &Block, signature_bytes: &SignatureBytes) -> Result<(), RpcErr> {
-    let public = env::var("PUBLIC_KEY").map_err(|_| {
-        RpcErr::EthrexRPC(ethrex_rpc::RpcErr::Internal(
-            "Missing PUBLIC_KEY environment variable".to_string(),
+    use ethrex_rpc::RpcErr::{BadParams, Internal};
+
+    // Get and decode public key from environment
+    let public_key_hex = env::var("PUBLIC_KEY").map_err(|_| {
+        RpcErr::EthrexRPC(Internal("Missing PUBLIC_KEY environment variable".into()))
+    })?;
+    println!("Using PUBLIC_KEY: {}", public_key_hex);
+
+    let public_key_bytes = hex::decode(&public_key_hex)
+        .map_err(|_| RpcErr::EthrexRPC(Internal("Invalid PUBLIC_KEY format".into())))?;
+
+    // Convert to [u8; 32]
+    let key_bytes: &[u8; 32] = public_key_bytes.as_slice().try_into().map_err(|_| {
+        RpcErr::EthrexRPC(Internal("Failed to convert PUBLIC_KEY to [u8; 32]".into()))
+    })?;
+
+    // Build verifying key
+    let verifying_key = VerifyingKey::from_bytes(key_bytes).map_err(|_| {
+        RpcErr::EthrexRPC(Internal(
+            "Failed to create VerifyingKey from PUBLIC_KEY".into(),
         ))
     })?;
 
-    let bytes = hex::decode(public).map_err(|_| {
-        RpcErr::EthrexRPC(ethrex_rpc::RpcErr::Internal(
-            "Invalid PUBLIC_KEY format".to_string(),
-        ))
-    })?;
-
+    // Verify signature
     let hash = block.hash();
-
-    let verifying_key =
-        VerifyingKey::from_bytes(<&[u8; 32]>::try_from(bytes.as_slice()).map_err(|_| {
-            RpcErr::EthrexRPC(ethrex_rpc::RpcErr::Internal(
-                "Failed to convert PUBLIC_KEY to [u8; 32]".to_string(),
-            ))
-        })?)
-        .map_err(|_| {
-            RpcErr::EthrexRPC(ethrex_rpc::RpcErr::Internal(
-                "Failed to create VerifyingKey from PUBLIC_KEY".to_string(),
-            ))
-        })?;
-
     let signature = Signature::from_bytes(signature_bytes);
 
     verifying_key
         .verify(hash.as_bytes(), &signature)
-        .map_err(|_| {
-            RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(
-                "Signature verification failed".to_string(),
-            ))
-        })?;
-    Ok(())
+        .map_err(|_| RpcErr::EthrexRPC(BadParams("Signature verification failed".into())))
 }
 
 fn rpc_block_to_block(rpc_block: RpcBlock) -> Block {
@@ -376,6 +370,7 @@ mod tests {
     fn test_verifying_signature_success() {
         let block = create_signed_block();
         let result = verifying_signature(&block.block, &block.signature);
+        println!("Signature verification result: {:?}", result);
         assert!(result.is_ok());
     }
 
@@ -386,6 +381,7 @@ mod tests {
 
         let result = verifying_signature(&block, &invalid_signature);
         assert!(result.is_err());
+        println!("Expected error: {:?}", result);
         if let Err(RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(msg))) = result {
             assert_eq!(msg, "Signature verification failed");
         } else {
@@ -418,6 +414,7 @@ mod tests {
         let result = verifying_signature(&block, &signature.to_bytes());
         assert!(result.is_err());
         if let Err(RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(msg))) = result {
+            println!("Expected error: {}", msg);
             assert_eq!(msg, "Signature verification failed");
         } else {
             panic!("Expected BadParams error for signature verification failure");
