@@ -57,7 +57,7 @@ fn verifying_signature(block: &Block, signature_bytes: &SignatureBytes) -> Resul
     let public_key_hex = env::var("PUBLIC_KEY").map_err(|_| {
         RpcErr::EthrexRPC(Internal("Missing PUBLIC_KEY environment variable".into()))
     })?;
-    println!("Using PUBLIC_KEY: {}", public_key_hex);
+    println!("Using PUBLIC_KEY: {public_key_hex}");
 
     let public_key_bytes = hex::decode(&public_key_hex)
         .map_err(|_| RpcErr::EthrexRPC(Internal("Invalid PUBLIC_KEY format".into())))?;
@@ -370,7 +370,7 @@ mod tests {
     fn test_verifying_signature_success() {
         let block = create_signed_block();
         let result = verifying_signature(&block.block, &block.signature);
-        println!("Signature verification result: {:?}", result);
+        println!("Signature verification result: {result:?}");
         assert!(result.is_ok());
     }
 
@@ -381,7 +381,7 @@ mod tests {
 
         let result = verifying_signature(&block, &invalid_signature);
         assert!(result.is_err());
-        println!("Expected error: {:?}", result);
+        println!("Expected error: {result:?}");
         if let Err(RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(msg))) = result {
             assert_eq!(msg, "Signature verification failed");
         } else {
@@ -414,7 +414,7 @@ mod tests {
         let result = verifying_signature(&block, &signature.to_bytes());
         assert!(result.is_err());
         if let Err(RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(msg))) = result {
-            println!("Expected error: {}", msg);
+            println!("Expected error: {msg}");
             assert_eq!(msg, "Signature verification failed");
         } else {
             panic!("Expected BadParams error for signature verification failure");
