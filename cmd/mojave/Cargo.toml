@@ -53,8 +53,8 @@ secp256k1 = { workspace = true, features = [
   "rand",
 ] }
 
-ed25519-dalek = { version = "2.1.1", features = ["rand_core"] }
-rand = { version = "0.8.5", optional = true, features = ["std"] }
+ed25519-dalek = { workspace = true, features = ["rand_core"] }
+rand = { workspace = true, optional = true, features = ["std"] }
 hex = "0.4.3"
 
 serde_json = { workspace = true }
