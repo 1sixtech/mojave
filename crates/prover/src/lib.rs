@@ -63,6 +63,8 @@ impl Prover {
                 {
                     tracing::error!("error sending proof {e}");
                 }
+            } else {
+                tracing::error!("Stopping the prover because sender dropped. This is a bug.");
             }
         }
     }
