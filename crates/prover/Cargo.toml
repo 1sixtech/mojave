@@ -1,0 +1,17 @@
+[package]
+name = "mojave-prover"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+zkvm_interface = { workspace = true }
+ethrex-l2-common = { workspace = true }
+ethrex-prover = { workspace = true }
+
+tokio = { workspace = true, features = ["sync"] }
+
+tracing = { workspace = true }
+
+[dev-dependencies]
+
+[features]

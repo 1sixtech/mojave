@@ -7,13 +7,15 @@ members = [
   "crates/syncer",
   # "crates/sequencer",
   "crates/utils",
-
+  "crates/prover",
+  "crates/proof-coordinator",
 ]
 resolver = "2"
 
 [workspace.dependencies]
 # ethrex
 ethrex = { git = "https://github.com/1sixtech/ethrex", rev = "d62fcc5accaaa13b9909af04071379219dc6a0b1", default-features = false }
+zkvm_interface = { git = "https://github.com/1sixtech/ethrex", rev = "d62fcc5accaaa13b9909af04071379219dc6a0b1", default-features = false }
 ethrex-blockchain = { git = "https://github.com/1sixtech/ethrex", rev = "d62fcc5accaaa13b9909af04071379219dc6a0b1", default-features = false }
 ethrex-l2 = { git = "https://github.com/1sixtech/ethrex", rev = "d62fcc5accaaa13b9909af04071379219dc6a0b1", default-features = false }
 ethrex-l2-common = { git = "https://github.com/1sixtech/ethrex", rev = "d62fcc5accaaa13b9909af04071379219dc6a0b1", default-features = false }
@@ -25,11 +27,13 @@ ethrex-common = { git = "https://github.com/1sixtech/ethrex", rev = "d62fcc5acca
 ethrex-p2p = { git = "https://github.com/1sixtech/ethrex", rev = "d62fcc5accaaa13b9909af04071379219dc6a0b1" }
 ethrex-rlp = { git = "https://github.com/1sixtech/ethrex", rev = "d62fcc5accaaa13b9909af04071379219dc6a0b1" }
 ethrex-storage = { git = "https://github.com/1sixtech/ethrex", rev = "d62fcc5accaaa13b9909af04071379219dc6a0b1" }
+ethrex-prover = { git = "https://github.com/1sixtech/ethrex", rev = "d62fcc5accaaa13b9909af04071379219dc6a0b1" }
 
 lazy_static = "1.5.0"
 
 # mojave
 mojave-block-builder = { path = "crates/block-builder" }
+mojave-prover = { path = "crates/prover" }
 mojave-chain-utils = { path = "crates/utils" }
 mojave-networking = { path = "crates/networking" }
 

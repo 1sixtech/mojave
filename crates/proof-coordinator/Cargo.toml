@@ -1,0 +1,19 @@
+[package]
+name = "mojave-proof-coordinator"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tracing = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["sync"] }
+
+ethrex-l2-common = { workspace = true }
+ethrex-l2 = { workspace = true }
+ethrex-common = { workspace = true, features = ["c-kzg"] }
+ethrex-storage = { workspace = true }
+ethrex-storage-rollup = { workspace = true }
+ethrex-blockchain = { workspace = true }
+zkvm_interface = { workspace = true }
+
+mojave-prover = { workspace = true }

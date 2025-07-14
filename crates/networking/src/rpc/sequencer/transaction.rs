@@ -59,7 +59,7 @@ fn get_transaction_data(rpc_req_params: &Option<Vec<Value>>) -> Result<Vec<u8>, 
         str_data
             .strip_prefix("0x")
             .ok_or(RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(
-                "Params are note 0x prefixed".to_owned(),
+                "Params are not 0x prefixed".to_owned(),
             )))?;
     hex::decode(str_data)
         .map_err(|error| RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(error.to_string())))
