@@ -1914,6 +1914,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "115531babc129696a58c64a4fef0a8bf9e9698629fb97e9e40767d235cfbcd53"
 dependencies = [
  "pkcs8",
+ "serde",
  "signature",
 ]
 
@@ -4622,7 +4623,6 @@ version = "0.1.0"
 dependencies = [
  "axum 0.8.4",
  "ctor",
- "ed25519-dalek",
  "ethrex-blockchain",
  "ethrex-common",
  "ethrex-p2p",
@@ -4636,6 +4636,7 @@ dependencies = [
  "k256 0.13.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "mockito",
  "mojave-chain-utils",
+ "mojave-signature",
  "rand 0.8.5",
  "reqwest 0.12.20",
  "secp256k1",
@@ -6437,6 +6438,7 @@ dependencies = [
  "k256 0.13.4 (git+https://github.com/sp1-patches/elliptic-curves?tag=patch-k256-13.4-sp1-5.0.0)",
  "rand 0.8.5",
  "secp256k1-sys",
+ "serde",
 ]
 
 [[package]]

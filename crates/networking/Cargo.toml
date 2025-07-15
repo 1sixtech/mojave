@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 # Internal project dependencies
 mojave-chain-utils = { workspace = true }
+mojave-signature ={ workspace = true, features = ["secp256k1"]}
 
 axum = "0.8.1"
 hex = "0.4.3"
@@ -39,7 +40,6 @@ k256 = { workspace = true, features = ["ecdh"] }
 
 reqwest = { workspace = true }
 rand = { version = "0.8.5", features = ["std"], optional = true }
-ed25519-dalek = { workspace = true, features = ["rand_core"] }
 serde_bytes = "0.11.17"
 
 

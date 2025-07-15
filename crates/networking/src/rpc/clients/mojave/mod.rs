@@ -1,10 +1,8 @@
-use ed25519_dalek::{Signature, SigningKey};
 use ethrex_common::{H256, types::Block};
 use futures::{
     FutureExt,
     future::{Fuse, select_ok},
 };
-use k256::ecdsa::signature::SignerMut;
 use reqwest::Url;
 use serde::Deserialize;
 use serde_json::json;
@@ -15,6 +13,8 @@ use crate::rpc::{
     clients::mojave::errors::{ForwardTransactionError, MojaveClientError},
     utils::{RpcErrorResponse, RpcRequest, RpcRequestId, RpcSuccessResponse},
 };
+
+use mojave_signature::{Signature, SigningKey, VerifyingKey};
 
 pub mod errors;
 
@@ -56,7 +56,7 @@ impl Client {
             .try_into()
             .expect("invalid length for private key");
 
-        let signing_key = SigningKey::from_bytes(&private_key_array);
+        let signing_key = SigningKey::from_bytes_default(&private_key_array)?;
 
         Ok(Self {
             inner: Arc::new(ClientInner {
@@ -141,12 +141,13 @@ impl Client {
 
     pub async fn send_broadcast_block(&self, block: &Block) -> Result<(), MojaveClientError> {
         let hash = block.hash();
-        let mut signing_key_clone = self.signing_key.clone();
-        let signature: Signature = signing_key_clone.sign(hash.as_bytes());
+        let signature: Signature = mojave_signature::sign(&self.signing_key, hash.as_bytes())?;
+        let verifying_key = VerifyingKey::from_signing_key(&self.signing_key)?;
 
         let params = SignedBlock {
             block: block.clone(),
-            signature: signature.to_bytes(),
+            signature: signature,
+            verifying_key: verifying_key,
         };
 
         let request = RpcRequest {

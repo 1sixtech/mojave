@@ -4,11 +4,12 @@ pub mod sequencer;
 pub mod utils;
 
 use crate::rpc::utils::{RpcErr, RpcRequest};
-use ed25519_dalek::ed25519::SignatureBytes;
 use ethrex_common::types::Block;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::time::Duration;
+
+use mojave_signature::{Signature, VerifyingKey};
 
 pub const FILTER_DURATION: Duration = Duration::from_secs(300);
 
@@ -19,11 +20,12 @@ pub enum RpcRequestWrapper {
     Multiple(Vec<RpcRequest>),
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+// need to check whether we will use Message and contain other data or not 
+#[derive(Serialize, Deserialize)]
 pub struct SignedBlock {
     pub block: Block,
-    #[serde(with = "serde_bytes")]
-    pub signature: SignatureBytes,
+    pub signature: Signature,
+    pub verifying_key: VerifyingKey,
 }
 
 #[allow(async_fn_in_trait)]
