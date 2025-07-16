@@ -1,13 +1,13 @@
-// #[cfg(feature = "secp256k1")]
+#[cfg(feature = "secp256k1")]
 pub mod ecdsa;
-// #[cfg(feature = "ed25519")]
+#[cfg(feature = "ed25519")]
 pub mod eddsa;
 mod error;
 
-// #[cfg(feature = "secp256k1")]
-// pub use ecdsa::{SigningKey, VerifyingKey};
-// #[cfg(any(feature = "default", feature = "ed25519"))]
-// pub use eddsa::{SigningKey, VerifyingKey};
+#[cfg(feature = "secp256k1")]
+pub use ecdsa::{SigningKey, VerifyingKey};
+#[cfg(feature = "ed25519")]
+pub use eddsa::{SigningKey, VerifyingKey};
 pub use error::SignatureError;
 
 use serde::{Deserialize, Serialize};
