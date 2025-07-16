@@ -311,63 +311,6 @@ pub async fn init_sequencer_rpc_api(
     tracker.spawn(rpc_api);
 }
 
-#[allow(clippy::too_many_arguments)]
-pub async fn init_sequencer_rpc_api(
-    opts: &Options,
-    sequencer_opts: &SequencerOpts,
-    peer_table: Arc<Mutex<KademliaTable>>,
-    local_p2p_node: Node,
-    local_node_record: NodeRecord,
-    store: Store,
-    blockchain: Arc<Blockchain>,
-    cancel_token: CancellationToken,
-    tracker: TaskTracker,
-    rollup_store: StoreRollup,
-) {
-    let peer_handler = PeerHandler::new(peer_table);
-
-    // Create SyncManager
-    let syncer = SyncManager::new(
-        peer_handler.clone(),
-        opts.syncmode.clone(),
-        cancel_token,
-        blockchain.clone(),
-        store.clone(),
-    )
-    .await;
-
-    let http_addr = get_http_socket_addr(opts);
-    let authrpc_addr = get_authrpc_socket_addr(opts);
-    let jwt_secret = read_jwtsecret_file(&opts.authrpc_jwtsecret);
-    let client_version = get_client_version();
-
-    // Create MojaveClient
-    let addrs: Vec<String> = sequencer_opts
-        .full_node_addresses
-        .iter()
-        .map(|addr| format!("http://{addr}"))
-        .collect();
-    let addrs = addrs.iter().map(|addr| addr.as_str()).collect();
-    let mojave_client = Client::new(addrs).expect("unable to init sync client");
-
-    let rpc_api = mojave_networking::rpc::sequencer::start_api(
-        http_addr,
-        authrpc_addr,
-        store,
-        blockchain,
-        jwt_secret,
-        local_p2p_node,
-        local_node_record,
-        syncer,
-        peer_handler,
-        client_version,
-        rollup_store,
-        mojave_client,
-    );
-
-    tracker.spawn(rpc_api);
-}
-
 pub async fn init_rollup_store(data_dir: &str) -> StoreRollup {
     cfg_if::cfg_if! {
         if #[cfg(feature = "sql")] {

@@ -3,8 +3,9 @@ pub mod full_node;
 pub mod sequencer;
 pub mod utils;
 
-use crate::rpc::utils::{RpcErr, RpcRequest};
+use crate::rpc::utils::{RpcErr, RpcErrorResponse, RpcRequest, RpcRequestId, RpcSuccessResponse};
 use ethrex_common::types::Block;
+use ethrex_rpc::RpcErrorMetadata;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::time::Duration;
@@ -20,7 +21,7 @@ pub enum RpcRequestWrapper {
     Multiple(Vec<RpcRequest>),
 }
 
-// need to check whether we will use Message and contain other data or not 
+// need to check whether we will use Message and contain other data or not
 #[derive(Serialize, Deserialize)]
 pub struct SignedBlock {
     pub block: Block,
@@ -38,6 +39,24 @@ pub trait RpcHandler<T>: Sized {
     }
 
     async fn handle(&self, context: T) -> Result<Value, RpcErr>;
+}
+
+pub fn rpc_response<E>(id: RpcRequestId, res: Result<Value, E>) -> Result<Value, RpcErr>
+where
+    E: Into<RpcErrorMetadata>,
+{
+    Ok(match res {
+        Ok(result) => serde_json::to_value(RpcSuccessResponse {
+            id,
+            jsonrpc: "2.0".to_string(),
+            result,
+        }),
+        Err(error) => serde_json::to_value(RpcErrorResponse {
+            id,
+            jsonrpc: "2.0".to_string(),
+            error: error.into(),
+        }),
+    }?)
 }
 
 #[cfg(test)]
@@ -557,22 +576,4 @@ mod tests {
 
         sequencer_client.send_broadcast_block(&block).await.unwrap();
     }
-}
-
-pub fn rpc_response<E>(id: RpcRequestId, res: Result<Value, E>) -> Result<Value, RpcErr>
-where
-    E: Into<RpcErrorMetadata>,
-{
-    Ok(match res {
-        Ok(result) => serde_json::to_value(RpcSuccessResponse {
-            id,
-            jsonrpc: "2.0".to_string(),
-            result,
-        }),
-        Err(error) => serde_json::to_value(RpcErrorResponse {
-            id,
-            jsonrpc: "2.0".to_string(),
-            error: error.into(),
-        }),
-    }?)
 }
