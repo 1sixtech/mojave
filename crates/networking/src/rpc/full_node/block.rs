@@ -96,11 +96,12 @@ fn get_block_data(req: &Option<Vec<Value>>) -> Result<SignedBlock, RpcErr> {
         ))));
     }
 
-    let signed_block_param = params
-        .first()
-        .ok_or(RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(
-            "Missing SignedBlock parameter".to_owned(),
-        )))?;
+    let signed_block_param =
+        params
+            .first()
+            .ok_or(RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(
+                "Missing SignedBlock parameter".to_owned(),
+            )))?;
 
     let signed_block = serde_json::from_value::<SignedBlock>(signed_block_param.clone())?;
 
@@ -108,7 +109,7 @@ fn get_block_data(req: &Option<Vec<Value>>) -> Result<SignedBlock, RpcErr> {
 }
 
 /// Mock function to verify if the sender is a valid sequencer
-/// 
+///
 /// Currently returns Ok for all addresses as a mock implementation.
 /// In production, this should check validity against syncer's valid_sequencer_addresses field
 fn verify_sender(_sender: &[u8]) -> Result<(), RpcErr> {
@@ -149,7 +150,11 @@ mod tests {
         let signing_key: SigningKey = SigningKey::from_bytes_default(&private_key_array).unwrap();
         let signature: Signature = mojave_signature::sign(&signing_key, hash.as_bytes()).unwrap();
         let verifying_key = mojave_signature::VerifyingKey::from_signing_key(&signing_key).unwrap();
-        SignedBlock { block, signature, verifying_key }
+        SignedBlock {
+            block,
+            signature,
+            verifying_key,
+        }
     }
 
     fn create_test_block() -> Block {
@@ -218,7 +223,10 @@ mod tests {
         let result = get_block_data(&params);
         assert!(result.is_err());
         if let Err(RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(msg))) = result {
-            assert_eq!(msg, "Expected exactly 1 parameter (SignedBlock), but 0 were provided");
+            assert_eq!(
+                msg,
+                "Expected exactly 1 parameter (SignedBlock), but 0 were provided"
+            );
         } else {
             panic!("Expected BadParams error");
         }
@@ -237,7 +245,10 @@ mod tests {
         let result = get_block_data(&params);
         assert!(result.is_err());
         if let Err(RpcErr::EthrexRPC(ethrex_rpc::RpcErr::BadParams(msg))) = result {
-            assert_eq!(msg, "Expected exactly 1 parameter (SignedBlock), but 3 were provided");
+            assert_eq!(
+                msg,
+                "Expected exactly 1 parameter (SignedBlock), but 3 were provided"
+            );
         } else {
             panic!("Expected BadParams error");
         }

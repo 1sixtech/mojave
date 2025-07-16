@@ -1,5 +1,5 @@
 #[derive(Debug, thiserror::Error)]
-pub enum SignatureError{
+pub enum SignatureError {
     #[error("Invalid key length. Expected:{expected}, Got:{actual}")]
     InvalidKeyLength { expected: usize, actual: usize },
     #[error("Invalid signature length")]

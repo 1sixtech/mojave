@@ -18,7 +18,6 @@ pub enum MojaveClientError {
     MissingSigningKey,
     #[error("Signature error: {0}")]
     SignatureError(#[from] mojave_signature::SignatureError),
-
 }
 
 #[derive(Debug, thiserror::Error)]

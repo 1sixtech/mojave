@@ -14,9 +14,9 @@ pub mod error;
 pub use error::SignatureError;
 
 static SECP256K1_SIGNING: LazyLock<Secp256k1<secp256k1::SignOnly>> =
-    LazyLock::new(|| Secp256k1::signing_only());
+    LazyLock::new(Secp256k1::signing_only);
 static SECP256K1_VERIFY: LazyLock<Secp256k1<secp256k1::VerifyOnly>> =
-    LazyLock::new(|| Secp256k1::verification_only());
+    LazyLock::new(Secp256k1::verification_only);
 
 #[derive(PartialEq, Serialize, Deserialize)]
 pub enum SignatureScheme {
