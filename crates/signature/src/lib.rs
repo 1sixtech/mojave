@@ -16,8 +16,6 @@ use std::str::FromStr;
 pub trait Signer: FromStr<Err = SignatureError> + Sized {
     fn from_slice(slice: &[u8]) -> Result<Self, SignatureError>;
 
-    fn verifying_key(&self) -> impl Verifier;
-
     fn sign<T: Serialize>(&self, message: &T) -> Result<Signature, SignatureError>;
 }
 

@@ -31,11 +31,6 @@ impl super::Signer for SigningKey {
         Ok(Self(private_key))
     }
 
-    fn verifying_key(&self) -> impl crate::Verifier {
-        let secp = Secp256k1::new();
-        VerifyingKey(PublicKey::from_secret_key(&secp, &self.0))
-    }
-
     fn sign<T: Serialize>(&self, message: &T) -> Result<Signature, SignatureError> {
         let message_bytes =
             bincode::serialize(message).map_err(|error| Error::Sign(error.into()))?;
@@ -48,6 +43,13 @@ impl super::Signer for SigningKey {
             bytes: signature.to_vec(),
             scheme: SignatureScheme::Secp256k1,
         })
+    }
+}
+
+impl SigningKey {
+    pub fn verifying_key(&self) -> VerifyingKey {
+        let secp = Secp256k1::new();
+        VerifyingKey(PublicKey::from_secret_key(&secp, &self.0))
     }
 }
 

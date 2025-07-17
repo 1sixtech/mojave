@@ -26,10 +26,6 @@ impl super::Signer for SigningKey {
         Ok(Self(secret_key))
     }
 
-    fn verifying_key(&self) -> impl crate::Verifier {
-        VerifyingKey(PublicKey::from(&self.0))
-    }
-
     fn sign<T: Serialize>(&self, message: &T) -> Result<Signature, SignatureError> {
         let message_bytes =
             bincode::serialize(message).map_err(|error| Error::Sign(error.into()))?;
@@ -38,6 +34,12 @@ impl super::Signer for SigningKey {
             bytes: signature.to_vec(),
             scheme: SignatureScheme::Ed25519,
         })
+    }
+}
+
+impl SigningKey {
+    fn verifying_key(&self) -> VerifyingKey {
+        VerifyingKey(PublicKey::from(&self.0))
     }
 }
 
