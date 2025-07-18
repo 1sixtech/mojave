@@ -14,7 +14,7 @@ use crate::rpc::{
     utils::{RpcErrorResponse, RpcRequest, RpcRequestId, RpcSuccessResponse},
 };
 
-use mojave_signature::{Signature, SigningKey, VerifyingKey};
+use mojave_signature::{Signer, Signature, SigningKey};
 
 pub mod errors;
 
@@ -56,7 +56,7 @@ impl Client {
             .try_into()
             .expect("invalid length for private key");
 
-        let signing_key = SigningKey::from_bytes_default(&private_key_array)?;
+        let signing_key = Signer::from_slice(&private_key_array)?;
 
         Ok(Self {
             inner: Arc::new(ClientInner {
@@ -141,8 +141,8 @@ impl Client {
 
     pub async fn send_broadcast_block(&self, block: &Block) -> Result<(), MojaveClientError> {
         let hash = block.hash();
-        let signature: Signature = mojave_signature::sign(&self.signing_key, hash.as_bytes())?;
-        let verifying_key = VerifyingKey::from_signing_key(&self.signing_key)?;
+        let signature: Signature = self.signing_key.sign(&hash)?;
+        let verifying_key = self.signing_key.verifying_key();
 
         let params = SignedBlock {
             block: block.clone(),

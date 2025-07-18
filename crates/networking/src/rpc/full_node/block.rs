@@ -7,13 +7,35 @@ use crate::rpc::{
 use ethrex_common::types::{Block, BlockBody, Transaction};
 use ethrex_rpc::{clients::eth::BlockByNumber, types::block::RpcBlock};
 
-use mojave_signature::{Signature, VerifyingKey};
+use mojave_signature::{Signature, Verifier, VerifyingKey};
 use serde_json::Value;
 
 pub struct BroadcastBlockRequest {
     block: Block,
     signature: Signature,
     verifying_key: VerifyingKey,
+}
+
+impl BroadcastBlockRequest {
+    /// Verifies the block signature and checks if the sender is a valid sequencer.
+    ///
+    /// Currently returns Ok for all addresses as a mock implementation.
+    /// In production, this should check validity against syncer's valid_sequencer_addresses field
+    fn verify_signature_and_sender(&self) -> Result<bool, RpcErr> {
+        // Verify the signature first
+        let is_msg_valid = self
+            .verifying_key
+            .verify(&self.block.header.hash(), &self.signature)?;
+
+        if !is_msg_valid {
+            return Ok(false);
+        }
+
+        // in case of ecdsa, need to convert pub key to address and check validity
+        let _sender = self.verifying_key.to_address();
+
+        Ok(true)
+    }
 }
 
 impl RpcHandler<RpcApiContextFullNode> for BroadcastBlockRequest {
@@ -27,16 +49,11 @@ impl RpcHandler<RpcApiContextFullNode> for BroadcastBlockRequest {
     }
 
     async fn handle(&self, context: RpcApiContextFullNode) -> Result<Value, RpcErr> {
-        // Verify the signature before processing the block
-        mojave_signature::verify(
-            &self.verifying_key,
-            &self.block.header.hash().to_fixed_bytes(),
-            &self.signature,
-        )?;
-        let sender = mojave_signature::address_from_pubkey(&self.verifying_key)?;
-
+        // Check if the signature and sender are valid; if not, handle the invalid message case.
         // Mock sender verification - always returns Ok for now
-        verify_sender(&sender)?;
+        if !self.verify_signature_and_sender()? {
+            // TODO: Handle invalid message (e.g., return an error or log the incident)
+        }
 
         let latest_block_number = context.l1_context.storage.get_latest_block_number().await? + 1;
         for block_number in latest_block_number..self.block.header.number {
@@ -108,14 +125,6 @@ fn get_block_data(req: &Option<Vec<Value>>) -> Result<SignedBlock, RpcErr> {
     Ok(signed_block)
 }
 
-/// Mock function to verify if the sender is a valid sequencer
-///
-/// Currently returns Ok for all addresses as a mock implementation.
-/// In production, this should check validity against syncer's valid_sequencer_addresses field
-fn verify_sender(_sender: &[u8]) -> Result<(), RpcErr> {
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -124,7 +133,7 @@ mod tests {
         Address, Bloom, Bytes, H256, U256,
         types::{Block, BlockBody, BlockHeader},
     };
-    use mojave_signature::SigningKey;
+    use mojave_signature::{Signer, SigningKey};
 
     use serde_json::json;
 
@@ -147,9 +156,9 @@ mod tests {
         let private_key_array: [u8; 32] = private_key_bytes
             .try_into()
             .expect("invalid length for private key");
-        let signing_key: SigningKey = SigningKey::from_bytes_default(&private_key_array).unwrap();
-        let signature: Signature = mojave_signature::sign(&signing_key, hash.as_bytes()).unwrap();
-        let verifying_key = mojave_signature::VerifyingKey::from_signing_key(&signing_key).unwrap();
+        let signing_key: SigningKey = SigningKey::from_slice(&private_key_array).unwrap();
+        let signature: Signature = SigningKey::sign(&signing_key, &hash).unwrap();
+        let verifying_key = signing_key.verifying_key();
         SignedBlock {
             block,
             signature,

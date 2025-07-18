@@ -4681,6 +4681,7 @@ dependencies = [
 name = "mojave-signature"
 version = "0.1.0"
 dependencies = [
+ "bincode",
  "bs58",
  "ed25519-dalek",
  "hex",
