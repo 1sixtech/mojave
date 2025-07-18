@@ -15,6 +15,8 @@ pub enum RpcErr {
     CustomError(String),
     #[error("Blockchain error: {0}")]
     BlockchainError(#[from] ChainError),
+    #[error("Signature error: {0}")]
+    SignatureError(#[from] mojave_signature::SignatureError),
 }
 
 impl From<RpcErr> for RpcErrorMetadata {
@@ -33,6 +35,11 @@ impl From<RpcErr> for RpcErrorMetadata {
             },
             RpcErr::EthClientError(err) => RpcErrorMetadata {
                 code: -38002,
+                data: None,
+                message: err.to_string(),
+            },
+            RpcErr::SignatureError(err) => RpcErrorMetadata {
+                code: -38003,
                 data: None,
                 message: err.to_string(),
             },
@@ -235,6 +242,7 @@ pub mod test_utils {
     use ethrex_storage::{EngineType, Store};
     use ethrex_storage_rollup::{EngineTypeRollup, StoreRollup};
     use k256::ecdsa::SigningKey;
+    use secp256k1::rand;
     use tokio::sync::oneshot::Receiver;
 
     use crate::rpc::{

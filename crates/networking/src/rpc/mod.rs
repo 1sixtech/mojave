@@ -3,10 +3,14 @@ pub mod full_node;
 pub mod sequencer;
 pub mod utils;
 
-use crate::rpc::utils::{RpcErr, RpcRequest};
-use serde::Deserialize;
+use crate::rpc::utils::{RpcErr, RpcErrorResponse, RpcRequest, RpcRequestId, RpcSuccessResponse};
+use ethrex_common::types::Block;
+use ethrex_rpc::RpcErrorMetadata;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::time::Duration;
+
+use mojave_signature::{Signature, VerifyingKey};
 
 pub const FILTER_DURATION: Duration = Duration::from_secs(300);
 
@@ -15,6 +19,14 @@ pub const FILTER_DURATION: Duration = Duration::from_secs(300);
 pub enum RpcRequestWrapper {
     Single(RpcRequest),
     Multiple(Vec<RpcRequest>),
+}
+
+// need to check whether we will use Message and contain other data or not
+#[derive(Serialize, Deserialize)]
+pub struct SignedBlock {
+    pub block: Block,
+    pub signature: Signature,
+    pub verifying_key: VerifyingKey,
 }
 
 #[allow(async_fn_in_trait)]
@@ -29,12 +41,31 @@ pub trait RpcHandler<T>: Sized {
     async fn handle(&self, context: T) -> Result<Value, RpcErr>;
 }
 
+pub fn rpc_response<E>(id: RpcRequestId, res: Result<Value, E>) -> Result<Value, RpcErr>
+where
+    E: Into<RpcErrorMetadata>,
+{
+    Ok(match res {
+        Ok(result) => serde_json::to_value(RpcSuccessResponse {
+            id,
+            jsonrpc: "2.0".to_string(),
+            result,
+        }),
+        Err(error) => serde_json::to_value(RpcErrorResponse {
+            id,
+            jsonrpc: "2.0".to_string(),
+            error: error.into(),
+        }),
+    }?)
+}
+
 #[cfg(test)]
 mod tests {
     use crate::rpc::utils::test_utils::{start_test_api_full_node, start_test_api_sequencer};
 
     use super::*;
 
+    use ctor::ctor;
     use ethrex_common::{
         Address, Bloom, Bytes, H256, U256,
         types::{Block, BlockBody, BlockHeader, EIP1559Transaction, Signable, TxKind, TxType},
@@ -49,6 +80,17 @@ mod tests {
         str::FromStr,
         time::{Duration, SystemTime, UNIX_EPOCH},
     };
+
+    #[ctor]
+    fn test_setup() {
+        unsafe {
+            std::env::set_var(
+                "PRIVATE_KEY",
+                "433887ac4e37c40872643b0f77a5919db9c47b0ad64650ed5a79dd05bbd6f197",
+            )
+        };
+        println!("PRIVATE_KEY initialized for all tests");
+    }
 
     #[test]
     fn test_rpc_request_wrapper_single() {

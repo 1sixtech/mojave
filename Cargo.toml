@@ -9,6 +9,7 @@ members = [
   "crates/utils",
   "crates/prover",
   "crates/proof-coordinator",
+  "crates/signature",
 ]
 resolver = "2"
 
@@ -36,22 +37,27 @@ mojave-block-builder = { path = "crates/block-builder" }
 mojave-prover = { path = "crates/prover" }
 mojave-chain-utils = { path = "crates/utils" }
 mojave-networking = { path = "crates/networking" }
+mojave-signature = { path = "crates/signature" }
 
 anyhow = { version = "1.0" }
 clap = { version = "4.5", features = ["derive"] }
 futures = "0.3"
-secp256k1 = { version = "0.29.1", default-features = false }
+secp256k1 = { version = "0.29.1", default-features = false, features = [
+  "serde",
+] }
 k256 = { version = "0.13.3", features = ["ecdh"] }
 serde = { version = "1.0", default-features = false }
 serde_json = "1.0"
 thiserror = "2"
 tokio = { version = "1", default-features = false }
-rand = "0.8.5"
+rand = { version = "0.8.5", default-features = false }
+ed25519-dalek = { version = "2.1.1", features = ["rand_core", "serde"] }
 tokio-stream = { version = "0.1.17" }
 tokio-util = { version = "0.7", default-features = false }
 tracing = "0.1"
 tracing-subscriber = "0.3"
 trait-variant = "0.1"
+hex = "0.4.3"
 
 reqwest = { version = "0.12.7", features = ["json"] }
 

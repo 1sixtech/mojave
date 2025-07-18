@@ -1,0 +1,25 @@
+[package]
+name = "mojave-signature"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Core dependencies, always included
+bincode = "1.3"
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+hex = { workspace = true }
+signature = "2.2"
+sha2 = "0.10"
+tiny-keccak = { version = "2.0.0", features = ["keccak"] }
+bs58 = "0.5"
+
+# Optional crypto libraries
+ed25519-dalek = { workspace = true, optional = true }
+secp256k1 = { workspace = true, features = ["std"], optional = true }
+
+[features]
+default = ["secp256k1"]
+ed25519 = ["dep:ed25519-dalek"]
+secp256k1 = ["dep:secp256k1"]

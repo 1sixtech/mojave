@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 # Internal project dependencies
 mojave-chain-utils = { workspace = true }
+mojave-signature = { workspace = true }
 
 axum = "0.8.1"
 hex = "0.4.3"
@@ -38,9 +39,14 @@ secp256k1 = { workspace = true, features = [
 k256 = { workspace = true, features = ["ecdh"] }
 
 reqwest = { workspace = true }
+rand = { version = "0.8.5", features = ["std"], optional = true }
+serde_bytes = "0.11.17"
 
 
 [dev-dependencies]
 mockito = "0.31"
 ethrex-rlp = { workspace = true }
-rand.workspace = true
+ctor = "0.4.2"
+
+[features]
+rand = ["dep:rand"]
