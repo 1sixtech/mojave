@@ -5,8 +5,11 @@ use ethrex_common::types::{BlobsBundle, Block};
 use ethrex_l2_common::prover::BatchProof;
 use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
-use mojave_prover::ProverData;
-use tokio::sync::mpsc::{Receiver, Sender};
+use mojave_common::{ProverData, Message};
+use tokio::{
+    net::TcpStream,
+    sync::mpsc::Receiver,
+};
 use zkvm_interface::io::ProgramInput;
 
 use crate::errors::ProofCoordinatorError;
@@ -17,21 +20,14 @@ pub struct ProofCoordinator {
     /// Come from the block builder
     proof_data_receiver: Receiver<u64>,
     /// Send to the prover
-    prover_data_sender: Sender<ProverData>,
-    /// Receive from the prover
-    proof_receiver: Receiver<(BatchProof, u64)>,
+    prover_tcp_addr: String,
 }
 
 impl ProofCoordinator {
-    pub fn new(
-        proof_data_receiver: Receiver<u64>,
-        prover_data_sender: Sender<ProverData>,
-        proof_receiver: Receiver<(BatchProof, u64)>,
-    ) -> Self {
+    pub fn new(proof_data_receiver: Receiver<u64>, prover_tcp_addr: String) -> Self {
         Self {
             proof_data_receiver,
-            prover_data_sender,
-            proof_receiver,
+            prover_tcp_addr,
         }
     }
 
@@ -49,19 +45,26 @@ impl ProofCoordinator {
             Err(e) => return Err(e),
         };
 
-        match self.prover_data_sender.send(input).await {
-            Ok(_) => {}
-            Err(e) => return Err(ProofCoordinatorError::ProverDataSendError(e)),
-        };
+        let (batch_number, batch_proof) = self.request_proof_from_prover(input).await?;
 
-        let (proof, batch_number) = match self.proof_receiver.recv().await {
-            Some((proof, data)) => (proof, data),
-            None => return Ok(()),
-        };
-
-        context.store_proof(proof, batch_number).await?;
+        context
+            .store_proof(batch_proof, batch_number)
+            .await?;
 
         Ok(())
+    }
+
+    // TODO: need to make send/receive separately 
+    async fn request_proof_from_prover(
+        &self,
+        prover_data: ProverData,
+    ) -> Result<(u64, BatchProof), ProofCoordinatorError> {
+        let mut stream = TcpStream::connect(&self.prover_tcp_addr).await?;
+
+        Message::send(&mut stream, &prover_data).await?;
+
+        let (batch_number, batch_proof) = Message::receive(&mut stream).await?;
+        Ok((batch_number, batch_proof))
     }
 }
 
