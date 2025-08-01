@@ -23,6 +23,7 @@ generate-key-pair = ["rand"]
 # ours
 mojave-chain-utils = { workspace = true }
 mojave-networking = { workspace = true }
+mojave-prover = { workspace = true }
 
 anyhow = { workspace = true }
 

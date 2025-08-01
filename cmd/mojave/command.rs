@@ -11,6 +11,7 @@ use ethrex_l2::SequencerConfig;
 use ethrex_p2p::network::peer_table;
 use ethrex_vm::EvmEngine;
 use mojave_chain_utils::resolve_datadir;
+use mojave_prover::Prover;
 use tokio::sync::Mutex;
 use tokio_util::task::TaskTracker;
 
@@ -21,6 +22,7 @@ use crate::{
         init_sequencer_rpc_api,
     },
     options::Options,
+    prover_options::ProverOpts,
     sequencer_options::SequencerOpts,
 };
 
@@ -39,6 +41,11 @@ pub enum Command {
         opts: Options,
         #[command(flatten)]
         sequencer_opts: SequencerOpts,
+    },
+    #[command(name = "prover", about = "Run a prover")]
+    Prover {
+        #[command(flatten)]
+        prover_opts: ProverOpts,
     },
     #[cfg(feature = "generate-key-pair")]
     #[command(name = "generate-key-pair", about = "Show help information")]
@@ -223,6 +230,26 @@ impl Command {
                         store_node_config_file(node_config, node_config_path).await;
                         tokio::time::sleep(Duration::from_secs(1)).await;
                         tracing::info!("Server shutting down!");
+                    }
+                }
+            }
+            Command::Prover { prover_opts } => {
+                tracing::info!(
+                    "Prover starting on {}:{} (aligned_mode: {})",
+                    prover_opts.prover_host,
+                    prover_opts.prover_port,
+                    prover_opts.aligned_mode
+                );
+
+                let addr = format!("{}:{}", prover_opts.prover_host, prover_opts.prover_port);
+                let mut prover = Prover::new(prover_opts.aligned_mode, &addr).await;
+
+                tokio::select! {
+                    _ = prover.start() => {
+                        tracing::error!("Prover stopped unexpectedly");
+                    }
+                    _ = tokio::signal::ctrl_c() => {
+                        tracing::info!("Shutting down prover...");
                     }
                 }
             }
