@@ -10,7 +10,7 @@ default:
 	just --list
 
 build-mojave:
-cargo build --bin mojave
+	cargo build --bin mojave
 
 node: build-mojave
     export $(cat .env | xargs) && \
