@@ -54,7 +54,6 @@ impl ProofCoordinator {
         Ok(())
     }
 
-    // TODO: need to make send/receive separately 
     async fn request_proof_from_prover(
         &self,
         prover_data: ProverData,
@@ -63,6 +62,7 @@ impl ProofCoordinator {
 
         Message::send(&mut stream, &prover_data).await?;
 
+        // TODO: add timeout
         let (batch_number, batch_proof) = Message::receive(&mut stream).await?;
         Ok((batch_number, batch_proof))
     }
