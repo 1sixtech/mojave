@@ -1,12 +1,16 @@
 [workspace]
 members = [
-  "crates/client",
-  "crates/full-node",
+  "cmd/mojave",
+  "crates/block-builder",
+  # "crates/full-node",
+  "crates/common",
+  "crates/networking",
+  "crates/syncer",
+  # "crates/sequencer",
+  "crates/utils",
   "crates/prover",
   "crates/proof-coordinator",
-  "crates/sequencer",
-  "crates/signature",
-  "crates/utils",
+  "crates/signature", "crates/common",
 ]
 resolver = "2"
 
@@ -34,6 +38,7 @@ mojave-full-node = { path = "crates/full-node" }
 mojave-prover = { path = "crates/prover" }
 mojave-sequencer = { path = "crates/sequencer" }
 mojave-signature = { path = "crates/signature" }
+mojave-common = { path = "crates/common" }
 
 anyhow = { version = "1.0" }
 axum = "0.8.1"
