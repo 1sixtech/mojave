@@ -53,6 +53,7 @@ impl Prover {
     }
 }
 
+// TODO: send error message to client (proof coordinator)
 async fn handle_connection(mut stream: TcpStream, aligned_mode: bool) {
     match Message::receive::<ProverData>(&mut stream).await {
         Ok(data) => {
