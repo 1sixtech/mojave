@@ -177,9 +177,10 @@ impl Command {
                 tokio::spawn(async move {
                     loop {
                         match block_builder.build_block().await {
-                            Ok(block) => {
-                                let _ = client.send_broadcast_block(&block).await;
-                            }
+                            Ok(block) => client
+                                .send_broadcast_block(&block)
+                                .await
+                                .unwrap_or_else(|error| tracing::error!("{}", error)),
                             Err(error) => {
                                 tracing::error!("Error {}", error);
                             }
