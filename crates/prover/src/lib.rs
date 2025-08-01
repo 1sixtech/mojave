@@ -53,7 +53,6 @@ impl Prover {
     }
 }
 
-
 async fn handle_connection(mut stream: TcpStream, aligned_mode: bool) {
     match Message::receive::<ProverData>(&mut stream).await {
         Ok(data) => {

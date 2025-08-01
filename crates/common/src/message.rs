@@ -26,6 +26,8 @@ impl Message {
         let mut length_bytes = [0u8; 4];
         stream.read_exact(&mut length_bytes).await?;
 
+        // TODO: check byte length and return MessageTooLarge error if it's too big
+
         let length = u32::from_be_bytes(length_bytes) as usize;
         let mut buffer = vec![0u8; length];
         stream.read_exact(&mut buffer).await?;
