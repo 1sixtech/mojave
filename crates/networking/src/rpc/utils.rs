@@ -299,7 +299,7 @@ pub mod test_utils {
             None => TEST_SEQUENCER_ADDR.parse().unwrap(),
         };
         let url = format!("http://{sequencer_addr}");
-        let client = Client::new(vec![&url]).unwrap();
+        let client = Client::new(&vec![url.clone()]).unwrap();
         let eth_client = EthClient::new(&url).unwrap();
 
         let rpc_api = start_api_full_node(
@@ -348,9 +348,7 @@ pub mod test_utils {
             Some(addrs) => addrs.iter().map(|addr| format!("http://{addr}")).collect(),
             None => vec![default_node_url.to_string()],
         };
-
-        let node_urls: Vec<&str> = node_urls.iter().map(|s| s.as_str()).collect();
-        let client = Client::new(node_urls).unwrap();
+        let client = Client::new(&node_urls).unwrap();
 
         let rpc_api = start_api_sequencer(
             http_addr,

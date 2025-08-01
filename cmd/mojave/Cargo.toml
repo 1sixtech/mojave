@@ -21,6 +21,7 @@ generate-key-pair = ["rand"]
 
 [dependencies]
 # ours
+mojave-block-builder = { workspace = true }
 mojave-chain-utils = { workspace = true }
 mojave-networking = { workspace = true }
 

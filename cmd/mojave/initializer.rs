@@ -231,7 +231,7 @@ pub async fn init_full_node_rpc_api(
 
     let url = format!("http://{sequencer_addr}");
     // Create MojaveClient
-    let mojave_client = Client::new(vec![&url]).expect("unable to init sync client");
+    let mojave_client = Client::new(&vec![url.clone()]).expect("unable to init sync client");
     // Create EthClient
     let eth_client = EthClient::new(&url).expect("unable to init eth client");
 
@@ -290,8 +290,7 @@ pub async fn init_sequencer_rpc_api(
         .iter()
         .map(|addr| format!("http://{addr}"))
         .collect();
-    let addrs = addrs.iter().map(|addr| addr.as_str()).collect();
-    let mojave_client = Client::new(addrs).expect("unable to init sync client");
+    let mojave_client = Client::new(&addrs).expect("unable to init sync client");
 
     let rpc_api = mojave_networking::rpc::sequencer::start_api(
         http_addr,

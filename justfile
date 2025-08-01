@@ -9,32 +9,30 @@ PROOF_COORDINATOR_L1_PRIVATE_KEY := "0x39725efee3fb28614de3bacaffe4cc4bd8c436257
 default:
 	just --list
 
-node:
-	cargo build --bin mojave
-	
-	export $(cat .env | xargs) && \
-	cargo run --bin mojave -- full-node \
-		--network ./test_data/genesis.json \
-		--l1.bridge-address $(grep ETHREX_WATCHER_BRIDGE_ADDRESS .env | cut -d= -f2) \
-		--block-producer.coinbase-address {{COINBASE_ADDRESS}} \
-		--committer.l1-private-key {{COMMITTER_L1_PRIVATE_KEY}} \
-		--l1.on-chain-proposer-address $(grep ETHREX_COMMITTER_ON_CHAIN_PROPOSER_ADDRESS .env | cut -d= -f2) \
-		--proof-coordinator.l1-private-key {{PROOF_COORDINATOR_L1_PRIVATE_KEY}} \
-		--sequencer.port 1739 \
-		--sequencer.host 127.0.0.1
+build-mojave:
+cargo build --bin mojave
 
-sequencer:
-	cargo build --bin mojave
-	
-	export $(cat .env | xargs) && \
-	cargo run --bin mojave -- sequencer \
-		--network ./test_data/genesis.json \
-		--l1.bridge-address $(grep ETHREX_WATCHER_BRIDGE_ADDRESS .env | cut -d= -f2) \
-		--block-producer.coinbase-address {{COINBASE_ADDRESS}} \
-		--committer.l1-private-key {{COMMITTER_L1_PRIVATE_KEY}} \
-		--l1.on-chain-proposer-address $(grep ETHREX_COMMITTER_ON_CHAIN_PROPOSER_ADDRESS .env | cut -d= -f2) \
-		--proof-coordinator.l1-private-key {{PROOF_COORDINATOR_L1_PRIVATE_KEY}}
+node: build-mojave
+    export $(cat .env | xargs) && \
+    cargo run --bin mojave -- full-node \
+        --network ./test_data/genesis.json \
+        --l1.bridge-address $(grep ETHREX_WATCHER_BRIDGE_ADDRESS .env | cut -d= -f2) \
+        --block-producer.coinbase-address {{COINBASE_ADDRESS}} \
+        --committer.l1-private-key {{COMMITTER_L1_PRIVATE_KEY}} \
+        --l1.on-chain-proposer-address $(grep ETHREX_COMMITTER_ON_CHAIN_PROPOSER_ADDRESS .env | cut -d= -f2) \
+        --proof-coordinator.l1-private-key {{PROOF_COORDINATOR_L1_PRIVATE_KEY}} \
+        --sequencer.port 1739 \
+        --sequencer.host 127.0.0.1
 
+sequencer: node
+    export $(cat .env | xargs) && \
+    cargo run --bin mojave -- sequencer \
+        --network ./test_data/genesis.json \
+        --l1.bridge-address $(grep ETHREX_WATCHER_BRIDGE_ADDRESS .env | cut -d= -f2) \
+        --block-producer.coinbase-address {{COINBASE_ADDRESS}} \
+        --committer.l1-private-key {{COMMITTER_L1_PRIVATE_KEY}} \
+        --l1.on-chain-proposer-address $(grep ETHREX_COMMITTER_ON_CHAIN_PROPOSER_ADDRESS .env | cut -d= -f2) \
+        --proof-coordinator.l1-private-key {{PROOF_COORDINATOR_L1_PRIVATE_KEY}}
 
 generate-key-pair:
 	cargo build --bin mojave

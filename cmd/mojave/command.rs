@@ -1,4 +1,4 @@
-use std::{future::IntoFuture, path::PathBuf, sync::Arc, time::Duration};
+use std::{path::PathBuf, sync::Arc, time::Duration};
 
 use anyhow::Result;
 use clap::Subcommand;
@@ -7,17 +7,19 @@ use ethrex::{
     utils::{store_node_config_file, NodeConfigFile},
 };
 use ethrex_blockchain::BlockchainType;
-use ethrex_l2::SequencerConfig;
+use ethrex_common::types::ELASTICITY_MULTIPLIER;
 use ethrex_p2p::network::peer_table;
 use ethrex_vm::EvmEngine;
+use mojave_block_builder::{BlockBuilder, BlockBuilderContext};
 use mojave_chain_utils::resolve_datadir;
+use mojave_networking::rpc::clients::mojave::Client;
 use tokio::sync::Mutex;
 use tokio_util::task::TaskTracker;
 
 use crate::{
     full_node_options::FullNodeOptions,
     initializer::{
-        get_local_p2p_node, init_full_node_rpc_api, init_metrics, init_network, init_rollup_store,
+        get_local_p2p_node, init_full_node_rpc_api, init_metrics, init_rollup_store,
         init_sequencer_rpc_api,
     },
     options::Options,
@@ -101,38 +103,6 @@ impl Command {
                     init_metrics(&opts, tracker.clone());
                 }
 
-                if opts.p2p_enabled {
-                    init_network(
-                        &opts,
-                        &opts.network,
-                        &data_dir,
-                        local_p2p_node,
-                        local_node_record.clone(),
-                        signer,
-                        peer_table.clone(),
-                        store.clone(),
-                        tracker.clone(),
-                        blockchain.clone(),
-                    )
-                    .await;
-                } else {
-                    tracing::info!("P2P is disabled");
-                }
-
-                let l2_sequencer_cfg = SequencerConfig::from(opts.sequencer_opts);
-
-                let l2_sequencer = ethrex_l2::start_l2(
-                    store,
-                    rollup_store,
-                    blockchain,
-                    l2_sequencer_cfg,
-                    #[cfg(feature = "metrics")]
-                    format!("http://{}:{}", opts.http_addr, opts.http_port),
-                )
-                .into_future();
-
-                tracker.spawn(l2_sequencer);
-
                 tokio::select! {
                     _ = tokio::signal::ctrl_c() => {
                         tracing::info!("Server shut down started...");
@@ -158,7 +128,7 @@ impl Command {
                 let rollup_store_dir = data_dir.clone() + "/rollup_store";
 
                 let genesis = opts.network.get_genesis()?;
-                let store = init_store(&data_dir, genesis).await;
+                let store = init_store(&data_dir, genesis.clone()).await;
                 let rollup_store = init_rollup_store(&rollup_store_dir).await;
 
                 let blockchain = init_blockchain(opts.evm, store.clone(), BlockchainType::L2);
@@ -194,24 +164,32 @@ impl Command {
                 )
                 .await;
 
-                // Initialize metrics if enabled
-                if opts.metrics_enabled {
-                    init_metrics(&opts, tracker.clone());
-                }
+                // Spawn block builder.
+                let block_builder_context = BlockBuilderContext::new(
+                    store.clone(),
+                    blockchain.clone(),
+                    rollup_store.clone(),
+                    genesis.coinbase,
+                    ELASTICITY_MULTIPLIER,
+                );
+                let block_builder = BlockBuilder::start(block_builder_context, 100);
+                let client = Client::new(&sequencer_opts.full_node_addresses)?;
+                tokio::spawn(async move {
+                    loop {
+                        match block_builder.build_block().await {
+                            Ok(block) => {
+                                let _ = client.send_broadcast_block(&block).await;
+                            }
+                            Err(error) => {
+                                tracing::error!("Error {}", error);
+                            }
+                        }
+                        tokio::time::sleep(Duration::from_millis(sequencer_opts.block_time)).await;
+                    }
+                });
 
-                let l2_sequencer_cfg = SequencerConfig::from(opts.sequencer_opts);
-
-                let l2_sequencer = ethrex_l2::start_l2(
-                    store,
-                    rollup_store,
-                    blockchain,
-                    l2_sequencer_cfg,
-                    #[cfg(feature = "metrics")]
-                    format!("http://{}:{}", opts.http_addr, opts.http_port),
-                )
-                .into_future();
-
-                tracker.spawn(l2_sequencer);
+                // start_l2(store, rollup_store, blockchain, cfg)
+                // tracker.spawn(l2_sequencer);
 
                 tokio::select! {
                     _ = tokio::signal::ctrl_c() => {
