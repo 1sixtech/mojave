@@ -10,7 +10,7 @@ members = [
   "crates/utils",
   "crates/prover",
   "crates/proof-coordinator",
-  "crates/signature", "crates/common",
+  "crates/signature",
 ]
 resolver = "2"
 
