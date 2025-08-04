@@ -22,7 +22,7 @@ node:
         --l1.on-chain-proposer-address $(grep ETHREX_COMMITTER_ON_CHAIN_PROPOSER_ADDRESS .env | cut -d= -f2) \
         --proof-coordinator.l1-private-key {{PROOF_COORDINATOR_L1_PRIVATE_KEY}} \
         --sequencer.port 1739 \
-        --sequencer.host 127.0.0.1
+        --sequencer.host 0.0.0.0
 
 sequencer:
     export $(cat .env | xargs) && \
@@ -32,7 +32,8 @@ sequencer:
         --block-producer.coinbase-address {{COINBASE_ADDRESS}} \
         --committer.l1-private-key {{COMMITTER_L1_PRIVATE_KEY}} \
         --l1.on-chain-proposer-address $(grep ETHREX_COMMITTER_ON_CHAIN_PROPOSER_ADDRESS .env | cut -d= -f2) \
-        --proof-coordinator.l1-private-key {{PROOF_COORDINATOR_L1_PRIVATE_KEY}}
+        --proof-coordinator.l1-private-key {{PROOF_COORDINATOR_L1_PRIVATE_KEY}} \
+        --http.port 1739
 
 generate-key-pair:
 	cargo build --bin mojave
