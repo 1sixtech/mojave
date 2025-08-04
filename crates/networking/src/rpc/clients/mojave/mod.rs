@@ -1,3 +1,8 @@
+use crate::rpc::{
+    SignedBlock,
+    clients::mojave::errors::{ForwardTransactionError, MojaveClientError},
+    utils::{RpcErrorResponse, RpcRequest, RpcRequestId, RpcSuccessResponse},
+};
 use ethrex_common::{H256, types::Block};
 use futures::{
     FutureExt,
@@ -6,13 +11,7 @@ use futures::{
 use reqwest::Url;
 use serde::Deserialize;
 use serde_json::json;
-use std::{env, pin::Pin, sync::Arc};
-
-use crate::rpc::{
-    SignedBlock,
-    clients::mojave::errors::{ForwardTransactionError, MojaveClientError},
-    utils::{RpcErrorResponse, RpcRequest, RpcRequestId, RpcSuccessResponse},
-};
+use std::{env, pin::Pin, str::FromStr, sync::Arc};
 
 use mojave_signature::{Signature, Signer, SigningKey};
 
@@ -48,15 +47,9 @@ impl Client {
                 })
             })
             .collect::<Result<Vec<_>, _>>()?;
-
-        let secret = env::var("PRIVATE_KEY").map_err(|_| MojaveClientError::MissingSigningKey)?;
-
-        let private_key_bytes = hex::decode(secret).expect("Failed to decode private key from hex");
-        let private_key_array: [u8; 32] = private_key_bytes
-            .try_into()
-            .expect("invalid length for private key");
-
-        let signing_key = Signer::from_slice(&private_key_array)?;
+        let private_key = env::var("COMMITTER_L1_PRIVATE_KEY")
+            .map_err(|error| MojaveClientError::Custom(format!("Private key error: {}", error)))?;
+        let signing_key = SigningKey::from_str(&private_key)?;
 
         Ok(Self {
             inner: Arc::new(ClientInner {
