@@ -21,7 +21,6 @@ pub struct ProverOpts {
     pub prover_host: String,
     #[arg(
         long = "prover.aligned-mode",
-        default_value = "false",
         help = "Enable aligned mode for proof generation",
         help_heading = "Prover Options"
     )]
