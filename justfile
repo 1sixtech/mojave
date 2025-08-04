@@ -12,7 +12,7 @@ default:
 build-mojave:
 	cargo build --bin mojave
 
-node: build-mojave
+node:
     export $(cat .env | xargs) && \
     cargo run --bin mojave -- full-node \
         --network ./test_data/genesis.json \
@@ -24,7 +24,7 @@ node: build-mojave
         --sequencer.port 1739 \
         --sequencer.host 127.0.0.1
 
-sequencer: node
+sequencer:
     export $(cat .env | xargs) && \
     cargo run --bin mojave -- sequencer \
         --network ./test_data/genesis.json \
