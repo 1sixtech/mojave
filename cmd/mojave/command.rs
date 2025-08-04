@@ -173,11 +173,16 @@ impl Command {
                     ELASTICITY_MULTIPLIER,
                 );
                 let block_builder = BlockBuilder::start(block_builder_context, 100);
-                let client = Client::new(&sequencer_opts.full_node_addresses)?;
+                let addrs: Vec<String> = sequencer_opts
+                    .full_node_addresses
+                    .iter()
+                    .map(|addr| format!("http://{addr}"))
+                    .collect();
+                let mojave_client = Client::new(&addrs)?;
                 tokio::spawn(async move {
                     loop {
                         match block_builder.build_block().await {
-                            Ok(block) => client
+                            Ok(block) => mojave_client
                                 .send_broadcast_block(&block)
                                 .await
                                 .unwrap_or_else(|error| tracing::error!("{}", error)),
