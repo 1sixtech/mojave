@@ -37,6 +37,18 @@ sequencer:
 		--l1.on-chain-proposer-address $(grep ETHREX_COMMITTER_ON_CHAIN_PROPOSER_ADDRESS .env | cut -d= -f2) \
 		--proof-coordinator.l1-private-key {{PROOF_COORDINATOR_L1_PRIVATE_KEY}}
 
+prover:
+	export $(cat .env | xargs)
+
+	cargo build --bin mojave
+
+	cargo run --bin mojave -- prover \
+		--prover.host 127.0.0.1 \
+		--prover.port 3900 \
+		# --prover.aligned-mode
+
+
+
 
 generate-key-pair:
 	export $(cat .env | xargs)
