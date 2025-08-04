@@ -226,7 +226,7 @@ impl BlockBuilderContext {
             payload,
             self.blockchain.evm_engine,
             &self.store,
-            BlockchainType::L2,
+            BlockchainType::L1,
         )?;
 
         self.fill_transactions(&mut context).await?;
