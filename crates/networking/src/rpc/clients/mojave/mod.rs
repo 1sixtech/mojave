@@ -47,7 +47,7 @@ impl Client {
                 })
             })
             .collect::<Result<Vec<_>, _>>()?;
-        let private_key = env::var("COMMITTER_L1_PRIVATE_KEY")
+        let private_key = env::var("PRIVATE_KEY")
             .map_err(|error| MojaveClientError::Custom(format!("Private key error: {}", error)))?;
         let signing_key = SigningKey::from_str(&private_key)?;
 
