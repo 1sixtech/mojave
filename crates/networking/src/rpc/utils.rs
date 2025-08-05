@@ -299,7 +299,7 @@ pub mod test_utils {
             None => TEST_SEQUENCER_ADDR.parse().unwrap(),
         };
         let url = format!("http://{sequencer_addr}");
-        let client = Client::new(std::slice::from_ref(&url.clone())).unwrap();
+        let client = Client::new(std::slice::from_ref(&url)).unwrap();
         let eth_client = EthClient::new(&url).unwrap();
 
         let rpc_api = start_api_full_node(
