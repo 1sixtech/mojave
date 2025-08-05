@@ -28,7 +28,7 @@ pub trait Verifier:
         &self,
         message: &T,
         signature: &Signature,
-    ) -> Result<bool, SignatureError>;
+    ) -> Result<(), SignatureError>;
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize)]

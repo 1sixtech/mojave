@@ -16,28 +16,6 @@ pub struct BroadcastBlockRequest {
     verifying_key: VerifyingKey,
 }
 
-impl BroadcastBlockRequest {
-    /// Verifies the block signature and checks if the sender is a valid sequencer.
-    ///
-    /// Currently returns Ok for all addresses as a mock implementation.
-    /// In production, this should check validity against syncer's valid_sequencer_addresses field
-    fn verify_signature_and_sender(&self) -> Result<bool, RpcErr> {
-        // Verify the signature first
-        let is_msg_valid = self
-            .verifying_key
-            .verify(&self.block.header.hash(), &self.signature)?;
-
-        if !is_msg_valid {
-            return Ok(false);
-        }
-
-        // in case of ecdsa, need to convert pub key to address and check validity
-        let _sender = self.verifying_key.to_address();
-
-        Ok(true)
-    }
-}
-
 impl RpcHandler<RpcApiContextFullNode> for BroadcastBlockRequest {
     fn parse(params: &Option<Vec<Value>>) -> Result<Self, RpcErr> {
         let signed_block = get_block_data(params)?;
@@ -49,11 +27,10 @@ impl RpcHandler<RpcApiContextFullNode> for BroadcastBlockRequest {
     }
 
     async fn handle(&self, context: RpcApiContextFullNode) -> Result<Value, RpcErr> {
-        // Check if the signature and sender are valid; if not, handle the invalid message case.
-        // Mock sender verification - always returns Ok for now
-        if !self.verify_signature_and_sender()? {
-            // TODO: Handle invalid message (e.g., return an error or log the incident)
-        }
+        // Check if the signature and sender are valid. If verification fails, return an error
+        // immediately without processing the block.
+        self.verifying_key
+            .verify(&self.block.header.hash(), &self.signature)?;
 
         let latest_block_number = context.l1_context.storage.get_latest_block_number().await? + 1;
         for block_number in latest_block_number..self.block.header.number {
@@ -137,6 +114,23 @@ mod tests {
     use mojave_signature::{Signer, SigningKey};
 
     use serde_json::json;
+
+    use crate::rpc::{
+        clients::mojave::Client as MojaveClient,
+        utils::test_utils::{
+            TEST_GENESIS, example_local_node_record, example_p2p_node, example_rollup_store,
+        },
+    };
+    use ethrex_blockchain::Blockchain;
+    use ethrex_p2p::{peer_handler::PeerHandler, sync_manager::SyncManager};
+    use ethrex_rpc::{EthClient, GasTipEstimator, NodeData, RpcApiContext as L1Context};
+    use ethrex_storage::{EngineType, Store};
+    use mojave_chain_utils::unique_heap::AsyncUniqueHeap;
+    use std::{
+        collections::HashMap,
+        sync::{Arc, Mutex},
+    };
+    use tokio::sync::Mutex as TokioMutex;
 
     #[ctor]
     fn test_setup() {
@@ -349,5 +343,65 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[tokio::test]
+    async fn test_broadcast_block_request_handle_invalid_signature() {
+        // Create a valid signed block and then tamper with the verifying key so that
+        // signature verification fails.
+        let signed_block = create_signed_block();
+        // Generate a different verifying key so that the signature check fails.
+        let other_secret = "82456c0d4e87df444f3be038cc5c0d1bea8ce29c8fb352b4172052efc27fa998";
+        let other_bytes = hex::decode(other_secret).expect("decode other key");
+        let other_array: [u8; 32] = other_bytes.try_into().expect("length");
+        let bad_signing_key = SigningKey::from_slice(&other_array).unwrap();
+        let bad_verifying_key = bad_signing_key.verifying_key();
+
+        let request = BroadcastBlockRequest {
+            block: signed_block.block.clone(),
+            signature: signed_block.signature.clone(),
+            verifying_key: bad_verifying_key,
+        };
+
+        // Build a minimal RPC context. The fields won't be used because the request should
+        // fail before any interaction with them, but they need to be valid so dropping is
+        // safe.
+        let storage = Store::new("", EngineType::InMemory).unwrap();
+        storage
+            .add_initial_state(serde_json::from_str(TEST_GENESIS).unwrap())
+            .await
+            .unwrap();
+        let blockchain = Arc::new(Blockchain::default_with_store(storage.clone()));
+        let active_filters = Arc::new(Mutex::new(HashMap::new()));
+        let l1_context = L1Context {
+            storage: storage.clone(),
+            blockchain: blockchain.clone(),
+            active_filters: active_filters.clone(),
+            syncer: Arc::new(SyncManager::dummy()),
+            peer_handler: PeerHandler::dummy(),
+            node_data: NodeData {
+                jwt_secret: Default::default(),
+                local_p2p_node: example_p2p_node(),
+                local_node_record: example_local_node_record(),
+                client_version: "test".to_string(),
+            },
+            gas_tip_estimator: Arc::new(TokioMutex::new(GasTipEstimator::new())),
+        };
+        let rollup_store = example_rollup_store().await;
+        let mojave_client = MojaveClient::new(&vec!["http://localhost:1".to_owned()]).unwrap();
+        let eth_client = EthClient::new("http://localhost:1").unwrap();
+        let block_queue = AsyncUniqueHeap::new();
+
+        let context = RpcApiContextFullNode {
+            l1_context,
+            rollup_store,
+            mojave_client,
+            eth_client,
+            blockchain,
+            block_queue,
+        };
+
+        let result = request.handle(context).await;
+        assert!(matches!(result, Err(RpcErr::SignatureError(_))));
     }
 }

@@ -139,8 +139,8 @@ impl Client {
 
         let params = SignedBlock {
             block: block.clone(),
-            signature: signature,
-            verifying_key: verifying_key,
+            signature,
+            verifying_key,
         };
 
         let request = RpcRequest {
