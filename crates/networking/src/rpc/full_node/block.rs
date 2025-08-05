@@ -70,6 +70,7 @@ impl RpcHandler<RpcApiContextFullNode> for BroadcastBlockRequest {
             .block_queue
             .push(OrderedBlock(self.block.clone()))
             .await;
+        tracing::info!("Received the block number: {}", self.block.header.number);
         Ok(Value::Null)
     }
 }
