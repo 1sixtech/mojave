@@ -237,7 +237,7 @@ mod tests {
         sleep(Duration::from_millis(1000)).await;
 
         // Create client and test block broadcast
-        let client = MojaveClient::new(&vec![server_url]).unwrap();
+        let client = MojaveClient::new(std::slice::from_ref(&server_url)).unwrap();
         let result = client.send_broadcast_block(&test_block).await;
 
         // Verify the request was processed
@@ -302,7 +302,7 @@ mod tests {
         sleep(Duration::from_millis(1000)).await;
 
         // Create client and test transaction forward
-        let client = MojaveClient::new(&vec![server_url]).unwrap();
+        let client = MojaveClient::new(std::slice::from_ref(&server_url)).unwrap();
         let result = client.send_forward_transaction(&transaction_data).await;
 
         // Verify the request was processed
@@ -360,7 +360,8 @@ mod tests {
         let transaction_data = vec![0x01, 0x02, 0x03, 0x04];
 
         // Test with non-existent server
-        let client = MojaveClient::new(&vec!["http://127.0.0.1:9999".to_owned()]).unwrap();
+        let client =
+            MojaveClient::new(std::slice::from_ref(&"http://127.0.0.1:9999".to_owned())).unwrap();
 
         // Test block broadcast to unavailable server
         let block_result = client.clone().send_broadcast_block(&test_block).await;

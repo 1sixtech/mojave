@@ -231,7 +231,8 @@ pub async fn init_full_node_rpc_api(
 
     let url = format!("http://{sequencer_addr}");
     // Create MojaveClient
-    let mojave_client = Client::new(&vec![url.clone()]).expect("unable to init sync client");
+    let mojave_client =
+        Client::new(std::slice::from_ref(&url)).expect("unable to init sync client");
     // Create EthClient
     let eth_client = EthClient::new(&url).expect("unable to init eth client");
 

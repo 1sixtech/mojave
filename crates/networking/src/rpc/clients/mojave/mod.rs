@@ -37,7 +37,7 @@ pub enum RpcResponse {
 }
 
 impl Client {
-    pub fn new(urls: &Vec<String>) -> Result<Self, MojaveClientError> {
+    pub fn new(urls: &[String]) -> Result<Self, MojaveClientError> {
         tracing::info!(urls=%urls.join(", "), "Creating new Mojave client");
         let urls = urls
             .iter()
@@ -48,7 +48,7 @@ impl Client {
             })
             .collect::<Result<Vec<_>, _>>()?;
         let private_key = env::var("PRIVATE_KEY")
-            .map_err(|error| MojaveClientError::Custom(format!("Private key error: {}", error)))?;
+            .map_err(|error| MojaveClientError::Custom(format!("Private key error: {error}")))?;
         let signing_key = SigningKey::from_str(&private_key)?;
 
         Ok(Self {
@@ -258,7 +258,7 @@ mod tests {
             )
             .create();
 
-        let client = Client::new(&vec![mockito::server_url()]).unwrap();
+        let client = Client::new(std::slice::from_ref(&mockito::server_url())).unwrap();
         let data = vec![0x12, 0x34];
         let result = client.send_forward_transaction(&data).await;
 
@@ -283,7 +283,7 @@ mod tests {
             )
             .create();
 
-        let client = Client::new(&vec![mockito::server_url()]).unwrap();
+        let client = Client::new(std::slice::from_ref(&mockito::server_url())).unwrap();
         let data = vec![0x12, 0x34];
         let result = client.send_forward_transaction(&data).await;
 
@@ -296,7 +296,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_send_forward_transaction_network_error() {
-        let client = Client::new(&vec!["http://nonexistent:9999".to_owned()]).unwrap();
+        let client =
+            Client::new(std::slice::from_ref(&"http://nonexistent:9999".to_owned())).unwrap();
         let data = vec![0x12, 0x34];
         let result = client.send_forward_transaction(&data).await;
 
@@ -321,7 +322,7 @@ mod tests {
             )
             .create();
 
-        let client = Client::new(&vec![mockito::server_url()]).unwrap();
+        let client = Client::new(std::slice::from_ref(&mockito::server_url())).unwrap();
         let block = create_test_block();
         let result = client.send_broadcast_block(&block).await;
 
@@ -346,7 +347,7 @@ mod tests {
             )
             .create();
 
-        let client = Client::new(&vec![mockito::server_url()]).unwrap();
+        let client = Client::new(std::slice::from_ref(&mockito::server_url())).unwrap();
         let block = create_test_block();
         let result = client.send_broadcast_block(&block).await;
 
@@ -356,7 +357,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_send_broadcast_block_network_error() {
-        let client = Client::new(&vec!["http://nonexistent:9999".to_owned()]).unwrap();
+        let client =
+            Client::new(std::slice::from_ref(&"http://nonexistent:9999".to_owned())).unwrap();
         let block = create_test_block();
         let result = client.send_broadcast_block(&block).await;
 
