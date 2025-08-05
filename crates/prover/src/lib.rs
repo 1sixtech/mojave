@@ -65,7 +65,31 @@ impl Prover {
                 }
             } else {
                 tracing::error!("Stopping the prover because sender dropped. This is a bug.");
+                break;
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+    use tokio::{sync::oneshot, time::timeout};
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn start_exits_when_sender_dropped() {
+        let (mut prover, sender, _receiver) = Prover::new(true);
+        let (started_tx, started_rx) = oneshot::channel();
+        let handle = tokio::spawn(async move {
+            started_tx.send(()).ok();
+            prover.start().await;
+        });
+        started_rx.await.expect("prover task did not start");
+        drop(sender);
+        timeout(Duration::from_millis(100), handle)
+            .await
+            .expect("Prover::start did not exit")
+            .unwrap();
     }
 }
