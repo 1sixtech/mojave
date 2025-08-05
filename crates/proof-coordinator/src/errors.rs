@@ -2,7 +2,6 @@ use ethrex_blockchain::error::ChainError;
 use ethrex_l2::sequencer::errors::ExecutionCacheError;
 use ethrex_storage::error::StoreError;
 use ethrex_storage_rollup::RollupStoreError;
-use mojave_common::MessageError;
 use tokio::task::JoinError;
 
 #[allow(clippy::large_enum_variant)]
@@ -24,8 +23,6 @@ pub enum ProofCoordinatorError {
     JoinError(#[from] JoinError),
     #[error("ProofCoordinator failed: {0}")]
     Custom(String),
-    #[error("ProofCoordinator failed to read/write to TcpStream: {0}")]
-    MessageError(#[from] MessageError),
     #[error("ProofCoordinator failed to get data from Store: {0}")]
     ItemNotFoundInStore(String),
     #[error("Unexpected Error: {0}")]

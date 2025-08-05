@@ -18,4 +18,3 @@ ethrex-blockchain = { workspace = true }
 zkvm_interface = { workspace = true }
 
 mojave-prover = { workspace = true }
-mojave-common = { workspace = true }

@@ -6,3 +6,8 @@ pub struct ProverData {
     pub batch_number: u64,
     pub input: ProgramInput,
 }
+
+#[derive(Serialize, Deserialize)]
+pub(crate) enum Request{
+    Proof(ProverData)
+}

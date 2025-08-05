@@ -5,14 +5,12 @@ use ethrex_common::types::{BlobsBundle, Block};
 use ethrex_l2_common::prover::BatchProof;
 use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
-use mojave_common::{ProverData, Message};
-use tokio::{
-    net::TcpStream,
-    sync::mpsc::Receiver,
-};
+use tokio::sync::mpsc::Receiver;
 use zkvm_interface::io::ProgramInput;
 
 use crate::errors::ProofCoordinatorError;
+
+use mojave_prover::ProverData;
 
 mod errors;
 
@@ -58,13 +56,14 @@ impl ProofCoordinator {
         &self,
         prover_data: ProverData,
     ) -> Result<(u64, BatchProof), ProofCoordinatorError> {
-        let mut stream = TcpStream::connect(&self.prover_tcp_addr).await?;
+        todo!("Connect using prover client")
+        // let mut stream = TcpStream::connect(&self.prover_tcp_addr).await?;
 
-        Message::send(&mut stream, &prover_data).await?;
+        // Message::send(&mut stream, &prover_data).await?;
 
-        // TODO: add timeout
-        let (batch_number, batch_proof) = Message::receive(&mut stream).await?;
-        Ok((batch_number, batch_proof))
+        // // TODO: add timeout
+        // let (batch_number, batch_proof) = Message::receive(&mut stream).await?;
+        // Ok((batch_number, batch_proof))
     }
 }
 
