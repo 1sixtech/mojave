@@ -11,7 +11,7 @@ use ethrex_l2::SequencerConfig;
 use ethrex_p2p::network::peer_table;
 use ethrex_vm::EvmEngine;
 use mojave_chain_utils::resolve_datadir;
-use mojave_prover::Prover;
+use mojave_prover::ProverServer;
 use tokio::sync::Mutex;
 use tokio_util::task::TaskTracker;
 
@@ -242,7 +242,7 @@ impl Command {
                 );
 
                 let addr = format!("{}:{}", prover_opts.prover_host, prover_opts.prover_port);
-                let mut prover = Prover::new(prover_opts.aligned_mode, &addr).await;
+                let mut prover = ProverServer::new(prover_opts.aligned_mode, &addr).await;
 
                 tokio::select! {
                     _ = prover.start() => {
