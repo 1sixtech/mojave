@@ -74,7 +74,7 @@ impl FromStr for VerifyingKey {
     }
 }
 
-impl super::Verifier for VerifyingKey {
+impl crate::Verifier for VerifyingKey {
     fn from_slice(slice: &[u8]) -> Result<Self, SignatureError> {
         let public_key =
             PublicKey::try_from(slice).map_err(|error| Error::CreateVerifyingKey(error.into()))?;
@@ -85,7 +85,7 @@ impl super::Verifier for VerifyingKey {
         &self,
         message: &T,
         signature: &Signature,
-    ) -> Result<bool, SignatureError> {
+    ) -> Result<(), SignatureError> {
         if signature.scheme != SignatureScheme::Ed25519 {
             return Err(Error::InvalidSignatureScheme)?;
         }
@@ -95,10 +95,9 @@ impl super::Verifier for VerifyingKey {
         let signature = EddsaSignature::from_slice(&signature.bytes)
             .map_err(|error| Error::Verify(error.into()))?;
 
-        match self.0.verify(&message_bytes, &signature) {
-            Ok(()) => Ok(true),
-            Err(_error) => Ok(false),
-        }
+        self.0
+            .verify(&message_bytes, &signature)
+            .map_err(|e| e.into())
     }
 }
 
@@ -137,6 +136,7 @@ mod tests {
     use super::*;
 
     use crate::{Signer, Verifier};
+
     /// made key pair using `solana-keygen new --no-passphrase`
     ///
     /// [
@@ -153,7 +153,6 @@ mod tests {
     ///
     /// first 32 bytes for secret key,
     /// second 32 bytes for public key.
-
     const PRIVATE_KEY: [u8; 32] = [
         144, 45, 220, 66, 89, 201, 7, 239, 86, 173, 155, 227, 31, 102, 64, 151, 142, 184, 211, 146,
         225, 143, 253, 224, 165, 105, 222, 216, 4, 223, 35, 225,
@@ -167,14 +166,11 @@ mod tests {
     fn test_ed25519_get_public_key_from_private_key() {
         let signing_key = SigningKey::from_slice(&PRIVATE_KEY).unwrap();
         let verifying_key = signing_key.verifying_key();
-        let expected_pub_key: String = hex::encode(&PUBLIC_KEY);
+        let expected_pub_key: String = hex::encode(PUBLIC_KEY);
 
         let pub_key = String::from(verifying_key);
 
-        print!(
-            "expected  : {:?}\ncalculated: {:?}",
-            expected_pub_key, pub_key
-        );
+        print!("expected: {expected_pub_key:?}\ncalculated: {pub_key:?}",);
         assert_eq!(expected_pub_key, pub_key);
     }
 
@@ -282,7 +278,7 @@ mod tests {
         };
         let result = verifying_key.verify(msg, &invalid_signature_zeros);
         // Ed25519 returns Ok(false) for invalid signatures that parse correctly
-        assert!(result.is_ok() && !result.unwrap());
+        assert!(result.is_err());
     }
 
     #[test]
@@ -297,7 +293,7 @@ mod tests {
 
         // Verification should fail with modified message
         let result = verifying_key.verify(modified_msg, &signature);
-        assert!(result.is_ok() && !result.unwrap()); // Should return Ok(false)
+        assert!(result.is_err());
     }
 
     #[test]
@@ -313,7 +309,7 @@ mod tests {
 
         // Verification should fail with corrupted signature
         let result = verifying_key.verify(msg, &signature);
-        assert!(result.is_ok() && !result.unwrap()); // Should return Ok(false)
+        assert!(result.is_err());
     }
 
     #[test]
