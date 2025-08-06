@@ -89,3 +89,15 @@ docker-build:
 
 docker-run:
 	docker run -p 8545:8545 mojave
+
+
+# ==============================================================================
+# Tests
+# ==============================================================================
+
+
+test:
+	cargo test --workspace || (echo "The tests have failed"; exit 1)
+
+test-e2e:
+	sh ./test_data/tests-e2e.sh
