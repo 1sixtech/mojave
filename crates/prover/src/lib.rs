@@ -1,14 +1,12 @@
 #[cfg(feature = "client")]
 mod client;
 mod message;
-mod request;
-mod response;
 #[cfg(feature = "server")]
 mod server;
+mod types;
 
 #[cfg(feature = "client")]
 pub use client::{ProverClient, ProverClientError};
 #[cfg(feature = "server")]
 pub use server::ProverServer;
-
-pub use request::ProverData;
+pub use types::*;
