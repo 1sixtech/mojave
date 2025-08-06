@@ -1,57 +1,62 @@
-use std::time::Duration;
-
+use crate::{
+    message::{self, MessageError, Request, Response},
+    types::*,
+};
 use ethrex_l2_common::prover::BatchProof;
+use std::time::Duration;
 use thiserror;
 use tokio::{net::TcpStream, time::timeout};
 
-use crate::{
-    message::{Message, MessageError},
-    request::{ProverData, Request},
-    response::Response,
-};
-
 pub struct ProverClient {
-    client: TcpStream,
-    timeout: u64,
+    server_address: String,
+    request_timeout: u64,
 }
 
 impl ProverClient {
-    pub async fn new(addr: String, timeout: u64) -> Result<Self, ProverClientError> {
-        let client = TcpStream::connect(addr).await?;
-        Ok(Self { client, timeout })
+    pub fn new(server_address: &str, request_timeout: u64) -> Self {
+        Self {
+            server_address: server_address.to_owned(),
+            request_timeout,
+        }
+    }
+
+    async fn request_inner(&mut self, request: Request) -> Result<Response, ProverClientError> {
+        let mut stream = TcpStream::connect(&self.server_address).await?;
+        message::send(&mut stream, request).await?;
+        let response = message::receive::<Response>(&mut stream).await?;
+        Ok(response)
+    }
+
+    async fn request(&mut self, request: Request) -> Result<Response, ProverClientError> {
+        match timeout(
+            Duration::from_secs(self.request_timeout),
+            self.request_inner(request),
+        )
+        .await
+        {
+            Ok(response) => response,
+            Err(_) => Err(ProverClientError::TimeOut),
+        }
     }
 
     pub async fn get_proof(&mut self, data: ProverData) -> Result<BatchProof, ProverClientError> {
-        let future = async {
-            Message::send(&mut self.client, &Request::Proof(data)).await?;
-            let response: Response = Message::receive(&mut self.client).await?;
-
-            match response {
-                Response::Proof(proof) => Ok(proof),
-                Response::Error(error) => Err(ProverClientError::Internal(Box::new(error))),
-                others => Err(ProverClientError::Unexpected(format!(
-                    "Unexpected response: {:?}",
-                    others
-                ))),
-            }
-        };
-
-        timeout(Duration::from_secs(self.timeout), future)
-            .await
-            .map_err(|_| ProverClientError::Timeout)?
+        match self.request(Request::Proof(data)).await? {
+            Response::Proof(proof) => Ok(proof),
+            Response::Error(error) => Err(ProverClientError::Internal(error)),
+        }
     }
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum ProverClientError {
-    #[error("Connection error: {0}")]
-    Connection(#[from] std::io::Error),
-    #[error("Prover server error: {0}")]
-    Internal(Box<dyn std::error::Error>),
-    #[error("Prover communication error: {0}")]
-    InternalCommunication(#[from] MessageError),
-    #[error("Timeout error")]
-    Timeout,
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+    #[error("Message error: {0}")]
+    Message(#[from] MessageError),
+    #[error("Internal server error: {0}")]
+    Internal(String),
     #[error("Unexpected error: {0}")]
     Unexpected(String),
+    #[error("Connection timed out")]
+    TimeOut,
 }

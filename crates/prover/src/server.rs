@@ -1,14 +1,6 @@
-use ethrex_l2_common::prover::BatchProof;
+use crate::message::{self, MessageError, Request, Response};
 use ethrex_prover_lib::{prove, to_batch_proof};
 use tokio::net::{TcpListener, TcpStream};
-
-use tracing::error;
-
-use crate::{
-    message::Message,
-    request::ProverData,
-    response::{Response, ResponseError},
-};
 
 #[allow(unused)]
 const QUEUE_SIZE: usize = 100;
@@ -45,14 +37,14 @@ impl ProverServer {
     pub async fn start(&mut self) {
         loop {
             match self.tcp_listener.accept().await {
-                Ok((stream, addr)) => {
+                Ok((mut stream, addr)) => {
                     let aligned_mode = self.aligned_mode;
                     tokio::spawn(async move {
                         handle_connection(stream, aligned_mode).await;
                     });
                 }
                 Err(e) => {
-                    error!("error accepting connection: {e}");
+                    tracing::error!("Failed to accept connection: {e}");
                 }
             }
         }
@@ -60,57 +52,35 @@ impl ProverServer {
 }
 
 async fn handle_connection(mut stream: TcpStream, aligned_mode: bool) {
-    if let Err(error) = async {
-        
-    let prover_data = receive_data(&mut stream).await?;
-    let batch_proof = generate_proof(prover_data, aligned_mode).await?;
-    send_response(&mut stream, batch_proof).await?;
-    Ok(())
+    // Turn everything into `Response`.
+    let response = handle_request(&mut stream, aligned_mode)
+        .await
+        .unwrap_or_else(|error| Response::Error(error.to_string()));
 
-    }.await {
-        send_err(&mut stream, error).await;
-    }
+    // If send() fails, we need to know.
+    message::send(&mut stream, &response)
+        .await
+        .unwrap_or_else(|error| tracing::error!("{error}"));
 }
 
-async fn receive_data(stream: &mut TcpStream) -> Result<ProverData, ResponseError> {
-    match Message::receive::<ProverData>(stream).await {
-        Ok(data) => Ok(data),
-        Err(e) => {
-            error!("Error while receiving data from stream: {e}");
-            Err(ResponseError::StreamError(e.to_string()))
-        }
-    }
-}
-
-async fn generate_proof(prover_data: ProverData, aligned_mode: bool) -> Result<BatchProof, ResponseError> {
-    prove(prover_data.input, aligned_mode)
-    .and_then(|output| to_batch_proof(output, aligned_mode))
-    .map_err(|e| {
-        error!("Proving error: {e}");
-        ResponseError::ProofError(e.to_string())
-    })
-}
-
-async fn send_response(
+async fn handle_request(
     stream: &mut TcpStream,
-    batch_proof: BatchProof,
-) -> Result<(), ResponseError> {
-    match Message::send(
-        stream,
-        &Response::Proof(batch_proof),
-    )
-    .await
-    {
-        Ok(()) => Ok(()),
-        Err(error) => {
-            error!("Error while write stream: {error}");
-            Err(ResponseError::StreamError(error.to_string()))
+    aligned_mode: bool,
+) -> Result<Response, InternalError> {
+    let request = message::receive::<Request>(stream).await?;
+    match request {
+        Request::Proof(prover_data) => {
+            let batch_proof = prove(prover_data.input, aligned_mode)
+                .and_then(|output| to_batch_proof(output, aligned_mode))?;
+            Ok(Response::Proof(batch_proof))
         }
     }
 }
 
-async fn send_err(stream: &mut TcpStream, error: ResponseError) {
-    if let Err(error) = Message::send(stream, &Response::Error(error)).await {
-        error!("Fail to send error response: {error}")
-    };
+#[derive(Debug, thiserror::Error)]
+pub enum InternalError {
+    #[error("{0}")]
+    Message(#[from] MessageError),
+    #[error("{0}")]
+    Prover(#[from] Box<dyn std::error::Error>),
 }
