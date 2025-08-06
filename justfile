@@ -85,7 +85,7 @@ doc-watch:
 	cargo watch -x "doc --no-deps"
 
 docker-build:
-	docker build -t mojave .
+	docker build -t 1sixtech/mojave .
 
 docker-run:
-	docker run -p 8545:8545 mojave
+	docker run -p 8545:8545 1sixtech/mojave
