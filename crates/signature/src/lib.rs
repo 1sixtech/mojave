@@ -4,11 +4,15 @@ pub mod ecdsa;
 pub mod eddsa;
 mod error;
 
-#[cfg(feature = "secp256k1")]
-pub use ecdsa::{SigningKey, VerifyingKey};
-#[cfg(feature = "ed25519")]
-pub use eddsa::{SigningKey, VerifyingKey};
 pub use error::SignatureError;
+
+cfg_if::cfg_if! {
+    if #[cfg(feature = "secp256k1")] {
+      pub use ecdsa::{SigningKey, VerifyingKey};
+    } else if #[cfg(feature = "ed25519")] {
+      pub use eddsa::{SigningKey, VerifyingKey};
+    }
+}
 
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -28,7 +32,7 @@ pub trait Verifier:
         &self,
         message: &T,
         signature: &Signature,
-    ) -> Result<bool, SignatureError>;
+    ) -> Result<(), SignatureError>;
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize)]

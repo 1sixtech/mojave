@@ -8,9 +8,9 @@ use std::{str::FromStr, sync::LazyLock};
 use tiny_keccak::{Hasher, Keccak};
 
 static SECP256K1_SIGNING: LazyLock<Secp256k1<secp256k1::SignOnly>> =
-    LazyLock::new(|| Secp256k1::signing_only());
+    LazyLock::new(Secp256k1::signing_only);
 static SECP256K1_VERIFY: LazyLock<Secp256k1<secp256k1::VerifyOnly>> =
-    LazyLock::new(|| Secp256k1::verification_only());
+    LazyLock::new(Secp256k1::verification_only);
 
 #[derive(Clone, Debug)]
 pub struct SigningKey(PrivateKey);
@@ -83,7 +83,7 @@ impl FromStr for VerifyingKey {
     }
 }
 
-impl super::Verifier for VerifyingKey {
+impl crate::Verifier for VerifyingKey {
     fn from_slice(slice: &[u8]) -> Result<Self, SignatureError> {
         let public_key = PublicKey::from_slice(slice)
             .map_err(|error| Error::CreateVerifyingKey(error.into()))?;
@@ -94,7 +94,7 @@ impl super::Verifier for VerifyingKey {
         &self,
         message: &T,
         signature: &Signature,
-    ) -> Result<bool, SignatureError> {
+    ) -> Result<(), SignatureError> {
         if signature.scheme != SignatureScheme::Secp256k1 {
             return Err(Error::InvalidSignatureScheme)?;
         }
@@ -108,10 +108,7 @@ impl super::Verifier for VerifyingKey {
         let sig = EcdsaSignature::from_compact(&signature.bytes)
             .map_err(|error| Error::Verify(error.into()))?;
 
-        match secp.verify_ecdsa(&msg, &sig, &self.0) {
-            Ok(()) => Ok(true),
-            Err(_error) => Ok(false),
-        }
+        secp.verify_ecdsa(&msg, &sig, &self.0).map_err(|e| e.into())
     }
 }
 
@@ -125,9 +122,7 @@ impl VerifyingKey {
         let mut hash = [0u8; 32];
         hasher.finalize(&mut hash);
 
-        let address = hex::encode(&hash[12..32]);
-
-        address
+        hex::encode(&hash[12..32])
     }
 }
 
@@ -158,15 +153,15 @@ mod test {
     use super::*;
 
     use crate::{Signer, Verifier};
+
     /// use anvil 0 account for test in here: https://getfoundry.sh/anvil/overview/
     /// address: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
     /// private_key: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-
     const ANVIL_ACC0_KEY: &str = "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
     #[test]
     fn test_secp256k1_address_from_anvil_acc0_pk() {
-        let signing_key = SigningKey::from_str(&ANVIL_ACC0_KEY).unwrap();
+        let signing_key = SigningKey::from_str(ANVIL_ACC0_KEY).unwrap();
         let verifying_key = signing_key.verifying_key();
 
         let address = verifying_key.to_address();
@@ -174,15 +169,14 @@ mod test {
             address.to_lowercase(),
             "f39Fd6e51aad88F6F4ce6aB8827279cffFb92266".to_lowercase()
         );
-        print!("address expected  : \"f39Fd6e51aad88F6F4ce6aB8827279cffFb92266\"\naddress calculated: {:?}", address);
+        print!("address expected  : \"f39Fd6e51aad88F6F4ce6aB8827279cffFb92266\"\naddress calculated: {address:?}");
     }
 
     #[test]
-
     fn test_secp256k1_sign_and_verify() {
         use crate::{Signer, Verifier};
 
-        let anvil_signing_key = SigningKey::from_str(&ANVIL_ACC0_KEY).unwrap();
+        let anvil_signing_key = SigningKey::from_str(ANVIL_ACC0_KEY).unwrap();
 
         let verifying_key = anvil_signing_key.verifying_key();
         let msg = b"Hello World";
@@ -193,9 +187,7 @@ mod test {
     }
 
     // Negative test cases
-
     #[test]
-
     fn test_secp256k1_invalid_signing_key() {
         // Test with invalid hex characters
         let invalid_hex = "invalid_hex_string_not_valid_ecdsa";
@@ -237,7 +229,6 @@ mod test {
     }
 
     #[test]
-
     fn test_secp256k1_invalid_verifying_key() {
         // Test with invalid hex characters
         let invalid_hex = "zzinvalid_hex_string_not_valid_for_public_key_ecdsa";
@@ -301,7 +292,7 @@ mod test {
             scheme: SignatureScheme::Secp256k1,
         };
         let result = verifying_key.verify(msg, &invalid_signature_zeros);
-        assert!(result.is_ok() && !result.unwrap()); // Should return Ok(false)
+        assert!(result.is_err());
 
         // Test with invalid signature content (all 255s)
         let invalid_signature_max = Signature {
@@ -313,7 +304,6 @@ mod test {
     }
 
     #[test]
-
     fn test_secp256k1_verify_with_modified_message() {
         let signing_key = SigningKey::from_str(ANVIL_ACC0_KEY).unwrap();
         let verifying_key = signing_key.verifying_key();
@@ -325,11 +315,10 @@ mod test {
 
         // Verification should fail with modified message
         let result = verifying_key.verify(modified_msg, &signature);
-        assert!(result.is_ok() && !result.unwrap()); // Should return Ok(false)
+        assert!(result.is_err());
     }
 
     #[test]
-
     fn test_secp256k1_verify_with_corrupted_signature() {
         let signing_key = SigningKey::from_str(ANVIL_ACC0_KEY).unwrap();
         let verifying_key = signing_key.verifying_key();
@@ -342,11 +331,10 @@ mod test {
 
         // Verification should fail with corrupted signature
         let result = verifying_key.verify(msg, &signature);
-        assert!(result.is_ok() && !result.unwrap()); // Should return Ok(false)
+        assert!(result.is_err());
     }
 
     #[test]
-
     fn test_secp256k1_serialization_deserialization_errors() {
         // Test VerifyingKey deserialization with invalid public key string
         let invalid_json = "\"invalid_public_key_string\"";
@@ -360,7 +348,6 @@ mod test {
     }
 
     #[test]
-
     fn test_secp256k1_address_generation_edge_cases() {
         // Test address generation with a known public key to ensure consistency
         let signing_key = SigningKey::from_str(ANVIL_ACC0_KEY).unwrap();
@@ -377,7 +364,6 @@ mod test {
     }
 
     #[test]
-
     fn test_secp256k1_wrong_private_key_range() {
         // Test with private key that's too large for secp256k1 (> curve order)
         // secp256k1 curve order is 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141

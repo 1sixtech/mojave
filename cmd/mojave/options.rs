@@ -115,7 +115,7 @@ pub struct Options {
     pub evm: EvmEngine,
     #[arg(
         long = "http.addr",
-        default_value = "localhost",
+        default_value = "0.0.0.0",
         value_name = "ADDRESS",
         help = "Listening address for the http rpc server.",
         help_heading = "RPC options",

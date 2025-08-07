@@ -1,3 +1,8 @@
+use crate::rpc::{
+    SignedBlock,
+    clients::mojave::errors::{ForwardTransactionError, MojaveClientError},
+    utils::{RpcErrorResponse, RpcRequest, RpcRequestId, RpcSuccessResponse},
+};
 use ethrex_common::{H256, types::Block};
 use futures::{
     FutureExt,
@@ -6,15 +11,9 @@ use futures::{
 use reqwest::Url;
 use serde::Deserialize;
 use serde_json::json;
-use std::{env, pin::Pin, sync::Arc};
+use std::{env, pin::Pin, str::FromStr, sync::Arc};
 
-use crate::rpc::{
-    SignedBlock,
-    clients::mojave::errors::{ForwardTransactionError, MojaveClientError},
-    utils::{RpcErrorResponse, RpcRequest, RpcRequestId, RpcSuccessResponse},
-};
-
-use mojave_signature::{Signer, Signature, SigningKey};
+use mojave_signature::{Signature, Signer, SigningKey};
 
 pub mod errors;
 
@@ -38,7 +37,7 @@ pub enum RpcResponse {
 }
 
 impl Client {
-    pub fn new(urls: Vec<&str>) -> Result<Self, MojaveClientError> {
+    pub fn new(urls: &[String]) -> Result<Self, MojaveClientError> {
         tracing::info!(urls=%urls.join(", "), "Creating new Mojave client");
         let urls = urls
             .iter()
@@ -48,15 +47,9 @@ impl Client {
                 })
             })
             .collect::<Result<Vec<_>, _>>()?;
-
-        let secret = env::var("PRIVATE_KEY").map_err(|_| MojaveClientError::MissingSigningKey)?;
-
-        let private_key_bytes = hex::decode(secret).expect("Failed to decode private key from hex");
-        let private_key_array: [u8; 32] = private_key_bytes
-            .try_into()
-            .expect("invalid length for private key");
-
-        let signing_key = Signer::from_slice(&private_key_array)?;
+        let private_key = env::var("PRIVATE_KEY")
+            .map_err(|error| MojaveClientError::Custom(format!("Private key error: {error}")))?;
+        let signing_key = SigningKey::from_str(&private_key)?;
 
         Ok(Self {
             inner: Arc::new(ClientInner {
@@ -146,8 +139,8 @@ impl Client {
 
         let params = SignedBlock {
             block: block.clone(),
-            signature: signature,
-            verifying_key: verifying_key,
+            signature,
+            verifying_key,
         };
 
         let request = RpcRequest {
@@ -216,8 +209,11 @@ mod tests {
 
     #[test]
     fn test_client_new_success() {
-        let urls = vec!["http://localhost:8545", "http://localhost:8546"];
-        let client = Client::new(urls);
+        let urls = vec![
+            "http://localhost:8545".to_owned(),
+            "http://localhost:8546".to_owned(),
+        ];
+        let client = Client::new(&urls);
         assert!(client.is_ok());
         let client = client.unwrap();
         assert_eq!(client.inner.urls.len(), 2);
@@ -225,23 +221,23 @@ mod tests {
 
     #[test]
     fn test_client_new_invalid_url() {
-        let urls = vec!["invalid-url"];
-        let result = Client::new(urls);
+        let urls = vec!["invalid-url".to_owned()];
+        let result = Client::new(&urls);
         assert!(result.is_err());
         assert!(matches!(result, Err(MojaveClientError::ParseUrlError(_))));
     }
 
     #[test]
     fn test_client_new_mixed_urls() {
-        let urls = vec!["http://localhost:8545", "invalid-url"];
-        let result = Client::new(urls);
+        let urls = vec!["http://localhost:8545".to_owned(), "invalid-url".to_owned()];
+        let result = Client::new(&urls);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_client_new_empty_urls() {
-        let urls: Vec<&str> = vec![];
-        let client = Client::new(urls);
+        let urls = vec![];
+        let client = Client::new(&urls);
         assert!(client.is_ok());
         let client = client.unwrap();
         assert_eq!(client.inner.urls.len(), 0);
@@ -262,7 +258,7 @@ mod tests {
             )
             .create();
 
-        let client = Client::new(vec![&mockito::server_url()]).unwrap();
+        let client = Client::new(std::slice::from_ref(&mockito::server_url())).unwrap();
         let data = vec![0x12, 0x34];
         let result = client.send_forward_transaction(&data).await;
 
@@ -287,7 +283,7 @@ mod tests {
             )
             .create();
 
-        let client = Client::new(vec![&mockito::server_url()]).unwrap();
+        let client = Client::new(std::slice::from_ref(&mockito::server_url())).unwrap();
         let data = vec![0x12, 0x34];
         let result = client.send_forward_transaction(&data).await;
 
@@ -300,7 +296,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_send_forward_transaction_network_error() {
-        let client = Client::new(vec!["http://nonexistent:9999"]).unwrap();
+        let client =
+            Client::new(std::slice::from_ref(&"http://nonexistent:9999".to_owned())).unwrap();
         let data = vec![0x12, 0x34];
         let result = client.send_forward_transaction(&data).await;
 
@@ -325,7 +322,7 @@ mod tests {
             )
             .create();
 
-        let client = Client::new(vec![&mockito::server_url()]).unwrap();
+        let client = Client::new(std::slice::from_ref(&mockito::server_url())).unwrap();
         let block = create_test_block();
         let result = client.send_broadcast_block(&block).await;
 
@@ -350,7 +347,7 @@ mod tests {
             )
             .create();
 
-        let client = Client::new(vec![&mockito::server_url()]).unwrap();
+        let client = Client::new(std::slice::from_ref(&mockito::server_url())).unwrap();
         let block = create_test_block();
         let result = client.send_broadcast_block(&block).await;
 
@@ -360,7 +357,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_send_broadcast_block_network_error() {
-        let client = Client::new(vec!["http://nonexistent:9999"]).unwrap();
+        let client =
+            Client::new(std::slice::from_ref(&"http://nonexistent:9999".to_owned())).unwrap();
         let block = create_test_block();
         let result = client.send_broadcast_block(&block).await;
 
@@ -385,8 +383,8 @@ mod tests {
 
     #[test]
     fn test_client_arc_cloning() {
-        let urls = vec!["http://localhost:8545"];
-        let client = Client::new(urls).unwrap();
+        let urls = vec!["http://localhost:8545".to_owned()];
+        let client = Client::new(&urls).unwrap();
 
         // Clone the client multiple times
         let client_clone1 = client.clone();

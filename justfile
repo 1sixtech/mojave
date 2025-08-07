@@ -9,20 +9,20 @@ PROOF_COORDINATOR_L1_PRIVATE_KEY := "0x39725efee3fb28614de3bacaffe4cc4bd8c436257
 default:
 	just --list
 
-node:
-	export $(cat .env | xargs)
-
+build-mojave:
 	cargo build --bin mojave
 
-	cargo run --bin mojave -- full-node \
-		--network ./test_data/genesis.json \
-		--l1.bridge-address $(grep ETHREX_WATCHER_BRIDGE_ADDRESS .env | cut -d= -f2) \
-		--block-producer.coinbase-address {{COINBASE_ADDRESS}} \
-		--committer.l1-private-key {{COMMITTER_L1_PRIVATE_KEY}} \
-		--l1.on-chain-proposer-address $(grep ETHREX_COMMITTER_ON_CHAIN_PROPOSER_ADDRESS .env | cut -d= -f2) \
-		--proof-coordinator.l1-private-key {{PROOF_COORDINATOR_L1_PRIVATE_KEY}} \
-		--sequencer.port 1739 \
-		--sequencer.host 127.0.0.1
+node:
+    export $(cat .env | xargs) && \
+    cargo run --bin mojave -- full-node \
+        --network ./test_data/genesis.json \
+        --l1.bridge-address $(grep ETHREX_WATCHER_BRIDGE_ADDRESS .env | cut -d= -f2) \
+        --block-producer.coinbase-address {{COINBASE_ADDRESS}} \
+        --committer.l1-private-key {{COMMITTER_L1_PRIVATE_KEY}} \
+        --l1.on-chain-proposer-address $(grep ETHREX_COMMITTER_ON_CHAIN_PROPOSER_ADDRESS .env | cut -d= -f2) \
+        --proof-coordinator.l1-private-key {{PROOF_COORDINATOR_L1_PRIVATE_KEY}} \
+        --sequencer.port 1739 \
+        --sequencer.host 0.0.0.0
 
 sequencer:
 	export $(cat .env | xargs)
@@ -35,26 +35,22 @@ sequencer:
 		--block-producer.coinbase-address {{COINBASE_ADDRESS}} \
 		--committer.l1-private-key {{COMMITTER_L1_PRIVATE_KEY}} \
 		--l1.on-chain-proposer-address $(grep ETHREX_COMMITTER_ON_CHAIN_PROPOSER_ADDRESS .env | cut -d= -f2) \
-		--proof-coordinator.l1-private-key {{PROOF_COORDINATOR_L1_PRIVATE_KEY}}
+		--proof-coordinator.l1-private-key {{PROOF_COORDINATOR_L1_PRIVATE_KEY}} \
+    --http.port 1739
 
 prover:
-	export $(cat .env | xargs)
-
 	cargo build --bin mojave
-
+  
+	export $(cat .env | xargs) && \
 	cargo run --bin mojave -- prover \
 		--prover.host 127.0.0.1 \
 		--prover.port 3900 \
 		# --prover.aligned-mode
 
 
-
-
 generate-key-pair:
-	export $(cat .env | xargs)
-
 	cargo build --bin mojave
-
+	export $(cat .env | xargs) && \
 	cargo run --features generate-key-pair --bin mojave generate-key-pair
 
 # Fix some issues
@@ -102,7 +98,7 @@ doc-watch:
 	cargo watch -x "doc --no-deps"
 
 docker-build:
-	docker build -t mojave .
+	docker build -t 1sixtech/mojave .
 
 docker-run:
-	docker run -p 8545:8545 mojave
+	docker run -p 8545:8545 1sixtech/mojave

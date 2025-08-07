@@ -1,6 +1,6 @@
 use crate::BlockBuilderError;
 use ethrex_blockchain::{
-    Blockchain, BlockchainType,
+    Blockchain,
     constants::TX_GAS_COST,
     error::ChainError,
     fork_choice::apply_fork_choice,
@@ -226,11 +226,10 @@ impl BlockBuilderContext {
             payload,
             self.blockchain.evm_engine,
             &self.store,
-            BlockchainType::L2,
+            self.blockchain.r#type.clone(),
         )?;
 
         self.fill_transactions(&mut context).await?;
-        self.blockchain.extract_requests(&mut context)?;
         self.blockchain.finalize_payload(&mut context).await?;
 
         let interval = Instant::now().duration_since(since).as_millis();

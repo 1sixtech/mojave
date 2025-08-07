@@ -4579,6 +4579,7 @@ dependencies = [
  "k256 0.13.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static",
  "local-ip-address",
+ "mojave-block-builder",
  "mojave-chain-utils",
  "mojave-networking",
  "rand 0.8.5",
@@ -4683,6 +4684,7 @@ version = "0.1.0"
 dependencies = [
  "bincode",
  "bs58",
+ "cfg-if",
  "ed25519-dalek",
  "hex",
  "secp256k1",
