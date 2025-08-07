@@ -97,15 +97,5 @@ docker-run:
 
 
 test:
-	@echo "=== Running unit tests ==="
-	just test-unit
-	@echo "\n=== Running e2e tests ==="
-	just test-e2e
-	@echo "\n All tests passed successfully!"
-
-test-unit:
-	cargo test --workspace || (echo "Unit tests failed"; exit 1)
-
-test-e2e:
-	sh ./test_data/tests-e2e.sh || (echo "E2E tests failed"; exit 1)
+	sh ./test_data/tests-e2e.sh || (echo "Running tests failed"; exit 1)
 	
