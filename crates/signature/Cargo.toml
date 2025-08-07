@@ -23,6 +23,5 @@ cfg-if = "1.0"
 
 [features]
 default = ["secp256k1"]
-# default = ["ed25519"]
 ed25519 = ["dep:ed25519-dalek"]
 secp256k1 = ["dep:secp256k1"]
