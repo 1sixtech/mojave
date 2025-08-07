@@ -38,7 +38,7 @@ impl RpcHandler<RpcApiContextFullNode> for BroadcastBlockRequest {
                 .eth_client
                 .get_block_by_number(BlockByNumber::Number(block_number))
                 .await?;
-            let block = rpc_block_to_block(block);
+            let block = rpc_block_to_block(block)?;
 
             context.block_queue.push(OrderedBlock(block)).await;
         }
@@ -52,7 +52,7 @@ impl RpcHandler<RpcApiContextFullNode> for BroadcastBlockRequest {
     }
 }
 
-fn rpc_block_to_block(rpc_block: RpcBlock) -> Block {
+fn rpc_block_to_block(rpc_block: RpcBlock) -> Result<Block, RpcErr> {
     match rpc_block.body {
         ethrex_rpc::types::block::BlockBodyWrapper::Full(full_block_body) => {
             // transform RPCBlock to normal block
@@ -62,17 +62,17 @@ fn rpc_block_to_block(rpc_block: RpcBlock) -> Block {
                 .map(|b| b.tx.clone())
                 .collect();
 
-            Block::new(
+            Ok(Block::new(
                 rpc_block.header,
                 BlockBody {
                     ommers: full_block_body.uncles,
                     transactions,
                     withdrawals: Some(full_block_body.withdrawals),
                 },
-            )
+            ))
         }
         ethrex_rpc::types::block::BlockBodyWrapper::OnlyHashes(..) => {
-            unreachable!()
+            Err(RpcErr::CustomError("Expected full block body".into()))
         }
     }
 }
@@ -326,7 +326,7 @@ mod tests {
 
         match rpc_block_result {
             Ok(rpc_block) => {
-                let result_block = rpc_block_to_block(rpc_block);
+                let result_block = rpc_block_to_block(rpc_block).unwrap();
 
                 assert_eq!(result_block.header.number, 10u64); // 0xa = 10
                 assert_eq!(result_block.header.gas_limit, 30000000u64); // 0x1c9c380
@@ -404,5 +404,44 @@ mod tests {
 
         let result = request.handle(context).await;
         assert!(matches!(result, Err(RpcErr::SignatureError(_))));
+    }
+
+    #[test]
+    fn test_rpc_block_to_block_only_hashes_error() {
+        let logs_bloom = format!("0x{}", "0".repeat(512));
+        let rpc_block_json = json!({
+            "hash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+            "size": "0x200",
+            "number": "0xa",
+            "gasLimit": "0x1c9c380",
+            "gasUsed": "0x5208",
+            "timestamp": "0x5f5e100",
+            "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "difficulty": "0x1",
+            "totalDifficulty": "0xa",
+            "nonce": "0x0",
+            "sha3Uncles": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+            "logsBloom": logs_bloom,
+            "transactionsRoot": "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+            "stateRoot": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "receiptsRoot": "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+            "miner": "0x0000000000000000000000000000000000000000",
+            "extraData": "0x",
+            "mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "baseFeePerGas": "0x3b9aca00",
+            "transactions": [
+                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ],
+            "uncles": [],
+            "withdrawals": []
+        });
+
+        let rpc_block: RpcBlock = serde_json::from_value(rpc_block_json).unwrap();
+        let result = rpc_block_to_block(rpc_block);
+        if let Err(RpcErr::CustomError(msg)) = result {
+            assert_eq!(msg, "Expected full block body");
+        } else {
+            panic!("Expected CustomError for OnlyHashes body");
+        }
     }
 }
