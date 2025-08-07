@@ -1,7 +1,6 @@
 #[derive(Debug, thiserror::Error)]
 pub enum SignatureError {
     #[cfg(feature = "secp256k1")]
-    // #[cfg(feature = "secp256k1")]
     #[error("{0}")]
     Ecdsa(#[from] crate::ecdsa::Error),
     #[cfg(feature = "ed25519")]

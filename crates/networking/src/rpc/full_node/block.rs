@@ -388,7 +388,8 @@ mod tests {
             gas_tip_estimator: Arc::new(TokioMutex::new(GasTipEstimator::new())),
         };
         let rollup_store = example_rollup_store().await;
-        let mojave_client = MojaveClient::new(&vec!["http://localhost:1".to_owned()]).unwrap();
+        let mojave_client =
+            MojaveClient::new(std::slice::from_ref(&"http://localhost:1".to_owned())).unwrap();
         let eth_client = EthClient::new("http://localhost:1").unwrap();
         let block_queue = AsyncUniqueHeap::new();
 

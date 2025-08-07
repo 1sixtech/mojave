@@ -4684,6 +4684,7 @@ version = "0.1.0"
 dependencies = [
  "bincode",
  "bs58",
+ "cfg-if",
  "ed25519-dalek",
  "hex",
  "secp256k1",
