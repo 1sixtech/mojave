@@ -19,6 +19,8 @@ bs58 = "0.5"
 ed25519-dalek = { workspace = true, optional = true }
 secp256k1 = { workspace = true, features = ["std"], optional = true }
 
+cfg-if = "1.0"
+
 [features]
 default = ["secp256k1"]
 ed25519 = ["dep:ed25519-dalek"]

@@ -85,10 +85,10 @@ doc-watch:
 	cargo watch -x "doc --no-deps"
 
 docker-build:
-	docker build -t mojave .
+	docker build -t 1sixtech/mojave .
 
 docker-run:
-	docker run -p 8545:8545 mojave
+	docker run -p 8545:8545 1sixtech/mojave
 
 
 # ==============================================================================
@@ -108,3 +108,4 @@ test-unit:
 
 test-e2e:
 	sh ./test_data/tests-e2e.sh || (echo "E2E tests failed"; exit 1)
+	

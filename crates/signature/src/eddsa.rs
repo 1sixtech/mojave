@@ -74,7 +74,7 @@ impl FromStr for VerifyingKey {
     }
 }
 
-impl super::Verifier for VerifyingKey {
+impl crate::Verifier for VerifyingKey {
     fn from_slice(slice: &[u8]) -> Result<Self, SignatureError> {
         let public_key =
             PublicKey::try_from(slice).map_err(|error| Error::CreateVerifyingKey(error.into()))?;
@@ -85,7 +85,7 @@ impl super::Verifier for VerifyingKey {
         &self,
         message: &T,
         signature: &Signature,
-    ) -> Result<bool, SignatureError> {
+    ) -> Result<(), SignatureError> {
         if signature.scheme != SignatureScheme::Ed25519 {
             return Err(Error::InvalidSignatureScheme)?;
         }
@@ -95,15 +95,14 @@ impl super::Verifier for VerifyingKey {
         let signature = EddsaSignature::from_slice(&signature.bytes)
             .map_err(|error| Error::Verify(error.into()))?;
 
-        match self.0.verify(&message_bytes, &signature) {
-            Ok(()) => Ok(true),
-            Err(_error) => Ok(false),
-        }
+        self.0
+            .verify(&message_bytes, &signature)
+            .map_err(|e| e.into())
     }
 }
 
-impl VerifyingKey{
-    pub fn to_address(&self) -> String{
+impl VerifyingKey {
+    pub fn to_address(&self) -> String {
         String::from(self.clone())
     }
 }
@@ -137,6 +136,7 @@ mod tests {
     use super::*;
 
     use crate::{Signer, Verifier};
+
     /// made key pair using `solana-keygen new --no-passphrase`
     ///
     /// [
@@ -153,36 +153,32 @@ mod tests {
     ///
     /// first 32 bytes for secret key,
     /// second 32 bytes for public key.
-    
     const PRIVATE_KEY: [u8; 32] = [
-        144, 45, 220, 66, 89, 201, 7, 239, 86, 173, 155, 227, 31, 102, 64, 151, 142, 184, 211,
-        146, 225, 143, 253, 224, 165, 105, 222, 216, 4, 223, 35, 225,
+        144, 45, 220, 66, 89, 201, 7, 239, 86, 173, 155, 227, 31, 102, 64, 151, 142, 184, 211, 146,
+        225, 143, 253, 224, 165, 105, 222, 216, 4, 223, 35, 225,
     ];
-    const PUBLIC_KEY: [u8;32] = [
-        104, 129, 238, 30, 109, 80, 35, 40, 222, 122, 189, 203, 126, 168, 28, 216, 229, 110,
-        167, 57, 192, 114, 219, 225, 233, 104, 3, 71, 9, 159, 103, 127,
+    const PUBLIC_KEY: [u8; 32] = [
+        104, 129, 238, 30, 109, 80, 35, 40, 222, 122, 189, 203, 126, 168, 28, 216, 229, 110, 167,
+        57, 192, 114, 219, 225, 233, 104, 3, 71, 9, 159, 103, 127,
     ];
 
     #[test]
     fn test_ed25519_get_public_key_from_private_key() {
         let signing_key = SigningKey::from_slice(&PRIVATE_KEY).unwrap();
         let verifying_key = signing_key.verifying_key();
-        let expected_pub_key: String = hex::encode(&PUBLIC_KEY);
+        let expected_pub_key: String = hex::encode(PUBLIC_KEY);
 
         let pub_key = String::from(verifying_key);
 
-        print!(
-            "expected  : {:?}\ncalculated: {:?}",
-            expected_pub_key, pub_key
-        );
+        print!("expected: {expected_pub_key:?}\ncalculated: {pub_key:?}",);
         assert_eq!(expected_pub_key, pub_key);
     }
 
     #[test]
     fn test_ed25519_sign_and_verify() {
         let signing_key = SigningKey::from_slice(&PRIVATE_KEY).unwrap();
-        
-        let verifying_key= signing_key.verifying_key();
+
+        let verifying_key = signing_key.verifying_key();
         let msg = b"Hello World";
 
         let signature = signing_key.sign(msg).unwrap();
@@ -192,14 +188,14 @@ mod tests {
     }
 
     // Negative test cases
-    
+
     #[test]
     fn test_ed25519_invalid_signing_key() {
         // Test with invalid hex characters
         let invalid_hex = "invalid_hex_string_not_valid";
         let result = SigningKey::from_str(invalid_hex);
         assert!(result.is_err());
-        
+
         // Test with odd-length hex string
         let odd_hex = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0";
         let result = SigningKey::from_str(odd_hex);
@@ -207,17 +203,16 @@ mod tests {
 
         // Test with too short byte array (16 bytes instead of 32)
         let short_key: [u8; 16] = [
-            144, 45, 220, 66, 89, 201, 7, 239,
-            86, 173, 155, 227, 31, 102, 64, 151
+            144, 45, 220, 66, 89, 201, 7, 239, 86, 173, 155, 227, 31, 102, 64, 151,
         ];
         let result = SigningKey::from_slice(&short_key);
         assert!(result.is_err());
-        
+
         // Test with too long byte array (64 bytes instead of 32)
         let long_key: [u8; 64] = [0u8; 64];
         let result = SigningKey::from_slice(&long_key);
         assert!(result.is_err());
-        
+
         // Test with empty byte array
         let empty_key: [u8; 0] = [];
         let result = SigningKey::from_slice(&empty_key);
@@ -230,7 +225,7 @@ mod tests {
         let invalid_hex = "invalid_hex_string_not_valid";
         let result = VerifyingKey::from_str(invalid_hex);
         assert!(result.is_err());
-        
+
         // Test with odd-length hex string
         let odd_hex = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0";
         let result = VerifyingKey::from_str(odd_hex);
@@ -238,17 +233,16 @@ mod tests {
 
         // Test with too short byte array (16 bytes instead of 32)
         let short_key: [u8; 16] = [
-            104, 129, 238, 30, 109, 80, 35, 40,
-            222, 122, 189, 203, 126, 168, 28, 216
+            104, 129, 238, 30, 109, 80, 35, 40, 222, 122, 189, 203, 126, 168, 28, 216,
         ];
         let result = VerifyingKey::from_slice(&short_key);
         assert!(result.is_err());
-        
+
         // Test with too long byte array (64 bytes instead of 32)
         let long_key: [u8; 64] = [0u8; 64];
         let result = VerifyingKey::from_slice(&long_key);
         assert!(result.is_err());
-        
+
         // Test with empty byte array
         let empty_key: [u8; 0] = [];
         let result = VerifyingKey::from_slice(&empty_key);
@@ -284,22 +278,22 @@ mod tests {
         };
         let result = verifying_key.verify(msg, &invalid_signature_zeros);
         // Ed25519 returns Ok(false) for invalid signatures that parse correctly
-        assert!(result.is_ok() && !result.unwrap());
+        assert!(result.is_err());
     }
 
     #[test]
     fn test_ed25519_verify_with_modified_message() {
         let signing_key = SigningKey::from_slice(&PRIVATE_KEY).unwrap();
         let verifying_key = signing_key.verifying_key();
-        
+
         let original_msg = b"Hello World";
         let modified_msg = b"Hello World!"; // Modified message
 
         let signature = signing_key.sign(original_msg).unwrap();
-        
+
         // Verification should fail with modified message
         let result = verifying_key.verify(modified_msg, &signature);
-        assert!(result.is_ok() && !result.unwrap()); // Should return Ok(false)
+        assert!(result.is_err());
     }
 
     #[test]
@@ -309,13 +303,13 @@ mod tests {
         let msg = b"Hello World";
 
         let mut signature = signing_key.sign(msg).unwrap();
-        
+
         // Corrupt the signature by flipping a bit
         signature.bytes[0] ^= 1;
-        
+
         // Verification should fail with corrupted signature
         let result = verifying_key.verify(msg, &signature);
-        assert!(result.is_ok() && !result.unwrap()); // Should return Ok(false)
+        assert!(result.is_err());
     }
 
     #[test]
@@ -324,11 +318,10 @@ mod tests {
         let invalid_json = "\"invalid_hex_string\"";
         let result: Result<VerifyingKey, _> = serde_json::from_str(invalid_json);
         assert!(result.is_err());
-        
+
         // Test VerifyingKey deserialization with wrong length hex
         let wrong_length_json = "\"6881ee1e6d502328de7abdcb7ea81cd8\""; // Too short
         let result: Result<VerifyingKey, _> = serde_json::from_str(wrong_length_json);
         assert!(result.is_err());
     }
-
 }
