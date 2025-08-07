@@ -14,8 +14,7 @@ impl FromStr for SigningKey {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = s.strip_prefix("0x").unwrap_or(s);
-        let bytes = hex::decode(s)
-            .map_err(|error| Error::CreateSigningKey(error.into()))?;
+        let bytes = hex::decode(s).map_err(|error| Error::CreateSigningKey(error.into()))?;
         let secret_key = PrivateKey::try_from(bytes.as_slice())
             .map_err(|error| Error::CreateSigningKey(error.into()))?;
         Ok(Self(secret_key))
@@ -179,37 +178,31 @@ mod tests {
 
     #[test]
     fn test_ed25519_get_public_key_from_private_key_hex() {
-        let private_key_hex = hex::encode(&PRIVATE_KEY);
+        let private_key_hex = hex::encode(PRIVATE_KEY);
+
         let signing_key = SigningKey::from_str(&private_key_hex).unwrap();
-        
         let verifying_key = signing_key.verifying_key();
-        let expected_pub_key: String = hex::encode(&PUBLIC_KEY);
+        let expected_pub_key: String = hex::encode(PUBLIC_KEY);
 
         let pub_key = String::from(verifying_key);
 
-        print!(
-            "expected  : {:?}\ncalculated: {:?}",
-            expected_pub_key, pub_key
-        );
+        print!("expected: {expected_pub_key:?}\ncalculated: {pub_key:?}",);
         assert_eq!(expected_pub_key, pub_key);
     }
 
     #[test]
     fn test_ed25519_get_public_key_from_private_key_hex_0x_prefix() {
-        let private_key_hex = hex::encode(&PRIVATE_KEY);
-        let private_key_hex = format!("0x{}", private_key_hex);
+        let private_key_hex = hex::encode(PRIVATE_KEY);
+        let private_key_hex = format!("0x{private_key_hex}");
 
         let signing_key = SigningKey::from_str(&private_key_hex).unwrap();
-        
+
         let verifying_key = signing_key.verifying_key();
-        let expected_pub_key: String = hex::encode(&PUBLIC_KEY);
+        let expected_pub_key: String = hex::encode(PUBLIC_KEY);
 
         let pub_key = String::from(verifying_key);
 
-        print!(
-            "expected  : {:?}\ncalculated: {:?}",
-            expected_pub_key, pub_key
-        );
+        print!("expected: {expected_pub_key:?}\ncalculated: {pub_key:?}",);
         assert_eq!(expected_pub_key, pub_key);
     }
 
@@ -228,7 +221,7 @@ mod tests {
 
     #[test]
     fn test_ed25519_sign_and_verify_with_hex() {
-        let private_key_hex = hex::encode(&PRIVATE_KEY);
+        let private_key_hex = hex::encode(PRIVATE_KEY);
         let signing_key = SigningKey::from_str(&private_key_hex).unwrap();
 
         let verifying_key = signing_key.verifying_key();
@@ -242,8 +235,8 @@ mod tests {
 
     #[test]
     fn test_ed25519_sign_and_verify_with_hex_0x_prefix() {
-        let private_key_hex = hex::encode(&PRIVATE_KEY);
-        let private_key_hex = format!("0x{}", private_key_hex);
+        let private_key_hex = hex::encode(PRIVATE_KEY);
+        let private_key_hex = format!("0x{private_key_hex}");
         let signing_key = SigningKey::from_str(&private_key_hex).unwrap();
 
         let verifying_key = signing_key.verifying_key();
