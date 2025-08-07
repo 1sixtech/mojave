@@ -85,7 +85,7 @@ impl super::Verifier for VerifyingKey {
         &self,
         message: &T,
         signature: &Signature,
-    ) -> Result<bool, SignatureError> {
+    ) -> Result<(), SignatureError> {
         if signature.scheme != SignatureScheme::Ed25519 {
             return Err(Error::InvalidSignatureScheme)?;
         }
@@ -96,8 +96,8 @@ impl super::Verifier for VerifyingKey {
             .map_err(|error| Error::Verify(error.into()))?;
 
         match self.0.verify(&message_bytes, &signature) {
-            Ok(()) => Ok(true),
-            Err(_error) => Ok(false),
+            Ok(()) => Ok(()),
+            Err(error) => Err(Error::Verify(ErrorKind::Ed25519(error)).into()),
         }
     }
 }
@@ -277,14 +277,13 @@ mod tests {
         let result = verifying_key.verify(msg, &invalid_signature_long);
         assert!(result.is_err());
 
-        // Test with invalid signature content (all zeros) - Ed25519 returns Ok(false)
+        // Test with invalid signature content (all zeros)
         let invalid_signature_zeros = Signature {
             bytes: vec![0u8; 64], // All zeros - invalid signature
             scheme: SignatureScheme::Ed25519,
         };
         let result = verifying_key.verify(msg, &invalid_signature_zeros);
-        // Ed25519 returns Ok(false) for invalid signatures that parse correctly
-        assert!(result.is_ok() && !result.unwrap());
+        assert!(result.is_err()); // Signature parses, but is invalid -> verify returns Err
     }
 
     #[test]
@@ -299,7 +298,7 @@ mod tests {
         
         // Verification should fail with modified message
         let result = verifying_key.verify(modified_msg, &signature);
-        assert!(result.is_ok() && !result.unwrap()); // Should return Ok(false)
+        assert!(result.is_err()); // Invalid signature for this message
     }
 
     #[test]
@@ -315,7 +314,7 @@ mod tests {
         
         // Verification should fail with corrupted signature
         let result = verifying_key.verify(msg, &signature);
-        assert!(result.is_ok() && !result.unwrap()); // Should return Ok(false)
+        assert!(result.is_err()); // Should now return Err for bad signature
     }
 
     #[test]
