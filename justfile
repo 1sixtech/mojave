@@ -91,11 +91,7 @@ docker-run:
 	docker run -p 8545:8545 1sixtech/mojave
 
 
-# ==============================================================================
-# Tests
-# ==============================================================================
-
-
+# Run unit and e2e tests
 test:
 	sh ./test_data/tests-e2e.sh || (echo "Running tests failed"; exit 1)
 	
