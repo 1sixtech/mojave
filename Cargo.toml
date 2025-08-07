@@ -2,10 +2,10 @@
 members = [
   "cmd/mojave",
   "crates/block-builder",
-  # "crates/full-node",
+  "crates/full-node",
   "crates/networking",
   "crates/syncer",
-  # "crates/sequencer",
+  "crates/sequencer",
   "crates/utils",
   "crates/prover",
   "crates/proof-coordinator",
@@ -30,17 +30,19 @@ ethrex-rlp = { git = "https://github.com/1sixtech/ethrex", rev = "d62fcc5accaaa1
 ethrex-storage = { git = "https://github.com/1sixtech/ethrex", rev = "d62fcc5accaaa13b9909af04071379219dc6a0b1" }
 ethrex-prover = { git = "https://github.com/1sixtech/ethrex", rev = "d62fcc5accaaa13b9909af04071379219dc6a0b1" }
 
-lazy_static = "1.5.0"
-
 # mojave
 mojave-block-builder = { path = "crates/block-builder" }
+mojave-full-node = { path = "crates/full-node" }
 mojave-prover = { path = "crates/prover" }
 mojave-chain-utils = { path = "crates/utils" }
 mojave-networking = { path = "crates/networking" }
+mojave-sequencer = { path = "crates/sequencer" }
 mojave-signature = { path = "crates/signature" }
 
 anyhow = { version = "1.0" }
+axum = "0.8.1"
 clap = { version = "4.5", features = ["derive"] }
+lazy_static = "1.5.0"
 futures = "0.3"
 secp256k1 = { version = "0.29.1", default-features = false, features = [
   "serde",
