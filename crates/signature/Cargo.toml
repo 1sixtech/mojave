@@ -20,7 +20,7 @@ ed25519-dalek = { workspace = true, optional = true }
 secp256k1 = { workspace = true, features = ["std"], optional = true }
 
 [features]
-# default = ["secp256k1"]
-default = ["ed25519", ]
+default = ["secp256k1"]
+# default = ["ed25519"]
 ed25519 = ["dep:ed25519-dalek"]
 secp256k1 = ["dep:secp256k1"]
