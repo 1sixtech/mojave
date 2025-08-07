@@ -1,6 +1,28 @@
 #!/bin/bash
 set -e  # Exit on error
 
+# ================================
+# Run unit tests
+# ================================
+
+echo "Running unit tests"
+
+cargo test --workspace || (echo "Unit tests failed"; exit 1)
+
+# ================================
+# Run e2e tests
+# ================================
+
+echo "Running e2e tests"
+
+
+COUNTER_CONTRACT_BYTE_CODE=0x6080604052348015600e575f5ffd5b5060015f819055506101e1806100235f395ff3fe608060405234801561000f575f5ffd5b506004361061003f575f3560e01c80633fb5c1cb146100435780638381f58a1461005f578063d09de08a1461007d575b5f5ffd5b61005d600480360381019061005891906100e4565b610087565b005b610067610090565b604051610074919061011e565b60405180910390f35b610085610095565b005b805f8190555050565b5f5481565b5f5f8154809291906100a690610164565b9190505550565b5f5ffd5b5f819050919050565b6100c3816100b1565b81146100cd575f5ffd5b50565b5f813590506100de816100ba565b92915050565b5f602082840312156100f9576100f86100ad565b5b5f610106848285016100d0565b91505092915050565b610118816100b1565b82525050565b5f6020820190506101315f83018461010f565b92915050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52601160045260245ffd5b5f61016e826100b1565b91507fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff82036101a05761019f610137565b5b60018201905091905056fea264697066735822122035036984d9cda9d8b7e24e9a8d12e922bc40578a5e3f11d8594eefda13b952f864736f6c634300081c0033
+PRIVATE_KEY=0xc97833ebdbc5d3b280eaee0c826f2bd3b5959fb902d60a167d75a035c694f282
+
+# ================================
+# Start services
+# ================================
+
 # Kill any existing mojave processes
 cleanup() {
     pkill -f mojave || true
@@ -23,9 +45,9 @@ sleep 2
 # just prover &
 # sleep 2
 
-
-
 echo "All services started. Testing connection..."
+
+
 
 
 # ================================
@@ -40,44 +62,46 @@ response=$(curl -s -X POST -H "Content-Type: application/json" \
 
 echo "Response from sequencer: $response"
 
-echo "Testing send raw transaction to full node"
 
-# Create a signed EIP1559 transaction to send to full node
-# The full node will automatically forward it to the sequencer
-# The params is extracted from the test_forward_transaction() in mod.rs
-tx_data=$(cat << 'EOF'
-{
-    "jsonrpc": "2.0",
-    "method": "eth_sendRawTransaction",
-    "params": ["0x02f8758206c18084773594008506fc23ac00825208940000000000000000000000000000000000000001880de0b6b3a764000080c001a0c2b251be76bed6798f93a7441d4bc5fc5c9801ba7f16398ed174a99eb0f01ea7a02d053e77b6e557ba04d009109c42cd94fa2d8f65d465c727254a18276c6812dc"],
-    "id": 1
-}
-EOF
-)
 
-# Send to full node on port 8545, which will forward to sequencer on port 1739
-echo "Sending transaction to full node which will forward to sequencer..."
-response=$(curl -s -X POST -H "Content-Type: application/json" \
-    --data "$tx_data" \
-    http://localhost:8545)
 
-echo "Response from transaction send: $response"
+# Deploy with bytecode
+CONTRACT_ADDRESS=$(rex deploy "$BYTE_CODE" 0 "$PRIVATE_KEY" --print-address)
 
-# Verify the transaction hash matches expected
-expected_hash="0x81c611445d4de5c61f74bc286f5b04d8334b60e1d7e0b29ad6b9c524e1ae430b"
-actual_hash=$(echo "$response" | jq -r '.result')
+echo "Contract address: $CONTRACT_ADDRESS"
 
-if [ "$actual_hash" = "$expected_hash" ]; then
-    echo "Transaction hash matches expected value"
+# Get number and check it equals 1
+NUMBER=$(rex call "$CONTRACT_ADDRESS" --calldata 0x8381f58a)
+if [ "$NUMBER" = "0x0000000000000000000000000000000000000000000000000000000000000001" ]; then
+    echo "Initial number is 1"
 else
-    echo "ERROR: Transaction hash does not match expected value"
-    echo "Expected: $expected_hash"
-    echo "Got: $actual_hash"
+    echo "ERROR: Initial number is not 1"
+    echo "Expected: 0x0000000000000000000000000000000000000000000000000000000000000001"
+    echo "Got: $NUMBER"
 
     cleanup
-
     exit 1
 fi
+
+# Set number to 5
+rex send "$CONTRACT_ADDRESS" 0 "$PRIVATE_KEY" --calldata 0x3fb5c1cb0000000000000000000000000000000000000000000000000000000000000005 
+
+# sleep to wait for the transaction to be mined
+sleep 2
+
+# Get number and check it equals 5
+NUMBER=$(rex call "$CONTRACT_ADDRESS" --calldata 0x8381f58a)
+if [ "$NUMBER" = "0x0000000000000000000000000000000000000000000000000000000000000005" ]; then
+    echo "Number is 5"
+else
+    echo "ERROR: Number is not 5"
+    echo "Expected: 0x0000000000000000000000000000000000000000000000000000000000000005"
+    echo "Got: $NUMBER"
+
+    cleanup
+    exit 1
+fi
+
 
 # ================================
 # Clean up
@@ -85,4 +109,4 @@ fi
 
 cleanup
 
-echo "TEST PASSED."
+echo "ALL TESTS PASSED SUCCESSFULLY!"
