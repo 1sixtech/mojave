@@ -117,7 +117,7 @@ async fn main() -> Result<(), Error> {
             tokio::select! {
                 _ = tokio::signal::ctrl_c() => {
                     tracing::info!("Shutting down the sequencer..");
-                    let node_config_path = PathBuf::from(data_dir).join("/node_config.json");
+                    let node_config_path = PathBuf::from(data_dir).join("node_config.json");
                     tracing::info!("Storing config at {:?}...", node_config_path);
                     cancel_token.cancel();
                     let node_config = NodeConfigFile::new(peer_table, local_node_record.lock().await.clone()).await;

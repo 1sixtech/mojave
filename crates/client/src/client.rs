@@ -26,7 +26,7 @@ struct MojaveClientInner {
 }
 
 impl MojaveClient {
-    pub fn new(full_node_addresses: &Vec<String>) -> Result<Self, MojaveClientError> {
+    pub fn new(full_node_addresses: &[String]) -> Result<Self, MojaveClientError> {
         let private_key = env::var("PRIVATE_KEY")
             .map_err(|error| MojaveClientError::Custom(format!("Private key error: {error}")))?;
         let urls = full_node_addresses
