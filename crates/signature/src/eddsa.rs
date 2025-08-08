@@ -172,7 +172,7 @@ mod tests {
 
         let pub_key = String::from(verifying_key);
 
-        print!("expected: {expected_pub_key:?}\ncalculated: {pub_key:?}",);
+        println!("expected: {expected_pub_key:?}\ncalculated: {pub_key:?}",);
         assert_eq!(expected_pub_key, pub_key);
     }
 
@@ -186,7 +186,7 @@ mod tests {
 
         let pub_key = String::from(verifying_key);
 
-        print!("expected: {expected_pub_key:?}\ncalculated: {pub_key:?}",);
+        println!("expected: {expected_pub_key:?}\ncalculated: {pub_key:?}",);
         assert_eq!(expected_pub_key, pub_key);
     }
 
@@ -202,7 +202,7 @@ mod tests {
 
         let pub_key = String::from(verifying_key);
 
-        print!("expected: {expected_pub_key:?}\ncalculated: {pub_key:?}",);
+        println!("expected: {expected_pub_key:?}\ncalculated: {pub_key:?}",);
         assert_eq!(expected_pub_key, pub_key);
     }
 

@@ -22,15 +22,11 @@ impl FromStr for SigningKey {
         let private_key = PrivateKey::from_str(s).or_else(|_| {
             let s = s.strip_prefix("0x").unwrap_or(s);
 
-            let bytes = hex::decode(s).map_err(|_| {
-                // Wrap hex decoding failure into bincode error -> ErrorKind -> Error
-                let bincode_err = bincode::ErrorKind::Custom("Invalid hex string".into()).into();
-                let kind = ErrorKind::Bincode(bincode_err);
-                crate::ecdsa::Error::CreateSigningKey(kind)
-            })?;
+            let bytes = hex::decode(s)
+                .map_err(|error| Error::CreateSigningKey(ErrorKind::InvalidHex(error)))?;
 
             PrivateKey::from_slice(&bytes)
-                .map_err(|e| crate::ecdsa::Error::CreateSigningKey(ErrorKind::Secp256k1(e)))
+                .map_err(|error| Error::CreateSigningKey(ErrorKind::Secp256k1(error)))
         })?;
         Ok(Self(private_key))
     }
@@ -157,6 +153,8 @@ pub enum ErrorKind {
     Secp256k1(#[from] secp256k1::Error),
     #[error("{0}")]
     Bincode(#[from] bincode::Error),
+    #[error("{0}")]
+    InvalidHex(hex::FromHexError),
 }
 
 #[cfg(test)]
@@ -182,7 +180,7 @@ mod test {
             address.to_lowercase(),
             "f39Fd6e51aad88F6F4ce6aB8827279cffFb92266".to_lowercase()
         );
-        print!("address expected  : \"f39Fd6e51aad88F6F4ce6aB8827279cffFb92266\"\naddress calculated: {address:?}");
+        println!("address expected  : \"f39Fd6e51aad88F6F4ce6aB8827279cffFb92266\"\naddress calculated: {address:?}");
     }
 
     #[test]
@@ -195,7 +193,7 @@ mod test {
             address.to_lowercase(),
             "f39Fd6e51aad88F6F4ce6aB8827279cffFb92266".to_lowercase()
         );
-        print!("address expected  : \"f39Fd6e51aad88F6F4ce6aB8827279cffFb92266\"\naddress calculated: {address:?}");
+        println!("address expected  : \"f39Fd6e51aad88F6F4ce6aB8827279cffFb92266\"\naddress calculated: {address:?}");
     }
 
     #[test]
