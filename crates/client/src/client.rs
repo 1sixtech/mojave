@@ -130,247 +130,185 @@ impl MojaveClient {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use ethrex_common::{
-//         Address, Bloom, Bytes, H256, U256,
-//         types::{Block, BlockBody, BlockHeader},
-//     };
-//     use mockito::mock;
-//     use serde_json::json;
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ethrex_common::{
+        Address, Bloom, Bytes, H256, U256,
+        types::{Block, BlockBody, BlockHeader},
+    };
+    use mockito::mock;
+    use serde_json::json;
 
-//     fn create_test_block() -> Block {
-//         Block {
-//             header: BlockHeader {
-//                 parent_hash: H256::zero(),
-//                 ommers_hash: H256::zero(),
-//                 coinbase: Address::zero(),
-//                 state_root: H256::zero(),
-//                 transactions_root: H256::zero(),
-//                 receipts_root: H256::zero(),
-//                 logs_bloom: Bloom::default(),
-//                 difficulty: U256::zero(),
-//                 number: 1u64,
-//                 gas_limit: 21000u64,
-//                 gas_used: 0u64,
-//                 timestamp: 0u64,
-//                 extra_data: Bytes::new(),
-//                 prev_randao: H256::zero(),
-//                 nonce: 0u64,
-//                 base_fee_per_gas: Some(0u64),
-//                 withdrawals_root: None,
-//                 blob_gas_used: None,
-//                 excess_blob_gas: None,
-//                 parent_beacon_block_root: None,
-//                 requests_hash: None,
-//                 ..Default::default()
-//             },
-//             body: BlockBody {
-//                 transactions: vec![],
-//                 ommers: vec![],
-//                 withdrawals: None,
-//             },
-//         }
-//     }
+    fn create_test_block() -> Block {
+        Block {
+            header: BlockHeader {
+                parent_hash: H256::zero(),
+                ommers_hash: H256::zero(),
+                coinbase: Address::zero(),
+                state_root: H256::zero(),
+                transactions_root: H256::zero(),
+                receipts_root: H256::zero(),
+                logs_bloom: Bloom::default(),
+                difficulty: U256::zero(),
+                number: 1u64,
+                gas_limit: 21000u64,
+                gas_used: 0u64,
+                timestamp: 0u64,
+                extra_data: Bytes::new(),
+                prev_randao: H256::zero(),
+                nonce: 0u64,
+                base_fee_per_gas: Some(0u64),
+                withdrawals_root: None,
+                blob_gas_used: None,
+                excess_blob_gas: None,
+                parent_beacon_block_root: None,
+                requests_hash: None,
+                ..Default::default()
+            },
+            body: BlockBody {
+                transactions: vec![],
+                ommers: vec![],
+                withdrawals: None,
+            },
+        }
+    }
 
-//     #[test]
-//     fn test_client_new_success() {
-//         let urls = vec![
-//             "http://localhost:8545".to_owned(),
-//             "http://localhost:8546".to_owned(),
-//         ];
-//         let client = MojaveClient::new(&urls);
-//         assert!(client.is_ok());
-//         let client = client.unwrap();
-//         assert_eq!(client.inner.urls.len(), 2);
-//     }
+    #[test]
+    fn test_client_new_success() {
+        let urls = vec![
+            "http://localhost:8545".to_owned(),
+            "http://localhost:8546".to_owned(),
+        ];
+        let client = MojaveClient::new(&urls);
+        assert!(client.is_ok());
+        let client = client.unwrap();
+        assert_eq!(client.inner.urls.len(), 2);
+    }
 
-//     #[test]
-//     fn test_client_new_invalid_url() {
-//         let urls = vec!["invalid-url".to_owned()];
-//         let result = MojaveClient::new(&urls);
-//         assert!(result.is_err());
-//         assert!(matches!(result, Err(MojaveClientError::ParseUrlError(_))));
-//     }
+    #[test]
+    fn test_client_new_invalid_url() {
+        let urls = vec!["invalid-url".to_owned()];
+        let result = MojaveClient::new(&urls);
+        assert!(result.is_err());
+        assert!(matches!(result, Err(MojaveClientError::ParseUrlError(_))));
+    }
 
-//     #[test]
-//     fn test_client_new_mixed_urls() {
-//         let urls = vec!["http://localhost:8545".to_owned(), "invalid-url".to_owned()];
-//         let result = MojaveClient::new(&urls);
-//         assert!(result.is_err());
-//     }
+    #[test]
+    fn test_client_new_mixed_urls() {
+        let urls = vec!["http://localhost:8545".to_owned(), "invalid-url".to_owned()];
+        let result = MojaveClient::new(&urls);
+        assert!(result.is_err());
+    }
 
-//     #[test]
-//     fn test_client_new_empty_urls() {
-//         let urls = vec![];
-//         let client = MojaveClient::new(&urls);
-//         assert!(client.is_ok());
-//         let client = client.unwrap();
-//         assert_eq!(client.inner.urls.len(), 0);
-//     }
+    #[test]
+    fn test_client_new_empty_urls() {
+        let urls = vec![];
+        let client = MojaveClient::new(&urls);
+        assert!(client.is_ok());
+        let client = client.unwrap();
+        assert_eq!(client.inner.urls.len(), 0);
+    }
 
-//     #[tokio::test]
-//     async fn test_send_forward_transaction_success() {
-//         let _mock = mock("POST", "/")
-//             .with_status(200)
-//             .with_header("content-type", "application/json")
-//             .with_body(
-//                 json!({
-//                     "id": 1,
-//                     "jsonrpc": "2.0",
-//                     "result": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
-//                 })
-//                 .to_string(),
-//             )
-//             .create();
+    #[tokio::test]
+    async fn test_send_broadcast_block_success() {
+        let _block = create_test_block();
 
-//         let client = MojaveClient::new(std::slice::from_ref(&mockito::server_url())).unwrap();
-//         let data = vec![0x12, 0x34];
-//         let result = client.send_forward_transaction(&data).await;
+        let _mock = mock("POST", "/")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(
+                json!({
+                    "id": 1,
+                    "jsonrpc": "2.0",
+                    "result": null
+                })
+                .to_string(),
+            )
+            .create();
 
-//         assert!(result.is_ok());
-//     }
+        let client = MojaveClient::new(std::slice::from_ref(&mockito::server_url())).unwrap();
+        let block = create_test_block();
+        let result = client.send_broadcast_block(&block).await;
 
-//     #[tokio::test]
-//     async fn test_send_forward_transaction_rpc_error() {
-//         let _mock = mock("POST", "/")
-//             .with_status(200)
-//             .with_header("content-type", "application/json")
-//             .with_body(
-//                 json!({
-//                     "id": 1,
-//                     "jsonrpc": "2.0",
-//                     "error": {
-//                         "code": -32602,
-//                         "message": "Invalid params"
-//                     }
-//                 })
-//                 .to_string(),
-//             )
-//             .create();
+        assert!(result.is_ok());
+    }
 
-//         let client = MojaveClient::new(std::slice::from_ref(&mockito::server_url())).unwrap();
-//         let data = vec![0x12, 0x34];
-//         let result = client.send_forward_transaction(&data).await;
+    #[tokio::test]
+    async fn test_send_broadcast_block_rpc_error() {
+        let _mock = mock("POST", "/")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(
+                json!({
+                    "id": 1,
+                    "jsonrpc": "2.0",
+                    "error": {
+                        "code": -32603,
+                        "message": "Internal error"
+                    }
+                })
+                .to_string(),
+            )
+            .create();
 
-//         assert!(result.is_err());
-//         assert!(matches!(
-//             result,
-//             Err(MojaveClientError::ForwardTransactionError(_))
-//         ));
-//     }
+        let client = MojaveClient::new(std::slice::from_ref(&mockito::server_url())).unwrap();
+        let block = create_test_block();
+        let result = client.send_broadcast_block(&block).await;
 
-//     #[tokio::test]
-//     async fn test_send_forward_transaction_network_error() {
-//         let client =
-//             MojaveClient::new(std::slice::from_ref(&"http://nonexistent:9999".to_owned())).unwrap();
-//         let data = vec![0x12, 0x34];
-//         let result = client.send_forward_transaction(&data).await;
+        assert!(result.is_err());
+        assert!(matches!(result, Err(MojaveClientError::RpcError(_))));
+    }
 
-//         assert!(result.is_err());
-//         assert!(matches!(result, Err(MojaveClientError::Custom(_))));
-//     }
+    #[tokio::test]
+    async fn test_send_broadcast_block_network_error() {
+        let client =
+            MojaveClient::new(std::slice::from_ref(&"http://nonexistent:9999".to_owned())).unwrap();
+        let block = create_test_block();
+        let result = client.send_broadcast_block(&block).await;
 
-//     #[tokio::test]
-//     async fn test_send_broadcast_block_success() {
-//         let _block = create_test_block();
+        assert!(result.is_err());
+        assert!(matches!(result, Err(MojaveClientError::Custom(_))));
+    }
 
-//         let _mock = mock("POST", "/")
-//             .with_status(200)
-//             .with_header("content-type", "application/json")
-//             .with_body(
-//                 json!({
-//                     "id": 1,
-//                     "jsonrpc": "2.0",
-//                     "result": null
-//                 })
-//                 .to_string(),
-//             )
-//             .create();
+    #[test]
+    fn test_rpc_response_deserialization_success() {
+        let json_str = r#"{"id":1,"jsonrpc":"2.0","result":"success"}"#;
+        let response: RpcResponse = serde_json::from_str(json_str).unwrap();
+        assert!(matches!(response, RpcResponse::Success(_)));
+    }
 
-//         let client = MojaveClient::new(std::slice::from_ref(&mockito::server_url())).unwrap();
-//         let block = create_test_block();
-//         let result = client.send_broadcast_block(&block).await;
+    #[test]
+    fn test_rpc_response_deserialization_error() {
+        let json_str =
+            r#"{"id":1,"jsonrpc":"2.0","error":{"code":-32602,"message":"Invalid params"}}"#;
+        let response: RpcResponse = serde_json::from_str(json_str).unwrap();
+        assert!(matches!(response, RpcResponse::Error(_)));
+    }
 
-//         assert!(result.is_ok());
-//     }
+    #[test]
+    fn test_client_arc_cloning() {
+        let urls = vec!["http://localhost:8545".to_owned()];
+        let client = MojaveClient::new(&urls).unwrap();
 
-//     #[tokio::test]
-//     async fn test_send_broadcast_block_rpc_error() {
-//         let _mock = mock("POST", "/")
-//             .with_status(200)
-//             .with_header("content-type", "application/json")
-//             .with_body(
-//                 json!({
-//                     "id": 1,
-//                     "jsonrpc": "2.0",
-//                     "error": {
-//                         "code": -32603,
-//                         "message": "Internal error"
-//                     }
-//                 })
-//                 .to_string(),
-//             )
-//             .create();
+        // Clone the client multiple times
+        let client_clone1 = client.clone();
+        let client_clone2 = client.clone();
 
-//         let client = MojaveClient::new(std::slice::from_ref(&mockito::server_url())).unwrap();
-//         let block = create_test_block();
-//         let result = client.send_broadcast_block(&block).await;
+        // Verify that all instances point to the same URLs
+        assert_eq!(client.inner.urls.len(), 1);
+        assert_eq!(client_clone1.inner.urls.len(), 1);
+        assert_eq!(client_clone2.inner.urls.len(), 1);
 
-//         assert!(result.is_err());
-//         assert!(matches!(result, Err(MojaveClientError::RpcError(_))));
-//     }
-
-//     #[tokio::test]
-//     async fn test_send_broadcast_block_network_error() {
-//         let client =
-//             MojaveClient::new(std::slice::from_ref(&"http://nonexistent:9999".to_owned())).unwrap();
-//         let block = create_test_block();
-//         let result = client.send_broadcast_block(&block).await;
-
-//         assert!(result.is_err());
-//         assert!(matches!(result, Err(MojaveClientError::Custom(_))));
-//     }
-
-//     #[test]
-//     fn test_rpc_response_deserialization_success() {
-//         let json_str = r#"{"id":1,"jsonrpc":"2.0","result":"success"}"#;
-//         let response: RpcResponse = serde_json::from_str(json_str).unwrap();
-//         assert!(matches!(response, RpcResponse::Success(_)));
-//     }
-
-//     #[test]
-//     fn test_rpc_response_deserialization_error() {
-//         let json_str =
-//             r#"{"id":1,"jsonrpc":"2.0","error":{"code":-32602,"message":"Invalid params"}}"#;
-//         let response: RpcResponse = serde_json::from_str(json_str).unwrap();
-//         assert!(matches!(response, RpcResponse::Error(_)));
-//     }
-
-//     #[test]
-//     fn test_client_arc_cloning() {
-//         let urls = vec!["http://localhost:8545".to_owned()];
-//         let client = MojaveClient::new(&urls).unwrap();
-
-//         // Clone the client multiple times
-//         let client_clone1 = client.clone();
-//         let client_clone2 = client.clone();
-
-//         // Verify that all instances point to the same URLs
-//         assert_eq!(client.inner.urls.len(), 1);
-//         assert_eq!(client_clone1.inner.urls.len(), 1);
-//         assert_eq!(client_clone2.inner.urls.len(), 1);
-
-//         // Verify URL content is the same
-//         assert_eq!(client.inner.urls[0].as_str(), "http://localhost:8545/");
-//         assert_eq!(
-//             client_clone1.inner.urls[0].as_str(),
-//             "http://localhost:8545/"
-//         );
-//         assert_eq!(
-//             client_clone2.inner.urls[0].as_str(),
-//             "http://localhost:8545/"
-//         );
-//     }
-// }
+        // Verify URL content is the same
+        assert_eq!(client.inner.urls[0].as_str(), "http://localhost:8545/");
+        assert_eq!(
+            client_clone1.inner.urls[0].as_str(),
+            "http://localhost:8545/"
+        );
+        assert_eq!(
+            client_clone2.inner.urls[0].as_str(),
+            "http://localhost:8545/"
+        );
+    }
+}
