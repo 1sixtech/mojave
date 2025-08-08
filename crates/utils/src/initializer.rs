@@ -4,14 +4,7 @@ use crate::{
 };
 use ethrex::utils::read_node_config_file;
 use ethrex_common::Address;
-use ethrex_p2p::{
-    kademlia::KademliaTable,
-    network::{P2PContext, public_key_from_signing_key},
-    peer_handler::PeerHandler,
-    sync_manager::SyncManager,
-    types::{Node, NodeRecord},
-};
-
+use ethrex_p2p::{network::public_key_from_signing_key, types::Node};
 use ethrex_storage_rollup::{EngineTypeRollup, StoreRollup};
 use k256::ecdsa::SigningKey;
 use std::{
@@ -68,54 +61,6 @@ pub fn get_bootnodes(opts: &Options, network: &Network, data_dir: &str) -> Vec<N
 
     bootnodes
 }
-
-// #[allow(clippy::too_many_arguments)]
-// pub async fn init_network(
-//     opts: &Options,
-//     network: &Network,
-//     data_dir: &str,
-//     local_p2p_node: Node,
-//     local_node_record: Arc<Mutex<NodeRecord>>,
-//     signer: SigningKey,
-//     peer_table: Arc<Mutex<KademliaTable>>,
-//     store: Store,
-//     tracker: TaskTracker,
-//     blockchain: Arc<Blockchain>,
-// ) {
-//     let bootnodes = get_bootnodes(opts, network, data_dir);
-
-//     let context = P2PContext::new(
-//         local_p2p_node,
-//         local_node_record,
-//         tracker.clone(),
-//         signer,
-//         peer_table.clone(),
-//         store,
-//         blockchain,
-//         get_client_version(),
-//     );
-
-//     context.set_fork_id().await.expect("Set fork id");
-
-//     ethrex_p2p::start_network(context, bootnodes)
-//         .await
-//         .expect("Network starts");
-
-//     tracker.spawn(ethrex_p2p::periodically_show_peer_stats(peer_table.clone()));
-// }
-
-// pub fn init_metrics(opts: &Options, tracker: TaskTracker) {
-//     tracing::info!(
-//         "Starting metrics server on {}:{}",
-//         opts.metrics_addr,
-//         opts.metrics_port
-//     );
-//     let metrics_api = ethrex_metrics::api::start_prometheus_metrics_api(
-//         opts.metrics_addr.clone(),
-//         opts.metrics_port.clone(),
-//     );
-//     tracker.spawn(metrics_api);
-// }
 
 pub fn parse_socket_addr(addr: &str, port: &str) -> io::Result<SocketAddr> {
     // NOTE: this blocks until hostname can be resolved

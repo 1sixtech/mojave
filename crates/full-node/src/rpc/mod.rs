@@ -1,7 +1,10 @@
 pub mod block;
 pub mod transaction;
+pub mod types;
 
-use crate::rpc::{block::SendBroadcastBlockRequest, transaction::SendRawTransactionRequest};
+use crate::rpc::{
+    block::SendBroadcastBlockRequest, transaction::SendRawTransactionRequest, types::OrderedBlock,
+};
 use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
 use ethrex_blockchain::Blockchain;
 use ethrex_common::Bytes;
@@ -11,12 +14,13 @@ use ethrex_p2p::{
     types::{Node, NodeRecord},
 };
 use ethrex_rpc::{
-    GasTipEstimator, NodeData, RpcApiContext as L1Context, RpcErr, RpcHandler, RpcRequestWrapper,
+    EthClient, GasTipEstimator, NodeData, RpcApiContext as L1Context, RpcErr, RpcRequestWrapper,
     rpc_response,
     utils::{RpcRequest, RpcRequestId},
 };
 use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
+use mojave_chain_utils::unique_heap::AsyncUniqueHeap;
 use serde_json::Value;
 use std::{
     collections::HashMap,
@@ -40,6 +44,8 @@ pub const FILTER_DURATION: Duration = {
 pub struct RpcApiContext {
     pub l1_context: L1Context,
     pub rollup_store: StoreRollup,
+    pub eth_client: EthClient,
+    pub block_queue: AsyncUniqueHeap<OrderedBlock, u64>,
 }
 
 #[expect(clippy::too_many_arguments)]
@@ -55,7 +61,8 @@ pub async fn start_api(
     peer_handler: PeerHandler,
     client_version: String,
     rollup_store: StoreRollup,
-    // mojave_client: MojaveClient,
+    eth_client: EthClient,
+    block_queue: AsyncUniqueHeap<OrderedBlock, u64>,
 ) -> Result<(), RpcErr> {
     let active_filters = Arc::new(Mutex::new(HashMap::new()));
     let context = RpcApiContext {
@@ -74,7 +81,8 @@ pub async fn start_api(
             gas_tip_estimator: Arc::new(TokioMutex::new(GasTipEstimator::new())),
         },
         rollup_store,
-        // mojave_client,
+        eth_client,
+        block_queue,
     };
 
     // Periodically clean up the active filters for the filters endpoints.

@@ -4,12 +4,15 @@ use ethrex::{
 };
 use ethrex_blockchain::BlockchainType;
 use ethrex_p2p::{network::peer_table, peer_handler::PeerHandler, sync_manager::SyncManager};
+use ethrex_rpc::EthClient;
 use ethrex_storage_rollup::{EngineTypeRollup, StoreRollup};
 use ethrex_vm::EvmEngine;
 use mojave_chain_utils::{
-    fs::resolve_data_dir,
-    initializer::{get_authrpc_socket_addr, get_http_socket_addr, get_local_p2p_node},
+    initializer::{
+        get_authrpc_socket_addr, get_http_socket_addr, get_local_p2p_node, resolve_data_dir,
+    },
     logging::init_logging,
+    unique_heap::AsyncUniqueHeap,
 };
 use mojave_full_node::{
     cli::{Cli, Command},
@@ -24,7 +27,10 @@ async fn main() -> Result<(), Error> {
     let cli = Cli::run();
     init_logging(cli.log_level);
     match cli.command {
-        Command::Init { options } => {
+        Command::Init {
+            options,
+            full_node_options,
+        } => {
             let data_dir = resolve_data_dir(&options.datadir);
             tracing::info!("Data directory resolved to: {:?}", data_dir);
 
@@ -68,6 +74,7 @@ async fn main() -> Result<(), Error> {
             )
             .await;
 
+            let eth_client = EthClient::new(&full_node_options.sequencer_address)?;
             start_api(
                 get_http_socket_addr(&options),
                 get_authrpc_socket_addr(&options),
@@ -80,6 +87,8 @@ async fn main() -> Result<(), Error> {
                 peer_handler,
                 get_client_version(),
                 rollup_store.clone(),
+                eth_client,
+                AsyncUniqueHeap::new(),
             )
             .await?;
 
