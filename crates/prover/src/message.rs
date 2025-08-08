@@ -19,13 +19,17 @@ pub enum Response {
     Error(String),
 }
 
+const MAX_MESSAGE_SIZE: u32 = 10 * 1024 * 1024; // 10MB
+
 pub async fn receive<T>(stream: &mut TcpStream) -> Result<T, MessageError>
 where
     T: DeserializeOwned,
 {
-    // TODO: check the packet length and return an error if it's too long.
     let length = stream.read_u32().await?;
-    let mut buffer = vec![0;length as usize];
+    if length > MAX_MESSAGE_SIZE {
+        return Err(MessageError::MessageTooLarge(MAX_MESSAGE_SIZE, length));
+    }
+    let mut buffer = vec![0; length as usize];
     stream.read_exact(&mut buffer).await?;
     serde_json::from_slice(&buffer).map_err(MessageError::Deserialize)
 }
@@ -50,6 +54,8 @@ pub enum MessageError {
     Deserialize(serde_json::Error),
     #[error("Serialization error: {0}")]
     Serialize(serde_json::Error),
+    #[error("Message is too large. max: {0}, got: {1}")]
+    MessageTooLarge(u32, u32),
 }
 
 

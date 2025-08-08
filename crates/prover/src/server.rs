@@ -37,7 +37,7 @@ impl ProverServer {
     pub async fn start(&mut self) {
         loop {
             match self.tcp_listener.accept().await {
-                Ok((mut stream, addr)) => {
+                Ok((mut stream, _)) => {
                     let aligned_mode = self.aligned_mode;
                     tokio::spawn(async move {
                         handle_connection(stream, aligned_mode).await;
