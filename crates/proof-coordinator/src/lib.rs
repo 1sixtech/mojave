@@ -10,7 +10,7 @@ use zkvm_interface::io::ProgramInput;
 
 use crate::errors::ProofCoordinatorError;
 
-use mojave_prover::ProverData;
+use mojave_prover::{ProverClient, ProverData};
 
 mod errors;
 
@@ -56,14 +56,13 @@ impl ProofCoordinator {
         &self,
         prover_data: ProverData,
     ) -> Result<(u64, BatchProof), ProofCoordinatorError> {
-        todo!("Connect using prover client")
-        // let mut stream = TcpStream::connect(&self.prover_tcp_addr).await?;
-
-        // Message::send(&mut stream, &prover_data).await?;
-
-        // // TODO: add timeout
-        // let (batch_number, batch_proof) = Message::receive(&mut stream).await?;
-        // Ok((batch_number, batch_proof))
+        let mut client = ProverClient::new(&self.prover_tcp_addr, 300);
+        let batch_number = prover_data.batch_number;
+        let proof = client
+            .get_proof(prover_data)
+            .await
+            .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?;
+        Ok((batch_number, proof))
     }
 }
 
