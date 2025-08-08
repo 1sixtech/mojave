@@ -5,6 +5,7 @@ pub mod initializer;
 pub mod logging;
 pub mod networks;
 pub mod options;
+pub mod prover_options;
 pub mod sequencer_options;
 pub(crate) mod version;
 

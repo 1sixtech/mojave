@@ -4,14 +4,21 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-zkvm_interface = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true, features = ["sync", "net"]}
 ethrex-l2-common = { workspace = true }
-ethrex-prover = { workspace = true }
+zkvm_interface = { workspace = true }
 
-tokio = { workspace = true, features = ["sync"] }
-
-tracing = { workspace = true }
+# server only dep
+ethrex-prover = { workspace = true , optional = true}
+tracing = { workspace = true , optional = true}
 
 [dev-dependencies]
+tokio = { workspace = true, features = ["io-util", "macros", "rt-multi-thread", "time"] }
 
 [features]
+default = []
+client = []
+server = ["ethrex-prover", "tracing"]

@@ -6,7 +6,8 @@ edition = "2024"
 [dependencies]
 tracing = { workspace = true }
 thiserror = { workspace = true }
-tokio = { workspace = true, features = ["sync"] }
+tokio = { workspace = true, features = ["sync", "net"] }
+serde_json = { workspace = true }
 
 ethrex-l2-common = { workspace = true }
 ethrex-l2 = { workspace = true }
