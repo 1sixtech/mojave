@@ -64,7 +64,6 @@ async fn main() -> Result<(), Error> {
             tokio::spawn(async move {
                 loop {
                     match block_producer.build_block().await {
-                        Ok(block) => {}
                         Ok(block) => mojave_client
                             .send_broadcast_block(&block)
                             .await

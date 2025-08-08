@@ -15,4 +15,6 @@ pub enum Error {
     BlockProducer(#[from] BlockProducerError),
     #[error(transparent)]
     Rpc(#[from] RpcErr),
+    #[error(transparent)]
+    MojaveClient(#[from] mojave_client::MojaveClientError),
 }
