@@ -33,6 +33,7 @@ RUN cargo build --release $BUILD_FLAGS
 FROM ubuntu:24.04
 WORKDIR /usr/local/bin
 
+COPY test_data ./test_data
 COPY --from=builder mojave/target/release/mojave .
 EXPOSE 8545
 ENTRYPOINT [ "./mojave" ]
