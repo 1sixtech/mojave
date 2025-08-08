@@ -7,9 +7,8 @@ use ethrex_p2p::{
     types::{Node, NodeRecord},
 };
 use ethrex_rpc::{
-    GasTipEstimator, NodeData, RpcApiContext as L1Context, RpcErr, RpcHandler, RpcRequestWrapper,
-    rpc_response,
-    types::transaction::SendRawTransactionRequest,
+    GasTipEstimator, NodeData, RpcApiContext as L1Context, RpcErr, RpcRequestWrapper,
+    map_eth_requests, rpc_response,
     utils::{RpcRequest, RpcRequestId},
 };
 use ethrex_storage::Store;
@@ -52,7 +51,6 @@ pub async fn start_api(
     peer_handler: PeerHandler,
     client_version: String,
     rollup_store: StoreRollup,
-    // mojave_client: MojaveClient,
 ) -> Result<(), RpcErr> {
     let active_filters = Arc::new(Mutex::new(HashMap::new()));
     let context = RpcApiContext {
@@ -139,24 +137,22 @@ async fn handle_http_request(
 
 async fn map_http_requests(req: &RpcRequest, context: RpcApiContext) -> Result<Value, RpcErr> {
     match RpcNamespace::resolve_namespace(req) {
+        Ok(RpcNamespace::Eth) => map_eth_requests(req, context.l1_context).await,
         Ok(RpcNamespace::Mojave) => map_mojave_requests(req, context).await,
-        Err(error) => Err(error),
+        Err(err) => Err(err),
     }
 }
 
+/// Leave this unimplemented for now.
 pub async fn map_mojave_requests(
-    req: &RpcRequest,
-    context: RpcApiContext,
+    _req: &RpcRequest,
+    _context: RpcApiContext,
 ) -> Result<Value, RpcErr> {
-    match req.method.as_str() {
-        "mojave_sendRawTransaction" => {
-            SendRawTransactionRequest::call(req, context.l1_context).await
-        }
-        others => Err(RpcErr::MethodNotFound(others.to_owned())),
-    }
+    Err(RpcErr::Internal("Unimplemented".to_owned()))
 }
 
 pub enum RpcNamespace {
+    Eth,
     Mojave,
 }
 
@@ -167,6 +163,7 @@ impl RpcNamespace {
             return Err(RpcErr::MethodNotFound(request.method.clone()));
         };
         match namespace {
+            "eth" => Ok(Self::Eth),
             "mojave" => Ok(Self::Mojave),
             _others => Err(RpcErr::MethodNotFound(request.method.to_owned())),
         }
