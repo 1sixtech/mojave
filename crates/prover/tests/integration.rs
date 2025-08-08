@@ -51,7 +51,7 @@ async fn test_client_server_communication() {
 async fn test_client_connection_refused() {
     let mut client = ProverClient::new("127.0.0.1:1", 10);
     match client.get_proof(create_mock_prover_data()).await {
-        Ok(data) => panic!("Should receive error"),
+        Ok(_) => panic!("Should receive error"),
         Err(error) => println!("Error! message is: {:?}", error),
     }
 }
@@ -61,7 +61,7 @@ async fn test_client_connection_refused() {
 async fn test_client_timeout() {
     let mut client = ProverClient::new("192.0.2.1:12345", 2);
     match client.get_proof(create_mock_prover_data()).await {
-        Ok(data) => panic!("Should receive timeout error"),
+        Ok(_) => panic!("Should receive timeout error"),
         Err(error) => println!("Error! message is: {:?}", error),
     }
 }
