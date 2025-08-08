@@ -10,10 +10,8 @@ pub enum MojaveClientError {
     SerdeError(#[from] serde_json::Error),
     #[error("RPCError: {0}")]
     RpcError(String),
-    #[error("Parse Url Error. {0}")]
+    #[error("Failed to parse URL: {0}")]
     ParseUrlError(String),
-    #[error("Forward Transaction Error: {0}")]
-    ForwardTransactionError(#[from] ForwardTransactionError),
     #[error("Missing signing key in environment variable PRIVATE_KEY")]
     MissingSigningKey,
     #[error("Signature error: {0}")]
