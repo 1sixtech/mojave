@@ -25,7 +25,7 @@ where
 {
     // TODO: check the packet length and return an error if it's too long.
     let length = stream.read_u32().await?;
-    let mut buffer = Vec::with_capacity(length as usize);
+    let mut buffer = vec![0;length as usize];
     stream.read_exact(&mut buffer).await?;
     serde_json::from_slice(&buffer).map_err(MessageError::Deserialize)
 }
@@ -50,4 +50,52 @@ pub enum MessageError {
     Deserialize(serde_json::Error),
     #[error("Serialization error: {0}")]
     Serialize(serde_json::Error),
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tokio::net::TcpListener;
+
+    // TODO: add test case when we can have program input mock data and proof result of it
+
+    #[tokio::test]
+    async fn send_receive_over_tcp() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+
+        let server = tokio::spawn(
+            async move {
+                let (mut stream, _addr) = listener.accept().await.unwrap();
+                send(&mut stream, "Response::Proof(dummy_proof)").await.unwrap();
+            });
+        
+        let mut stream = TcpStream::connect(addr).await.unwrap();
+        let response: String = receive(&mut stream).await.unwrap();
+
+        print!("Response: {:?}",response);
+
+        server.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn send_receive_error_over_tcp() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+
+        let server = tokio::spawn(
+            async move {
+                let (mut stream, _addr) = listener.accept().await.unwrap();
+                send(&mut stream, Response::Error("Error while generate proof".to_string())).await.unwrap();
+            });
+        
+        let mut stream = TcpStream::connect(addr).await.unwrap();
+        let response: Response = receive(&mut stream).await.unwrap();
+
+        print!("Response: {:?}",response);
+
+        server.await.unwrap();
+    }
+
 }
