@@ -3,9 +3,6 @@ name = "mojave-chain-utils"
 version = "0.1.0"
 edition = "2024"
 
-[dependencies]
-tokio = { workspace = true, features = ["signal", "sync"] }
-
 [dev-dependencies]
 tokio = { workspace = true, features = [
   "macros",
@@ -13,3 +10,27 @@ tokio = { workspace = true, features = [
   "rt-multi-thread",
   "time",
 ] }
+
+[dependencies]
+# ethrex
+ethrex = { workspace = true, features = ["libmdbx", "c-kzg", "blst", "l2"] }
+ethrex-blockchain = { workspace = true, features = ["l2"] }
+ethrex-l2 = { workspace = true, features = ["l2"] }
+ethrex-metrics = { workspace = true, features = ["l2"] }
+ethrex-rpc = { workspace = true }
+ethrex-storage-rollup = { workspace = true, features = ["l2"] }
+ethrex-vm = { workspace = true }
+ethrex-common = { workspace = true }
+ethrex-p2p = { workspace = true }
+ethrex-storage = { workspace = true }
+
+cfg-if = "1.0"
+clap = { workspace = true }
+k256 = { workspace = true, features = ["ecdh"] }
+lazy_static = { workspace = true }
+local-ip-address = { version = "0.6" }
+secp256k1 = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true, features = ["signal", "sync"] }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

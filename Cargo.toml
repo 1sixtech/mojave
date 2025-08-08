@@ -1,15 +1,12 @@
 [workspace]
 members = [
-  "cmd/mojave",
-  "crates/block-builder",
-  # "crates/full-node",
-  "crates/networking",
-  "crates/syncer",
-  # "crates/sequencer",
-  "crates/utils",
+  "crates/client",
+  "crates/full-node",
   "crates/prover",
   "crates/proof-coordinator",
+  "crates/sequencer",
   "crates/signature",
+  "crates/utils",
 ]
 resolver = "2"
 
@@ -30,36 +27,37 @@ ethrex-rlp = { git = "https://github.com/1sixtech/ethrex", rev = "d62fcc5accaaa1
 ethrex-storage = { git = "https://github.com/1sixtech/ethrex", rev = "d62fcc5accaaa13b9909af04071379219dc6a0b1" }
 ethrex-prover = { git = "https://github.com/1sixtech/ethrex", rev = "d62fcc5accaaa13b9909af04071379219dc6a0b1" }
 
-lazy_static = "1.5.0"
-
 # mojave
-mojave-block-builder = { path = "crates/block-builder" }
-mojave-prover = { path = "crates/prover" }
 mojave-chain-utils = { path = "crates/utils" }
-mojave-networking = { path = "crates/networking" }
+mojave-client = { path = "crates/client" }
+mojave-full-node = { path = "crates/full-node" }
+mojave-prover = { path = "crates/prover" }
+mojave-sequencer = { path = "crates/sequencer" }
 mojave-signature = { path = "crates/signature" }
 
 anyhow = { version = "1.0" }
-clap = { version = "4.5", features = ["derive"] }
+axum = "0.8.1"
+clap = { version = "4.5", default-features = false }
+ed25519-dalek = { version = "2.1.1", features = ["rand_core", "serde"] }
 futures = "0.3"
+hex = "0.4.3"
+k256 = { version = "0.13.3", features = ["ecdh"] }
+lazy_static = "1.5.0"
+rand = { version = "0.8.5", default-features = false }
+reqwest = { version = "0.12.7", features = ["json"] }
 secp256k1 = { version = "0.29.1", default-features = false, features = [
   "serde",
 ] }
-k256 = { version = "0.13.3", features = ["ecdh"] }
 serde = { version = "1.0", default-features = false }
 serde_json = "1.0"
 thiserror = "2"
 tokio = { version = "1", default-features = false }
-rand = { version = "0.8.5", default-features = false }
-ed25519-dalek = { version = "2.1.1", features = ["rand_core", "serde"] }
 tokio-stream = { version = "0.1.17" }
 tokio-util = { version = "0.7", default-features = false }
+tower-http = { version = "0.6.2", default-features = false }
 tracing = "0.1"
 tracing-subscriber = "0.3"
 trait-variant = "0.1"
-hex = "0.4.3"
-
-reqwest = { version = "0.12.7", features = ["json"] }
 
 [patch.crates-io]
 secp256k1 = { git = "https://github.com/sp1-patches/rust-secp256k1", tag = "patch-0.29.1-sp1-5.0.0" }
