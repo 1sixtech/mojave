@@ -16,6 +16,7 @@ ethrex-prover = { workspace = true , optional = true}
 tracing = { workspace = true , optional = true}
 
 [dev-dependencies]
+tokio = { workspace = true, features = ["io-util", "macros", "rt-multi-thread", "time"] }
 
 [features]
 default = []
