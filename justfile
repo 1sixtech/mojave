@@ -1,39 +1,24 @@
 #!/usr/bin/env just --justfile
 
 # List all of the available commands.
-
-COINBASE_ADDRESS := "0x0007a881CD95B1484fca47615B64803dad620C8d"
-COMMITTER_L1_PRIVATE_KEY := "0x385c546456b6a603a1cfcaa9ec9494ba4832da08dd6bcf4de9a71e4a01b74924"
-PROOF_COORDINATOR_L1_PRIVATE_KEY := "0x39725efee3fb28614de3bacaffe4cc4bd8c436257e2c8bb887c4b5c4be45e76d"
-
 default:
 	just --list
 
 build-mojave:
-	cargo build --bin mojave
+	cargo build --release
 
 node:
     export $(cat .env | xargs) && \
-    cargo run --bin mojave -- full-node \
+    cargo run --release --bin mojave-full-node init \
         --network ./test_data/genesis.json \
-        --l1.bridge-address $(grep ETHREX_WATCHER_BRIDGE_ADDRESS .env | cut -d= -f2) \
-        --block-producer.coinbase-address {{COINBASE_ADDRESS}} \
-        --committer.l1-private-key {{COMMITTER_L1_PRIVATE_KEY}} \
-        --l1.on-chain-proposer-address $(grep ETHREX_COMMITTER_ON_CHAIN_PROPOSER_ADDRESS .env | cut -d= -f2) \
-        --proof-coordinator.l1-private-key {{PROOF_COORDINATOR_L1_PRIVATE_KEY}} \
-        --sequencer.port 1739 \
-        --sequencer.host 0.0.0.0
+        --sequencer.address http://0.0.0.0:1739
 
 sequencer:
     export $(cat .env | xargs) && \
-    cargo run --bin mojave -- sequencer \
+    cargo run --release --bin mojave-sequencer init \
         --network ./test_data/genesis.json \
-        --l1.bridge-address $(grep ETHREX_WATCHER_BRIDGE_ADDRESS .env | cut -d= -f2) \
-        --block-producer.coinbase-address {{COINBASE_ADDRESS}} \
-        --committer.l1-private-key {{COMMITTER_L1_PRIVATE_KEY}} \
-        --l1.on-chain-proposer-address $(grep ETHREX_COMMITTER_ON_CHAIN_PROPOSER_ADDRESS .env | cut -d= -f2) \
-        --proof-coordinator.l1-private-key {{PROOF_COORDINATOR_L1_PRIVATE_KEY}} \
-        --http.port 1739
+        --http.port 1739 \
+        --full_node.addresses http://0.0.0.0:8545
 
 generate-key-pair:
 	cargo build --bin mojave
