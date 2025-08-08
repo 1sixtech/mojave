@@ -8,10 +8,12 @@ use ethrex_p2p::{network::peer_table, peer_handler::PeerHandler, sync_manager::S
 use ethrex_storage_rollup::{EngineTypeRollup, StoreRollup};
 use ethrex_vm::EvmEngine;
 use mojave_chain_utils::{
-    fs::resolve_data_dir,
-    initializer::{get_authrpc_socket_addr, get_http_socket_addr, get_local_p2p_node},
+    initializer::{
+        get_authrpc_socket_addr, get_http_socket_addr, get_local_p2p_node, resolve_data_dir,
+    },
     logging::init_logging,
 };
+use mojave_client::MojaveClient;
 use mojave_sequencer::{
     block_producer::{BlockProducer, BlockProducerContext},
     cli::{Cli, Command},
@@ -26,7 +28,10 @@ async fn main() -> Result<(), Error> {
     let cli = Cli::run();
     init_logging(cli.log_level);
     match cli.command {
-        Command::Init { options } => {
+        Command::Init {
+            options,
+            sequencer_options,
+        } => {
             let data_dir = resolve_data_dir(&options.datadir);
             tracing::info!("Data directory resolved to: {:?}", data_dir);
 
@@ -46,6 +51,8 @@ async fn main() -> Result<(), Error> {
 
             let blockchain = init_blockchain(EvmEngine::LEVM, store.clone(), BlockchainType::L2);
 
+            let mojave_client = MojaveClient::new(&sequencer_options.full_node_addresses)?;
+
             let context = BlockProducerContext::new(
                 store.clone(),
                 blockchain.clone(),
@@ -58,10 +65,10 @@ async fn main() -> Result<(), Error> {
                 loop {
                     match block_producer.build_block().await {
                         Ok(block) => {}
-                        // Ok(block) => mojave_client
-                        //     .send_broadcast_block(&block)
-                        //     .await
-                        //     .unwrap_or_else(|error| tracing::error!("{}", error)),
+                        Ok(block) => mojave_client
+                            .send_broadcast_block(&block)
+                            .await
+                            .unwrap_or_else(|error| tracing::error!("{}", error)),
                         Err(error) => {
                             tracing::error!("Failed to build a block: {}", error);
                         }
