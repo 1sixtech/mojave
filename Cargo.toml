@@ -1,11 +1,6 @@
 [workspace]
 members = [
-  "cmd/mojave",
-  "crates/block-builder",
-  # "crates/full-node",
-  "crates/networking",
-  "crates/syncer",
-  # "crates/sequencer",
+  "crates/sequencer",
   "crates/utils",
   "crates/prover",
   "crates/proof-coordinator",
@@ -32,7 +27,6 @@ ethrex-prover = { git = "https://github.com/1sixtech/ethrex", rev = "d62fcc5acca
 
 # mojave
 mojave-block-builder = { path = "crates/block-builder" }
-mojave-prover = { path = "crates/prover", features = ["client","server"]}
 mojave-chain-utils = { path = "crates/utils" }
 mojave-client = { path = "crates/client" }
 mojave-full-node = { path = "crates/full-node" }

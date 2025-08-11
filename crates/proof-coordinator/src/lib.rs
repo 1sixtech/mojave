@@ -45,9 +45,7 @@ impl ProofCoordinator {
 
         let (batch_number, batch_proof) = self.request_proof_from_prover(input).await?;
 
-        context
-            .store_proof(batch_proof, batch_number)
-            .await?;
+        context.store_proof(batch_proof, batch_number).await?;
 
         Ok(())
     }

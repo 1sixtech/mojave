@@ -4,7 +4,6 @@ use crate::{
 };
 use ethrex_l2_common::prover::BatchProof;
 use std::time::Duration;
-use thiserror;
 use tokio::{net::TcpStream, time::timeout};
 
 pub struct ProverClient {

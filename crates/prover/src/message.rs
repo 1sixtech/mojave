@@ -58,7 +58,6 @@ pub enum MessageError {
     MessageTooLarge(u32, u32),
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -71,16 +70,15 @@ mod tests {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
 
-        let server = tokio::spawn(
-            async move {
-                let (mut stream, _addr) = listener.accept().await.unwrap();
-                send(&mut stream, "Response::Proof(dummy_proof)").await.unwrap();
-            });
-        
-        let mut stream = TcpStream::connect(addr).await.unwrap();
-        let response: String = receive(&mut stream).await.unwrap();
+        let server = tokio::spawn(async move {
+            let (mut stream, _addr) = listener.accept().await.unwrap();
+            send(&mut stream, "Response::Proof(dummy_proof)")
+                .await
+                .unwrap();
+        });
 
-        print!("Response: {:?}",response);
+        let mut stream = TcpStream::connect(addr).await.unwrap();
+        let _response: String = receive(&mut stream).await.unwrap();
 
         server.await.unwrap();
     }
@@ -90,18 +88,19 @@ mod tests {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
 
-        let server = tokio::spawn(
-            async move {
-                let (mut stream, _addr) = listener.accept().await.unwrap();
-                send(&mut stream, Response::Error("Error while generate proof".to_string())).await.unwrap();
-            });
-        
-        let mut stream = TcpStream::connect(addr).await.unwrap();
-        let response: Response = receive(&mut stream).await.unwrap();
+        let server = tokio::spawn(async move {
+            let (mut stream, _addr) = listener.accept().await.unwrap();
+            send(
+                &mut stream,
+                Response::Error("Error while generate proof".to_string()),
+            )
+            .await
+            .unwrap();
+        });
 
-        print!("Response: {:?}",response);
+        let mut stream = TcpStream::connect(addr).await.unwrap();
+        let _response: Response = receive(&mut stream).await.unwrap();
 
         server.await.unwrap();
     }
-
 }

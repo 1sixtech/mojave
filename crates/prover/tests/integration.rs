@@ -20,7 +20,7 @@ async fn start_server() -> String {
     addr.to_string()
 }
 
-#[cfg(feature = "client")]
+#[cfg(all(feature = "client", feature = "server"))]
 async fn create_mock_client() -> ProverClient {
     let server_addr = start_server().await;
 
