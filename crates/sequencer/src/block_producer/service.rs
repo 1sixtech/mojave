@@ -13,28 +13,6 @@ pub struct BlockProducer {
 }
 
 impl BlockProducer {
-    /// # Examples: Sequencer
-    ///
-    /// ```rust,ignore
-    /// use std::time::Duration;
-    /// use tokio::time::sleep;
-    ///
-    /// let block_builder = BlockProducer::start(context, 100);
-    /// let block_time_millis: u64 = 500;
-    /// tokio::spawn(async move {
-    ///     loop {
-    ///         match block_builder.build_block().await {
-    ///             Ok(block) => todo!("broadcast the block"),
-    ///             Err(error) => {
-    ///                 tracing::error!("Error {}", error);
-    ///                 todo!("retry function");
-    ///             }
-    ///         }
-    ///         sleep(Duration::from_millis(block_time)).await;
-    ///     }
-    /// });
-    ///
-    /// ```
     pub fn start(context: BlockProducerContext, channel_capacity: usize) -> Self {
         let (sender, receiver) = mpsc::channel(channel_capacity);
         let mut receiver = ReceiverStream::new(receiver);
