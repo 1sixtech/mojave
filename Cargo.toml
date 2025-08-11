@@ -1,5 +1,6 @@
 [workspace]
 members = [
+  "crates/full-node",
   "crates/sequencer",
   "crates/utils",
   "crates/prover",
