@@ -58,6 +58,13 @@ pub struct SequencerOpts {
         default_value = "1000"
     )]
     pub block_time: u64,
+    #[arg(
+        long = "private_key",
+        help = "Private key used for signing blocks",
+        env = "PRIVATE_KEY",
+        hide_env_values = true,
+    )]
+    pub private_key: String,
 }
 
 impl Default for SequencerOpts {
@@ -65,6 +72,8 @@ impl Default for SequencerOpts {
         Self {
             full_node_addresses: vec!["0.0.0.0:8545".to_string()],
             block_time: 1000,
+            private_key: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+                ".to_string(), // Placeholder, should be set via environment variable or command line
         }
     }
 }
@@ -74,6 +83,7 @@ impl std::fmt::Debug for SequencerOpts {
         f.debug_struct("SequencerOptions")
             .field("full_node_addresses", &self.full_node_addresses)
             .field("block_time", &self.block_time)
+            .field("private_key", &self.private_key)
             .finish()
     }
 }

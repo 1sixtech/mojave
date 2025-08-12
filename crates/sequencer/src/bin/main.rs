@@ -51,7 +51,7 @@ async fn main() -> Result<(), Error> {
 
             let blockchain = init_blockchain(EvmEngine::LEVM, store.clone(), BlockchainType::L2);
 
-            let mojave_client = MojaveClient::new(&sequencer_options.full_node_addresses)?;
+            let mojave_client = MojaveClient::new(&sequencer_options.full_node_addresses, sequencer_options.private_key)?;
             let context = BlockProducerContext::new(
                 store.clone(),
                 blockchain.clone(),
