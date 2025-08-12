@@ -13,7 +13,7 @@ WORKDIR /mojave
 
 FROM chef AS planner
 COPY crates ./crates
-COPY cmd ./cmd
+# COPY cmd ./cmd
 COPY Cargo.* .
 # Determine the crates that need to be built from dependencies
 RUN cargo chef prepare --recipe-path recipe.json
@@ -26,7 +26,7 @@ RUN cargo chef cook --release --recipe-path recipe.json
 # Optional build flags
 ARG BUILD_FLAGS=""
 COPY crates ./crates
-COPY cmd ./cmd
+# COPY cmd ./cmd
 COPY Cargo.* ./
 RUN cargo build --release $BUILD_FLAGS
 
@@ -34,6 +34,7 @@ FROM ubuntu:24.04
 WORKDIR /usr/local/bin
 
 COPY test_data ./test_data
-COPY --from=builder mojave/target/release/mojave .
+COPY --from=builder mojave/target/release/mojave-sequencer .
+COPY --from=builder mojave/target/release/mojave-full-node .
 EXPOSE 8545
-ENTRYPOINT [ "./mojave" ]
+ENTRYPOINT [ "./mojave-sequencer" ]

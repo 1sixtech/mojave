@@ -4280,6 +4280,7 @@ dependencies = [
  "ethrex-storage",
  "ethrex-storage-rollup",
  "mojave-prover",
+ "serde_json",
  "thiserror 2.0.12",
  "tokio",
  "tracing",
@@ -4292,6 +4293,9 @@ version = "0.1.0"
 dependencies = [
  "ethrex-l2-common",
  "ethrex-prover",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "zkvm_interface",

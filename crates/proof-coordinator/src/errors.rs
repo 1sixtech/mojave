@@ -1,10 +1,8 @@
 use ethrex_blockchain::error::ChainError;
 use ethrex_l2::sequencer::errors::ExecutionCacheError;
-use ethrex_l2_common::prover::BatchProof;
 use ethrex_storage::error::StoreError;
 use ethrex_storage_rollup::RollupStoreError;
-use mojave_prover::ProverData;
-use tokio::{sync::mpsc::error::SendError, task::JoinError};
+use tokio::task::JoinError;
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, thiserror::Error)]
@@ -17,7 +15,7 @@ pub enum ProofCoordinatorError {
     FailedAccessingStore(#[from] StoreError),
     #[error("ProverServer failed to access RollupStore: {0}")]
     FailedAccessingRollupStore(#[from] RollupStoreError),
-    #[error("ProofCoordinator failed to retrieve block from storaga, data is None.")]
+    #[error("ProofCoordinator failed to retrieve block from storage, data is None.")]
     StorageDataIsNone,
     #[error("ProofCoordinator failed to create ExecutionWitness: {0}")]
     FailedToCreateExecutionWitness(#[from] ChainError),
@@ -25,8 +23,6 @@ pub enum ProofCoordinatorError {
     JoinError(#[from] JoinError),
     #[error("ProofCoordinator failed: {0}")]
     Custom(String),
-    #[error("ProofCoordinator failed to write to TcpStream: {0}")]
-    WriteError(String),
     #[error("ProofCoordinator failed to get data from Store: {0}")]
     ItemNotFoundInStore(String),
     #[error("Unexpected Error: {0}")]
@@ -39,8 +35,4 @@ pub enum ProofCoordinatorError {
     ComandError(std::io::Error),
     #[error("Missing blob for batch {0}")]
     MissingBlob(u64),
-    #[error("ProofCoordinator prover data send error {0}")]
-    ProverDataSendError(SendError<ProverData>),
-    #[error("ProofCoordinator proof sender error {0}")]
-    ProofSendError(SendError<(BatchProof, u64)>),
 }
