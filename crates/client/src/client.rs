@@ -28,7 +28,7 @@ struct MojaveClientInner {
 impl MojaveClient {
     pub fn new(
         full_node_addresses: &[String],
-        private_key: String,
+        private_key: &str,
     ) -> Result<Self, MojaveClientError> {
         let urls = full_node_addresses
             .iter()
@@ -36,7 +36,7 @@ impl MojaveClient {
                 Url::parse(url).map_err(|error| MojaveClientError::ParseUrlError(error.to_string()))
             })
             .collect::<Result<Vec<_>, _>>()?;
-        let signing_key = SigningKey::from_str(&private_key)?;
+        let signing_key = SigningKey::from_str(private_key)?;
         Ok(Self {
             inner: Arc::new(MojaveClientInner {
                 client: reqwest::Client::new(),

@@ -13,7 +13,7 @@ use mojave_chain_utils::{
     },
     logging::init_logging,
 };
-use mojave_client::{MojaveClient, MojaveClientError};
+use mojave_client::MojaveClient;
 use mojave_sequencer::{
     block_producer::{BlockProducer, BlockProducerContext},
     cli::{Cli, Command},
@@ -51,13 +51,10 @@ async fn main() -> Result<(), Error> {
 
             let blockchain = init_blockchain(EvmEngine::LEVM, store.clone(), BlockchainType::L2);
 
-            let private_key = sequencer_options
-                .private_key
-                .clone()
-                .ok_or(MojaveClientError::Custom("private key missing".to_string()))?;
-
-            let mojave_client =
-                MojaveClient::new(&sequencer_options.full_node_addresses, private_key)?;
+            let mojave_client = MojaveClient::new(
+                &sequencer_options.full_node_addresses,
+                sequencer_options.private_key.as_str(),
+            )?;
 
             let context = BlockProducerContext::new(
                 store.clone(),
