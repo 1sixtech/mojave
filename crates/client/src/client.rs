@@ -26,7 +26,10 @@ struct MojaveClientInner {
 }
 
 impl MojaveClient {
-    pub fn new(full_node_addresses: &[String], private_key: String) -> Result<Self, MojaveClientError> {
+    pub fn new(
+        full_node_addresses: &[String],
+        private_key: String,
+    ) -> Result<Self, MojaveClientError> {
         let urls = full_node_addresses
             .iter()
             .map(|url| {
