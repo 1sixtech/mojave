@@ -8,7 +8,7 @@ pub struct ProverOpts {
         long = "prover.port",
         default_value = "3900",
         help = "Port for the prover",
-        help_heading = "Prover Options",
+        help_heading = "Prover Options"
     )]
     pub prover_port: u16,
     #[arg(
