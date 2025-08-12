@@ -4347,6 +4347,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "mojave-tests"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "ctor",
+ "ethrex-blockchain",
+ "ethrex-common",
+ "ethrex-p2p",
+ "ethrex-rpc",
+ "ethrex-storage",
+ "ethrex-storage-rollup",
+ "mojave-chain-utils",
+ "mojave-client",
+ "mojave-full-node",
+ "mojave-sequencer",
+ "serde_json",
+ "thiserror 2.0.12",
+ "tokio",
+ "tower-http",
+]
+
+[[package]]
 name = "native-tls"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -7,6 +7,7 @@ members = [
   "crates/sequencer",
   "crates/signature",
   "crates/utils",
+  "crates/tests",
 ]
 resolver = "2"
 
@@ -34,6 +35,7 @@ mojave-full-node = { path = "crates/full-node" }
 mojave-prover = { path = "crates/prover" }
 mojave-sequencer = { path = "crates/sequencer" }
 mojave-signature = { path = "crates/signature" }
+mojave-tests = { path = "crates/tests" }
 
 anyhow = { version = "1.0" }
 axum = "0.8.1"
