@@ -15,8 +15,7 @@ pub struct ProverOpts {
         long = "prover.host",
         default_value = "0.0.0.0",
         help = "Host for the prover",
-        help_heading = "Prover Options",
-        required = true
+        help_heading = "Prover Options"
     )]
     pub prover_host: String,
     #[arg(
@@ -39,9 +38,10 @@ impl Default for ProverOpts {
 
 impl fmt::Debug for ProverOpts {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("ProverOptions")
+        f.debug_struct("ProverOpts")
             .field("prover_port", &self.prover_port)
             .field("prover_host", &self.prover_host)
+            .field("aligned_mod", &self.aligned_mode)
             .finish()
     }
 }

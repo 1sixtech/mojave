@@ -1,3 +1,4 @@
+// mod cli;
 #[cfg(feature = "client")]
 mod client;
 mod message;
