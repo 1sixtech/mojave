@@ -60,8 +60,7 @@ pub struct SequencerOpts {
     pub block_time: u64,
     #[arg(
         long = "private_key",
-        help = "Private key used for signing blocks",
-        default_value = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        help = "Private key used for signing blocks"
     )]
     pub private_key: String,
 }
