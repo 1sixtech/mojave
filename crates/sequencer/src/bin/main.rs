@@ -54,7 +54,7 @@ async fn main() -> Result<(), Error> {
             let private_key = sequencer_options
                 .private_key
                 .clone()
-                .ok_or(MojaveClientError::Custom(format!("private key missing")))?;
+                .ok_or(MojaveClientError::Custom("private key missing".to_string()))?;
 
             let mojave_client =
                 MojaveClient::new(&sequencer_options.full_node_addresses, private_key)?;
