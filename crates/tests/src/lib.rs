@@ -55,7 +55,8 @@ pub mod test_utils {
             None => TEST_SEQUENCER_ADDR.parse().unwrap(),
         };
         let url = format!("http://{sequencer_addr}");
-        let client = MojaveClient::new(std::slice::from_ref(&url)).unwrap();
+        let private_key = std::env::var("PRIVATE_KEY").unwrap();
+        let client = MojaveClient::new(std::slice::from_ref(&url), &private_key).unwrap();
         let eth_client = EthClient::new(&url).unwrap();
         let block_queue = AsyncUniqueHeap::new();
 
@@ -105,7 +106,8 @@ pub mod test_utils {
             Some(addrs) => addrs.iter().map(|addr| format!("http://{addr}")).collect(),
             None => vec![default_node_url.to_string()],
         };
-        let client = MojaveClient::new(&node_urls).unwrap();
+        let private_key = std::env::var("PRIVATE_KEY").unwrap();
+        let client = MojaveClient::new(&node_urls, &private_key).unwrap();
 
         let rpc_api = start_api_sequencer(
             http_addr,

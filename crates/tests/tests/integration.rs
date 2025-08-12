@@ -98,7 +98,8 @@ async fn test_sequencer_to_full_node_broadcast_block() {
     sleep(Duration::from_millis(100)).await;
 
     // create mojave client and test block broadcast
-    let client = MojaveClient::new(std::slice::from_ref(&server_url)).unwrap();
+    let private_key = std::env::var("PRIVATE_KEY").unwrap();
+    let client = MojaveClient::new(std::slice::from_ref(&server_url), &private_key).unwrap();
     let result = client.send_broadcast_block(&test_block).await;
 
 
@@ -175,7 +176,8 @@ async fn test_network_error_handling_when_servers_unavailable() {
     let server_url = format!("http://{addr}");
 
     // create mojave client and test block broadcast
-    let client = MojaveClient::new(std::slice::from_ref(&server_url)).unwrap();
+    let private_key = std::env::var("PRIVATE_KEY").unwrap();
+    let client = MojaveClient::new(std::slice::from_ref(&server_url), &private_key).unwrap();
     let result = client.send_broadcast_block(&test_block).await;
 
     // assert the response 
