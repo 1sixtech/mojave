@@ -1,3 +1,4 @@
+#[cfg(feature = "server")]
 mod cli;
 #[cfg(feature = "client")]
 mod client;
@@ -6,6 +7,7 @@ mod message;
 mod server;
 mod types;
 
+#[cfg(feature = "server")]
 pub use cli::*;
 #[cfg(feature = "client")]
 pub use client::{ProverClient, ProverClientError};
