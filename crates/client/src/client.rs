@@ -11,7 +11,7 @@ use futures::{
 use mojave_signature::{Signature, Signer, SigningKey};
 use reqwest::Url;
 use serde_json::json;
-use std::{env, pin::Pin, str::FromStr, sync::Arc};
+use std::{pin::Pin, str::FromStr, sync::Arc};
 
 #[derive(Clone, Debug)]
 pub struct MojaveClient {
@@ -27,8 +27,6 @@ struct MojaveClientInner {
 
 impl MojaveClient {
     pub fn new(full_node_addresses: &[String], private_key: String) -> Result<Self, MojaveClientError> {
-        // let private_key = env::var("PRIVATE_KEY")
-        //     .map_err(|error| MojaveClientError::Custom(format!("Private key error: {error}")))?;
         let urls = full_node_addresses
             .iter()
             .map(|url| {
