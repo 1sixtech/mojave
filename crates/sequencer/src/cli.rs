@@ -64,7 +64,7 @@ pub struct SequencerOpts {
         env = "PRIVATE_KEY",
         hide_env_values = true
     )]
-    pub private_key: String,
+    pub private_key: Option<String>,
 }
 
 impl Default for SequencerOpts {
@@ -72,8 +72,7 @@ impl Default for SequencerOpts {
         Self {
             full_node_addresses: vec!["0.0.0.0:8545".to_string()],
             block_time: 1000,
-            private_key: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-                .to_string(), // Placeholder, should be set via environment variable or command line
+            private_key: None,
         }
     }
 }
