@@ -41,7 +41,7 @@ impl fmt::Debug for ProverOpts {
         f.debug_struct("ProverOpts")
             .field("prover_port", &self.prover_port)
             .field("prover_host", &self.prover_host)
-            .field("aligned_mod", &self.aligned_mode)
+            .field("aligned_mode", &self.aligned_mode)
             .finish()
     }
 }
