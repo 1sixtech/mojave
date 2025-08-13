@@ -1,22 +1,22 @@
 #[cfg(test)]
 mod tests {
+    use ctor::ctor;
     use ethrex_common::{
-        Address, Bloom, Bytes, H256, U256,
         types::{Block, BlockBody, BlockHeader, EIP1559Transaction, Signable, TxKind, TxType},
+        Address, Bloom, Bytes, H256, U256,
     };
     use ethrex_rlp::encode::RLPEncode;
+    use ethrex_rpc::{clients::eth::BlockByNumber, EthClient};
     use mojave_client::MojaveClient;
-    use ctor::ctor;
+    use mojave_tests::{start_test_api_full_node, start_test_api_sequencer};
+    use secp256k1::SecretKey;
     use serde_json::{json, Value};
-    use tokio::time::{sleep, Duration};
-    use ethrex_rpc::{EthClient, clients::eth::BlockByNumber};
-    use mojave_tests::{start_test_api_sequencer, start_test_api_full_node};
-    use secp256k1::{SecretKey};
     use std::{
         net::SocketAddr,
         str::FromStr,
         time::{SystemTime, UNIX_EPOCH},
     };
+    use tokio::time::{sleep, Duration};
 
     #[ctor]
     fn test_setup() {
@@ -79,11 +79,12 @@ mod tests {
 
         // spawn full node server
         let server_handle = tokio::spawn(async move {
-            use axum::{Json, Router, http::StatusCode, routing::post};
+            use axum::{http::StatusCode, routing::post, Json, Router};
             use tower_http::cors::CorsLayer;
 
             async fn handle_rpc(body: String) -> Result<Json<Value>, StatusCode> {
-                let request: Value = serde_json::from_str(&body).map_err(|_| StatusCode::BAD_REQUEST)?;
+                let request: Value =
+                    serde_json::from_str(&body).map_err(|_| StatusCode::BAD_REQUEST)?;
 
                 if let Some(method) = request.get("method").and_then(|m| m.as_str()) {
                     if method == "mojave_sendBroadcastBlock" {
@@ -114,10 +115,9 @@ mod tests {
         let client = MojaveClient::new(std::slice::from_ref(&server_url), &private_key).unwrap();
         let result = client.send_broadcast_block(&test_block).await;
 
-
         server_handle.abort();
 
-        // assert the response 
+        // assert the response
         assert!(result.is_ok(), "Communication should complete");
     }
 
@@ -125,7 +125,7 @@ mod tests {
     async fn test_full_node_to_sequencer_forward_transaction() {
         // create a test transaction
         let transaction_data = vec![0x01, 0x02, 0x03, 0x04];
-        
+
         // Find an available port
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
@@ -135,11 +135,12 @@ mod tests {
 
         // spawn sequencer server
         let server_handle = tokio::spawn(async move {
-            use axum::{Json, Router, http::StatusCode, routing::post};
+            use axum::{http::StatusCode, routing::post, Json, Router};
             use tower_http::cors::CorsLayer;
 
             async fn handle_rpc(body: String) -> Result<Json<Value>, StatusCode> {
-                let request: Value = serde_json::from_str(&body).map_err(|_| StatusCode::BAD_REQUEST)?;
+                let request: Value =
+                    serde_json::from_str(&body).map_err(|_| StatusCode::BAD_REQUEST)?;
 
                 if let Some(method) = request.get("method").and_then(|m| m.as_str()) {
                     if method == "eth_sendRawTransaction" {
@@ -179,7 +180,7 @@ mod tests {
     async fn test_network_error_handling_when_servers_unavailable() {
         // create a test block
         let test_block = create_test_block();
-        
+
         // Find an available port
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
@@ -192,7 +193,7 @@ mod tests {
         let client = MojaveClient::new(std::slice::from_ref(&server_url), &private_key).unwrap();
         let result = client.send_broadcast_block(&test_block).await;
 
-        // assert the response 
+        // assert the response
         assert!(result.is_err(), "Should fail when server is unavailable");
     }
 
@@ -228,13 +229,18 @@ mod tests {
         let secret_key = SecretKey::from_slice(&priv_key_bytes).unwrap();
 
         let signed_tx = tx.sign(&secret_key).unwrap();
-        
+
         let mut encoded_tx = signed_tx.encode_to_vec();
         encoded_tx.insert(0, TxType::EIP1559.into());
-        
-        let expected_hash = H256::from_str("0x81c611445d4de5c61f74bc286f5b04d8334b60e1d7e0b29ad6b9c524e1ae430b").unwrap();
 
-        let ret = full_node_client.send_raw_transaction(&encoded_tx).await.unwrap();
+        let expected_hash =
+            H256::from_str("0x81c611445d4de5c61f74bc286f5b04d8334b60e1d7e0b29ad6b9c524e1ae430b")
+                .unwrap();
+
+        let ret = full_node_client
+            .send_raw_transaction(&encoded_tx)
+            .await
+            .unwrap();
 
         assert_eq!(ret, expected_hash);
     }
@@ -247,16 +253,18 @@ mod tests {
         let full_node_auth_addr: SocketAddr = "127.0.0.1:8507".parse().unwrap();
 
         let (sequencer_client, sequencer_rx) = start_test_api_sequencer(
-            Some(vec![full_node_http_addr]), 
-            Some(sequencer_http_addr), 
-            Some(sequencer_auth_addr)
-        ).await;
+            Some(vec![full_node_http_addr]),
+            Some(sequencer_http_addr),
+            Some(sequencer_auth_addr),
+        )
+        .await;
 
         let (_, full_node_rx) = start_test_api_full_node(
-            Some(sequencer_http_addr), 
-            Some(full_node_http_addr), 
-            Some(full_node_auth_addr)
-        ).await;
+            Some(sequencer_http_addr),
+            Some(full_node_http_addr),
+            Some(full_node_auth_addr),
+        )
+        .await;
 
         sequencer_rx.await.unwrap();
         full_node_rx.await.unwrap();
@@ -327,6 +335,4 @@ mod tests {
 
         sequencer_client.send_broadcast_block(&block).await.unwrap();
     }
-
-
 }

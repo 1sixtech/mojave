@@ -1,17 +1,20 @@
-use std::{net::SocketAddr, sync::Arc};
-use ethrex_rpc::EthClient;
-use mojave_client::MojaveClient;
-use tokio::sync::oneshot;
-use ethrex_storage::{Store, EngineType};
 use ethrex_blockchain::Blockchain;
-use ethrex_storage_rollup::{StoreRollup, EngineTypeRollup};
-use ethrex_p2p::{types::Node, sync_manager::SyncManager, peer_handler::PeerHandler, types::NodeRecord};
+use ethrex_common::H512;
+use ethrex_p2p::{
+    peer_handler::PeerHandler,
+    sync_manager::SyncManager,
+    types::{Node, NodeRecord},
+};
+use ethrex_rpc::EthClient;
+use ethrex_storage::{EngineType, Store};
+use ethrex_storage_rollup::{EngineTypeRollup, StoreRollup};
+use k256::ecdsa::SigningKey;
+use mojave_chain_utils::unique_heap::AsyncUniqueHeap;
+use mojave_client::MojaveClient;
 use mojave_full_node::rpc::start_api as start_api_full_node;
 use mojave_sequencer::rpc::start_api as start_api_sequencer;
-use mojave_chain_utils::unique_heap::AsyncUniqueHeap;
-use ethrex_common::H512;
-use k256::ecdsa::SigningKey;
-use std::str::FromStr;
+use std::{net::SocketAddr, str::FromStr, sync::Arc};
+use tokio::sync::oneshot;
 
 pub const TEST_GENESIS: &str = include_str!("../../../test_data/genesis.json");
 pub const TEST_SEQUENCER_ADDR: &str = "127.0.0.1:8502";
@@ -23,8 +26,8 @@ pub fn example_p2p_node() -> Node {
 }
 
 pub async fn example_rollup_store() -> StoreRollup {
-    let rollup_store = StoreRollup::new(".", EngineTypeRollup::InMemory)
-        .expect("Failed to create StoreRollup");
+    let rollup_store =
+        StoreRollup::new(".", EngineTypeRollup::InMemory).expect("Failed to create StoreRollup");
     rollup_store
         .init()
         .await
@@ -36,10 +39,9 @@ pub fn example_local_node_record() -> NodeRecord {
     let public_key_1 = H512::from_str("d860a01f9722d78051619d1e2351aba3f43f943f6f00718d1b9baa4101932a1f5011f16bb2b1bb35db20d6fe28fa0bf09636d26a87d31de9ec6203eeedb1f666").unwrap();
     let node = Node::new("127.0.0.1".parse().unwrap(), 30303, 30303, public_key_1);
     let signer = SigningKey::random(&mut rand::rngs::OsRng);
-    
+
     NodeRecord::from_node(&node, 1, &signer).unwrap()
 }
-
 
 pub async fn start_test_api_full_node(
     sequencer_addr: Option<SocketAddr>,
@@ -48,8 +50,7 @@ pub async fn start_test_api_full_node(
 ) -> (EthClient, oneshot::Receiver<()>) {
     let http_addr = http_addr.unwrap_or(TEST_NODE_ADDR.parse().unwrap());
     let authrpc_addr = authrpc_addr.unwrap_or("127.0.0.1:8501".parse().unwrap());
-    let storage =
-        Store::new("", EngineType::InMemory).expect("Failed to create in-memory storage");
+    let storage = Store::new("", EngineType::InMemory).expect("Failed to create in-memory storage");
     storage
         .add_initial_state(serde_json::from_str(TEST_GENESIS).unwrap())
         .await
@@ -63,7 +64,6 @@ pub async fn start_test_api_full_node(
         None => TEST_SEQUENCER_ADDR.parse().unwrap(),
     };
     let url = format!("http://{sequencer_addr}");
-    let private_key = std::env::var("PRIVATE_KEY").unwrap();
     let eth_client = EthClient::new(&url).unwrap();
     let block_queue = AsyncUniqueHeap::new();
 
@@ -98,8 +98,7 @@ pub async fn start_test_api_sequencer(
 ) -> (MojaveClient, oneshot::Receiver<()>) {
     let http_addr = http_addr.unwrap_or_else(|| TEST_SEQUENCER_ADDR.parse().unwrap());
     let authrpc_addr = authrpc_addr.unwrap_or_else(|| "127.0.0.1:8503".parse().unwrap());
-    let storage =
-        Store::new("", EngineType::InMemory).expect("Failed to create in-memory storage");
+    let storage = Store::new("", EngineType::InMemory).expect("Failed to create in-memory storage");
     storage
         .add_initial_state(serde_json::from_str(TEST_GENESIS).unwrap())
         .await
