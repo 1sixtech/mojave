@@ -19,7 +19,7 @@ sequencer:
         --network ./test_data/genesis.json \
         --http.port 1739 \
         --full_node.addresses http://0.0.0.0:8545 \
-		--private_key ${PRIVATE_KEY}
+        --private_key ${PRIVATE_KEY}
 
 generate-key-pair:
 	cargo build --bin mojave
@@ -75,3 +75,6 @@ docker-build:
 
 docker-run:
 	docker run -p 8545:8545 1sixtech/mojave
+
+test: 
+	sh test_data/tests-e2e.sh
