@@ -3,13 +3,21 @@ name = "mojave-prover"
 version = "0.1.0"
 edition = "2024"
 
+[[bin]]
+name = "mojave-prover"
+path = "src/bin/main.rs"
+required-features = ["server"]
+
 [dependencies]
-serde = { workspace = true }
-thiserror = { workspace = true }
-serde_json = { workspace = true }
-tokio = { workspace = true, features = ["sync", "net"] }
+clap = { workspace = true }
 ethrex-l2-common = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["sync", "net"] }
 zkvm_interface = { workspace = true }
+
+mojave-chain-utils = { workspace = true }
 
 # server only dep
 ethrex-prover = { workspace = true, optional = true }

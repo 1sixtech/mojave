@@ -1,5 +1,7 @@
 #!/usr/bin/env just --justfile
 
+current-dir := `pwd`
+
 # List all of the available commands.
 default:
 	just --list
@@ -11,7 +13,8 @@ node:
     export $(cat .env | xargs) && \
     cargo run --release --bin mojave-full-node init \
         --network ./test_data/genesis.json \
-        --sequencer.address http://0.0.0.0:1739
+        --sequencer.address http://0.0.0.0:1739 \
+        --datadir {{current-dir}}/mojave-full-node
 
 sequencer:
     export $(cat .env | xargs) && \
@@ -19,6 +22,7 @@ sequencer:
         --network ./test_data/genesis.json \
         --http.port 1739 \
         --full_node.addresses http://0.0.0.0:8545 \
+        --datadir {{current-dir}}/mojave-sequencer \
         --private_key ${PRIVATE_KEY}
 
 generate-key-pair:
