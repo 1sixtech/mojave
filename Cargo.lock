@@ -4226,6 +4226,7 @@ dependencies = [
  "futures",
  "hex",
  "mockito",
+ "mojave-prover",
  "mojave-signature",
  "reqwest 0.12.22",
  "serde",

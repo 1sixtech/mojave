@@ -15,6 +15,7 @@ ethrex-rpc = { workspace = true }
 
 # mojave
 mojave-signature = { workspace = true }
+mojave-prover = { workspace = true }
 
 futures = { workspace = true }
 hex = { workspace = true }
