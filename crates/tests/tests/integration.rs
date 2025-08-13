@@ -30,7 +30,7 @@ mod tests {
     }
 
     fn create_test_block() -> Block {
-        let test_block = Block {
+        Block {
             header: BlockHeader {
                 parent_hash: H256::zero(),
                 ommers_hash: H256::zero(),
@@ -60,9 +60,7 @@ mod tests {
                 ommers: vec![],
                 withdrawals: None,
             },
-        };
-
-        test_block
+        }
     }
 
     #[tokio::test]
