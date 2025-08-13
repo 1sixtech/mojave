@@ -53,6 +53,14 @@ pub struct SequencerOpts {
     )]
     pub full_node_addresses: Vec<String>,
     #[arg(
+        long = "prover.addresses",
+        help = "Allowed domain(s) and port(s) for the prover in the form 'domain:port', can be specified multiple times",
+        help_heading = "Prover Options",
+        default_value = "0.0.0.0:3900",
+        value_delimiter = ','
+    )]
+    pub prover_addresses: Vec<String>,
+    #[arg(
         long = "block_time",
         help = "Block creation interval in milliseconds",
         default_value = "1000"
