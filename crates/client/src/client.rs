@@ -63,6 +63,7 @@ impl MojaveClient {
         request: RpcRequest,
         client_type: ClientType,
     ) -> Result<RpcResponse, MojaveClientError> {
+        // TODO: do we need to send to all urls for prover?
         let urls = match client_type {
             ClientType::FullNode => &self.inner.full_node_urls,
             ClientType::Prover => &self.inner.prover_urls,
