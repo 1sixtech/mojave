@@ -18,7 +18,8 @@ sequencer:
     cargo run --release --bin mojave-sequencer init \
         --network ./test_data/genesis.json \
         --http.port 1739 \
-        --full_node.addresses http://0.0.0.0:8545
+        --full_node.addresses http://0.0.0.0:8545 \
+		--private_key ${PRIVATE_KEY}
 
 generate-key-pair:
 	cargo build --bin mojave
