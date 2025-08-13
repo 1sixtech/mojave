@@ -75,7 +75,7 @@ async fn main() -> Result<(), Error> {
                             tracing::error!("Failed to build a block: {}", error);
                         }
                     }
-                    tokio::time::sleep(Duration::from_millis(1000)).await;
+                    tokio::time::sleep(Duration::from_millis(sequencer_options.block_time)).await;
                 }
             });
 

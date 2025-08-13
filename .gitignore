@@ -25,3 +25,6 @@ jwt.hex
 Cargo.toml.bak
 
 .rules
+
+mojave-full-node
+mojave-sequencer
