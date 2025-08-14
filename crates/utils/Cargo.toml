@@ -13,10 +13,15 @@ tokio = { workspace = true, features = [
 
 [dependencies]
 # ethrex
-ethrex = { workspace = true, features = ["libmdbx", "c-kzg", "blst", "l2"] }
-ethrex-blockchain = { workspace = true, features = ["l2"] }
+ethrex = { workspace = true, features = [
+  "libmdbx",
+  "rollup_storage_libmdbx",
+  "c-kzg",
+  "blst",
+] }
+ethrex-blockchain = { workspace = true }
 ethrex-l2 = { workspace = true, features = ["l2"] }
-ethrex-metrics = { workspace = true, features = ["l2"] }
+ethrex-metrics = { workspace = true }
 ethrex-rpc = { workspace = true }
 ethrex-storage-rollup = { workspace = true, features = ["l2"] }
 ethrex-vm = { workspace = true }
