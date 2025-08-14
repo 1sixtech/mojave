@@ -214,12 +214,12 @@ impl MojaveClient {
     }
 
     // TODO: use proof batch instead of proof input
-    pub async fn send_batch_proof(&self, proof_input: &ProverData) -> Result<(), MojaveClientError> {
+    pub async fn send_batch_proof(&self, batch_proof: &[ProverData]) -> Result<(), MojaveClientError> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
             jsonrpc: "2.0".to_string(),
             method: "mojave_sendBatchProof".to_string(),
-            params: Some(vec![json!(proof_input)]),
+            params: Some(vec![json!(batch_proof)]),
         };
         
         match self.send_request(request, ClientType::Sequencer).await {
