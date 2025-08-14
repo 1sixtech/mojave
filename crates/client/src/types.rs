@@ -9,9 +9,3 @@ pub struct SignedBlock {
     pub signature: Signature,
     pub verifying_key: VerifyingKey,
 }
-
-pub enum ClientType {
-    FullNode,
-    Prover,
-    Sequencer,
-}

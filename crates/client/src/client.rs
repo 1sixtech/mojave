@@ -1,7 +1,4 @@
-use crate::{
-    MojaveClientError,
-    types::{ClientType, SignedBlock},
-};
+use crate::{MojaveClientError, types::SignedBlock};
 use ethrex_common::types::Block;
 use ethrex_l2_common::prover::BatchProof;
 use ethrex_rpc::{
@@ -26,36 +23,15 @@ pub struct MojaveClient {
 #[derive(Debug)]
 struct MojaveClientInner {
     client: reqwest::Client,
-    full_node_urls: Vec<Url>,
-    prover_url: Url,
-    sequencer_url: Url,
     signing_key: SigningKey,
 }
 
 impl MojaveClient {
-    pub fn new(
-        full_node_addresses: &[String],
-        prover_address: &str,
-        sequencer_address: &str,
-        private_key: &str,
-    ) -> Result<Self, MojaveClientError> {
-        let full_node_urls = full_node_addresses
-            .iter()
-            .map(|url| {
-                Url::parse(url).map_err(|error| MojaveClientError::ParseUrlError(error.to_string()))
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-        let prover_url = Url::parse(prover_address)
-            .map_err(|error| MojaveClientError::ParseUrlError(error.to_string()))?;
-        let sequencer_url = Url::parse(sequencer_address)
-            .map_err(|error| MojaveClientError::ParseUrlError(error.to_string()))?;
+    pub fn new(private_key: &str) -> Result<Self, MojaveClientError> {
         let signing_key = SigningKey::from_str(private_key)?;
         Ok(Self {
             inner: Arc::new(MojaveClientInner {
                 client: reqwest::Client::new(),
-                full_node_urls,
-                prover_url,
-                sequencer_url,
                 signing_key,
             }),
         })
@@ -66,13 +42,14 @@ impl MojaveClient {
     async fn send_request_race(
         &self,
         request: RpcRequest,
-        client_type: ClientType,
+        target_addresses: &[String],
     ) -> Result<RpcResponse, MojaveClientError> {
-        let urls = match client_type {
-            ClientType::FullNode => &self.inner.full_node_urls,
-            ClientType::Prover => std::slice::from_ref(&self.inner.prover_url),
-            ClientType::Sequencer => std::slice::from_ref(&self.inner.sequencer_url),
-        };
+        let urls = target_addresses
+            .iter()
+            .map(|url| {
+                Url::parse(url).map_err(|error| MojaveClientError::ParseUrlError(error.to_string()))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
 
         let requests: Vec<Pin<Box<Fuse<_>>>> = urls
             .iter()
@@ -91,17 +68,18 @@ impl MojaveClient {
     async fn send_request(
         &self,
         request: RpcRequest,
-        client_type: ClientType,
+        target_addresses: &[String],
     ) -> Result<RpcResponse, MojaveClientError> {
+        let urls = target_addresses
+            .iter()
+            .map(|url| {
+                Url::parse(url).map_err(|error| MojaveClientError::ParseUrlError(error.to_string()))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
         let mut response = Err(MojaveClientError::Custom(
             "All rpc calls failed".to_string(),
         ));
-
-        let urls = match client_type {
-            ClientType::FullNode => &self.inner.full_node_urls,
-            ClientType::Prover => std::slice::from_ref(&self.inner.prover_url),
-            ClientType::Sequencer => std::slice::from_ref(&self.inner.sequencer_url),
-        };
 
         for url in urls.iter() {
             let maybe_response = self.send_request_to_url(url, &request).await;
@@ -131,7 +109,11 @@ impl MojaveClient {
             .map_err(MojaveClientError::from)
     }
 
-    pub async fn send_broadcast_block(&self, block: &Block) -> Result<(), MojaveClientError> {
+    pub async fn send_broadcast_block(
+        &self,
+        block: &Block,
+        full_node_addresses: &[String],
+    ) -> Result<(), MojaveClientError> {
         let hash = block.hash();
         let signature: Signature = self.inner.signing_key.sign(&hash)?;
         let verifying_key = self.inner.signing_key.verifying_key();
@@ -149,7 +131,7 @@ impl MojaveClient {
             params: Some(vec![json!(params)]),
         };
 
-        match self.send_request_race(request, ClientType::FullNode).await {
+        match self.send_request_race(request, full_node_addresses).await {
             Ok(RpcResponse::Success(result)) => {
                 serde_json::from_value(result.result).map_err(MojaveClientError::from)
             }
@@ -163,18 +145,20 @@ impl MojaveClient {
     pub async fn send_proof_input(
         &self,
         proof_input: &ProverData,
+        prover_address: &str,
+        sequencer_address: &str,
     ) -> Result<serde_json::Value, MojaveClientError> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
             jsonrpc: "2.0".to_string(),
             method: "mojave_sendProofInput".to_string(),
-            params: Some(vec![
-                json!(proof_input),
-                json!(self.inner.sequencer_url.as_str()),
-            ]),
+            params: Some(vec![json!(proof_input), json!(sequencer_address)]),
         };
 
-        match self.send_request(request, ClientType::Prover).await {
+        match self
+            .send_request(request, &[prover_address.to_string()])
+            .await
+        {
             Ok(RpcResponse::Success(result)) => {
                 serde_json::from_value(result.result).map_err(MojaveClientError::from)
             }
@@ -185,7 +169,10 @@ impl MojaveClient {
         }
     }
 
-    pub async fn get_job_id(&self) -> Result<String, MojaveClientError> {
+    pub async fn get_job_id(
+        &self,
+        prover_address: &str,
+    ) -> Result<serde_json::Value, MojaveClientError> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
             jsonrpc: "2.0".to_string(),
@@ -193,7 +180,10 @@ impl MojaveClient {
             params: None,
         };
 
-        match self.send_request(request, ClientType::Prover).await {
+        match self
+            .send_request(request, &[prover_address.to_string()])
+            .await
+        {
             Ok(RpcResponse::Success(result)) => {
                 serde_json::from_value(result.result).map_err(MojaveClientError::from)
             }
@@ -204,7 +194,11 @@ impl MojaveClient {
         }
     }
 
-    pub async fn get_proof(&self, job_id: &str) -> Result<(), MojaveClientError> {
+    pub async fn get_proof(
+        &self,
+        job_id: &str,
+        prover_address: &str,
+    ) -> Result<BatchProof, MojaveClientError> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
             jsonrpc: "2.0".to_string(),
@@ -212,7 +206,10 @@ impl MojaveClient {
             params: Some(vec![json!(job_id)]),
         };
 
-        match self.send_request(request, ClientType::Prover).await {
+        match self
+            .send_request(request, &[prover_address.to_string()])
+            .await
+        {
             Ok(RpcResponse::Success(result)) => {
                 serde_json::from_value(result.result).map_err(MojaveClientError::from)
             }
@@ -226,6 +223,7 @@ impl MojaveClient {
     pub async fn send_batch_proof(
         &self,
         batch_proof: &BatchProof,
+        sequencer_address: &str,
     ) -> Result<(), MojaveClientError> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
@@ -234,7 +232,10 @@ impl MojaveClient {
             params: Some(vec![json!(batch_proof)]),
         };
 
-        match self.send_request(request, ClientType::Sequencer).await {
+        match self
+            .send_request(request, &[sequencer_address.to_string()])
+            .await
+        {
             Ok(RpcResponse::Success(result)) => {
                 serde_json::from_value(result.result).map_err(MojaveClientError::from)
             }
