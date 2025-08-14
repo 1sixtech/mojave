@@ -18,6 +18,7 @@ zkvm_interface = { git = "https://github.com/1sixtech/ethrex", rev = "9a771ea8f3
 ethrex-blockchain = { git = "https://github.com/1sixtech/ethrex", rev = "9a771ea8f3b895153a5f122caab87a1e7e6f7967", default-features = false }
 ethrex-l2 = { git = "https://github.com/1sixtech/ethrex", rev = "9a771ea8f3b895153a5f122caab87a1e7e6f7967", default-features = false }
 ethrex-l2-common = { git = "https://github.com/1sixtech/ethrex", rev = "9a771ea8f3b895153a5f122caab87a1e7e6f7967", default-features = false }
+ethrex-l2-rpc = { git = "https://github.com/1sixtech/ethrex", rev = "9a771ea8f3b895153a5f122caab87a1e7e6f7967", default-features = false }
 ethrex-metrics = { git = "https://github.com/1sixtech/ethrex", rev = "9a771ea8f3b895153a5f122caab87a1e7e6f7967", default-features = false }
 ethrex-rpc = { git = "https://github.com/1sixtech/ethrex", rev = "9a771ea8f3b895153a5f122caab87a1e7e6f7967", default-features = false }
 ethrex-storage-rollup = { git = "https://github.com/1sixtech/ethrex", rev = "9a771ea8f3b895153a5f122caab87a1e7e6f7967", default-features = false }

@@ -15,6 +15,7 @@ use mojave_full_node::rpc::start_api as start_api_full_node;
 use mojave_sequencer::rpc::start_api as start_api_sequencer;
 use std::{net::SocketAddr, str::FromStr, sync::Arc};
 use tokio::sync::oneshot;
+use tokio_util::sync::CancellationToken;
 
 pub const TEST_GENESIS: &str = include_str!("../../../test_data/genesis.json");
 pub const TEST_SEQUENCER_ADDR: &str = "127.0.0.1:8502";
@@ -38,9 +39,10 @@ pub async fn example_rollup_store() -> StoreRollup {
 pub fn example_local_node_record() -> NodeRecord {
     let public_key_1 = H512::from_str("d860a01f9722d78051619d1e2351aba3f43f943f6f00718d1b9baa4101932a1f5011f16bb2b1bb35db20d6fe28fa0bf09636d26a87d31de9ec6203eeedb1f666").unwrap();
     let node = Node::new("127.0.0.1".parse().unwrap(), 30303, 30303, public_key_1);
-    let signer = SigningKey::random(&mut rand::rngs::OsRng);
+    let k256_signer = SigningKey::random(&mut rand::rngs::OsRng);
+    let secret_key = secp256k1::SecretKey::from_slice(&k256_signer.to_bytes()).unwrap();
 
-    NodeRecord::from_node(&node, 1, &signer).unwrap()
+    NodeRecord::from_node(&node, 1, &secret_key).unwrap()
 }
 
 pub async fn start_test_api_full_node(
@@ -66,7 +68,7 @@ pub async fn start_test_api_full_node(
     let url = format!("http://{sequencer_addr}");
     let eth_client = EthClient::new(&url).unwrap();
     let block_queue = AsyncUniqueHeap::new();
-
+    let shutdown_token = CancellationToken::new();
     let rpc_api = start_api_full_node(
         http_addr,
         authrpc_addr,
@@ -81,6 +83,7 @@ pub async fn start_test_api_full_node(
         rollup_store,
         eth_client.clone(),
         block_queue,
+        shutdown_token,
     );
     let (full_node_tx, full_node_rx) = tokio::sync::oneshot::channel();
     tokio::spawn(async move {

@@ -4877,6 +4877,8 @@ dependencies = [
  "ctor",
  "ethrex-blockchain",
  "ethrex-common",
+ "ethrex-l2",
+ "ethrex-l2-rpc",
  "ethrex-p2p",
  "ethrex-rlp",
  "ethrex-rpc",
@@ -4892,6 +4894,7 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.14",
  "tokio",
+ "tokio-util",
  "tower-http",
 ]
 

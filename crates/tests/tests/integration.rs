@@ -2,11 +2,15 @@
 mod tests {
     use ctor::ctor;
     use ethrex_common::{
-        types::{Block, BlockBody, BlockHeader, EIP1559Transaction, Signable, TxKind, TxType},
+        types::{Block, BlockBody, BlockHeader, EIP1559Transaction, TxKind, TxType},
         Address, Bloom, Bytes, H256, U256,
     };
+    use ethrex_l2_rpc::signer::{LocalSigner, Signable, Signer};
     use ethrex_rlp::encode::RLPEncode;
-    use ethrex_rpc::{clients::eth::BlockByNumber, EthClient};
+    use ethrex_rpc::{
+        types::block_identifier::{BlockIdentifier, BlockTag},
+        EthClient,
+    };
     use mojave_client::MojaveClient;
     use mojave_tests::{start_test_api_full_node, start_test_api_sequencer};
     use secp256k1::SecretKey;
@@ -226,7 +230,9 @@ mod tests {
 
         let secret_key = SecretKey::from_slice(&priv_key_bytes).unwrap();
 
-        let signed_tx = tx.sign(&secret_key).unwrap();
+        let signer = Signer::Local(LocalSigner::new(secret_key));
+
+        let signed_tx = tx.sign(&signer).await.unwrap();
 
         let mut encoded_tx = signed_tx.encode_to_vec();
         encoded_tx.insert(0, TxType::EIP1559.into());
@@ -270,7 +276,7 @@ mod tests {
         let eth_client = EthClient::new(&format!("http://{sequencer_http_addr}")).unwrap();
 
         let last_block = eth_client
-            .get_block_by_number(BlockByNumber::Latest)
+            .get_block_by_number(BlockIdentifier::Tag(BlockTag::Latest))
             .await
             .unwrap();
 
