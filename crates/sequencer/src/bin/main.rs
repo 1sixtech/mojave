@@ -51,10 +51,7 @@ async fn main() -> Result<(), Error> {
 
             let blockchain = init_blockchain(EvmEngine::LEVM, store.clone(), BlockchainType::L2);
 
-            let mojave_client = MojaveClient::new(
-                &sequencer_options.full_node_addresses,
-                sequencer_options.private_key.as_str(),
-            )?;
+            let mojave_client = MojaveClient::new(sequencer_options.private_key.as_str())?;
 
             let context = BlockProducerContext::new(
                 store.clone(),
@@ -68,7 +65,7 @@ async fn main() -> Result<(), Error> {
                 loop {
                     match block_producer.build_block().await {
                         Ok(block) => mojave_client
-                            .send_broadcast_block(&block)
+                            .send_broadcast_block(&block, &sequencer_options.full_node_addresses)
                             .await
                             .unwrap_or_else(|error| tracing::error!("{}", error)),
                         Err(error) => {

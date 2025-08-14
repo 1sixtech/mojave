@@ -29,6 +29,7 @@ sequencer:
         --network ./test_data/genesis.json \
         --http.port 1739 \
         --full_node.addresses http://0.0.0.0:8545 \
+        --prover.address http://0.0.0.0:3900 \
         --datadir {{current-dir}}/mojave-sequencer \
         --private_key 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
