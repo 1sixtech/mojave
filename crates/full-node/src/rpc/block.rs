@@ -1,6 +1,10 @@
 use crate::rpc::{RpcApiContext, types::OrderedBlock};
 use ethrex_common::types::{Block, BlockBody, Transaction};
-use ethrex_rpc::{RpcErr, clients::eth::BlockByNumber, types::block::RpcBlock, utils::RpcRequest};
+use ethrex_rpc::{
+    RpcErr,
+    types::{block::RpcBlock, block_identifier::BlockIdentifier},
+    utils::RpcRequest,
+};
 use mojave_client::types::SignedBlock;
 use mojave_signature::Verifier;
 use serde_json::Value;
@@ -48,7 +52,7 @@ impl SendBroadcastBlockRequest {
         for block_number in latest_block_number..signed_block_number {
             let block = context
                 .eth_client
-                .get_block_by_number(BlockByNumber::Number(block_number))
+                .get_block_by_number(BlockIdentifier::Number(block_number))
                 .await
                 .map_err(|error| RpcErr::Internal(error.to_string()))?;
             let block = rpc_block_to_block(block);
@@ -77,7 +81,7 @@ fn rpc_block_to_block(rpc_block: RpcBlock) -> Block {
             Block::new(
                 rpc_block.header,
                 BlockBody {
-                    ommers: full_block_body.uncles,
+                    ommers: vec![],
                     transactions,
                     withdrawals: Some(full_block_body.withdrawals),
                 },

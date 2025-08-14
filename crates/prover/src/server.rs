@@ -1,5 +1,5 @@
 use crate::message::{self, MessageError, Request, Response};
-use ethrex_prover_lib::{prove, to_batch_proof};
+use ethrex_prover_lib::{backends::Backend, prove, to_batch_proof};
 use tokio::net::{TcpListener, TcpStream};
 
 #[allow(unused)]
@@ -70,7 +70,7 @@ async fn handle_request(
     let request = message::receive::<Request>(stream).await?;
     match request {
         Request::Proof(prover_data) => {
-            let batch_proof = prove(prover_data.input, aligned_mode)
+            let batch_proof = prove(Backend::Exec, prover_data.input, aligned_mode)
                 .and_then(|output| to_batch_proof(output, aligned_mode))?;
             Ok(Response::Proof(batch_proof))
         }

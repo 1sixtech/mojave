@@ -185,7 +185,7 @@ impl MojaveClient {
         }
     }
 
-    pub async fn get_job_id(&self) -> Result<String, MojaveClientError> {
+    pub async fn get_job_id(&self) -> Result<serde_json::Value, MojaveClientError> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
             jsonrpc: "2.0".to_string(),
@@ -204,7 +204,7 @@ impl MojaveClient {
         }
     }
 
-    pub async fn get_proof(&self, job_id: &str) -> Result<(), MojaveClientError> {
+    pub async fn get_proof(&self, job_id: &str) -> Result<BatchProof, MojaveClientError> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
             jsonrpc: "2.0".to_string(),

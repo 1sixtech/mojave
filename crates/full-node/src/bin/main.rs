@@ -21,6 +21,7 @@ use mojave_full_node::{
 };
 use std::{path::PathBuf, sync::Arc, time::Duration};
 use tokio::sync::Mutex;
+use tokio_util::sync::CancellationToken;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -74,6 +75,7 @@ async fn main() -> Result<(), Error> {
             )
             .await;
 
+            let rpc_shutdown = CancellationToken::new();
             let eth_client = EthClient::new(&full_node_options.sequencer_address)?;
             start_api(
                 get_http_socket_addr(&options),
@@ -89,12 +91,14 @@ async fn main() -> Result<(), Error> {
                 rollup_store.clone(),
                 eth_client,
                 AsyncUniqueHeap::new(),
+                rpc_shutdown.clone(),
             )
             .await?;
 
             tokio::select! {
                 _ = tokio::signal::ctrl_c() => {
                     tracing::info!("Shutting down the full node..");
+                    rpc_shutdown.cancel();
                     let node_config_path = PathBuf::from(data_dir).join("node_config.json");
                     tracing::info!("Storing config at {:?}...", node_config_path);
                     cancel_token.cancel();

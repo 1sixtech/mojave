@@ -6,7 +6,7 @@ use ethrex::utils::read_node_config_file;
 use ethrex_common::Address;
 use ethrex_p2p::{network::public_key_from_signing_key, types::Node};
 use ethrex_storage_rollup::{EngineTypeRollup, StoreRollup};
-use k256::ecdsa::SigningKey;
+use secp256k1::SecretKey;
 use std::{
     fs, io,
     net::{Ipv4Addr, SocketAddr, ToSocketAddrs},
@@ -83,7 +83,7 @@ pub fn get_authrpc_socket_addr(opts: &Options) -> SocketAddr {
         .expect("Failed to parse authrpc address and port")
 }
 
-pub fn get_local_p2p_node(opts: &Options, signer: &SigningKey) -> Node {
+pub fn get_local_p2p_node(opts: &Options, signer: &SecretKey) -> Node {
     let udp_socket_addr = parse_socket_addr(&opts.discovery_addr, &opts.discovery_port)
         .expect("Failed to parse discovery address and port");
     let tcp_socket_addr =

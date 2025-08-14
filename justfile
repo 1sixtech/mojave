@@ -9,6 +9,13 @@ default:
 build-mojave:
 	cargo build --release
 
+clean:
+	rm -rf mojave-full-node mojave-sequencer
+
+# Run both node and sequencer in parallel, with sequencer waiting for node
+full: clean
+	./start.sh
+
 node:
     export $(cat .env | xargs) && \
     cargo run --release --bin mojave-full-node init \
@@ -24,7 +31,7 @@ sequencer:
         --full_node.addresses http://0.0.0.0:8545 \
         --prover.address http://0.0.0.0:3900 \
         --datadir {{current-dir}}/mojave-sequencer \
-        --private_key $PRIVATE_KEY
+        --private_key 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
 generate-key-pair:
 	cargo build --bin mojave
