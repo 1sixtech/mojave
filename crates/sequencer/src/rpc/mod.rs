@@ -8,7 +8,7 @@ use ethrex_p2p::{
 };
 use ethrex_rpc::{
     GasTipEstimator, NodeData, RpcApiContext as L1Context, RpcErr, RpcRequestWrapper,
-    map_eth_requests, rpc_response,
+    map_eth_requests,
     utils::{RpcRequest, RpcRequestId},
 };
 use ethrex_storage::Store;
@@ -23,6 +23,8 @@ use std::{
 use tokio::{net::TcpListener, sync::Mutex as TokioMutex};
 use tower_http::cors::CorsLayer;
 use tracing::info;
+
+use mojave_chain_utils::rpc::rpc_response;
 
 pub const FILTER_DURATION: Duration = {
     if cfg!(test) {
