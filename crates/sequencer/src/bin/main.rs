@@ -54,6 +54,7 @@ async fn main() -> Result<(), Error> {
             let mojave_client = MojaveClient::new(
                 &sequencer_options.full_node_addresses,
                 &sequencer_options.prover_addresses,
+                &format!("http://{}:{}", options.http_addr, options.http_port),
                 sequencer_options.private_key.as_str(),
             )?;
 

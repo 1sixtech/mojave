@@ -13,4 +13,5 @@ pub struct SignedBlock {
 pub enum ClientType {
     FullNode,
     Prover,
+    Sequencer,
 }
