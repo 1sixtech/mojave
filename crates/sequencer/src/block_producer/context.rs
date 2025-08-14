@@ -22,7 +22,7 @@ use ethrex_common::{
 use ethrex_l2_common::{
     l1_messages::get_block_l1_messages,
     state_diff::{
-        AccountStateDiff, BLOCK_HEADER_LEN, DEPOSITS_LOG_LEN, L1MESSAGE_LOG_LEN,
+        AccountStateDiff, BLOCK_HEADER_LEN, L1MESSAGE_LOG_LEN, PRIVILEGED_TX_LOG_LEN,
         SIMPLE_TX_STATE_DIFF_SIZE, StateDiffError,
     },
 };
@@ -119,8 +119,14 @@ impl BlockProducerContext {
             requests: Vec::new(),
         };
 
+        let account_updates_list = self
+            .store
+            .apply_account_updates_batch(block.header.parent_hash, &account_updates)
+            .await?
+            .ok_or(BlockProducerError::ChainError(ChainError::ParentNotFound))?;
+
         self.blockchain
-            .store_block(&block, execution_result, &account_updates)
+            .store_block(&block, account_updates_list, execution_result)
             .await?;
         info!("Stored new block {:x}", block.hash());
         // WARN: We're not storing the payload into the Store because there's no use to it by the L2 for now.
@@ -368,7 +374,7 @@ impl BlockProducerContext {
                 &merged_diffs,
                 &head_tx,
                 &receipt,
-                *DEPOSITS_LOG_LEN,
+                *PRIVILEGED_TX_LOG_LEN,
                 *L1MESSAGE_LOG_LEN,
             )?;
 
@@ -465,18 +471,12 @@ impl BlockProducerContext {
                         None
                     };
 
-                    let bytecode = if new_account.code != original_account.code {
-                        Some(new_account.code.clone())
-                    } else {
-                        None
-                    };
-
                     let account_state_diff = AccountStateDiff {
                         new_balance,
                         nonce_diff,
                         storage: BTreeMap::new(), // We add the storage later
-                        bytecode,
-                        bytecode_hash: None,
+                        bytecode: None,
+                        bytecode_hash: Some(new_account.info.code_hash),
                     };
 
                     modified_accounts.insert(*address, account_state_diff);
@@ -589,12 +589,8 @@ impl BlockProducerContext {
         if self.is_deposit_l2(head_tx) {
             tx_state_diff_size += deposits_log_len;
         }
-        tx_state_diff_size += get_block_l1_messages(
-            &[Transaction::from(head_tx.clone())],
-            std::slice::from_ref(receipt),
-        )
-        .len()
-            * messages_log_len;
+        tx_state_diff_size +=
+            get_block_l1_messages(std::slice::from_ref(receipt)).len() * messages_log_len;
 
         Ok((tx_state_diff_size, new_accounts_diff_size))
     }
