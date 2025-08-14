@@ -14,7 +14,12 @@ ctor = "0.4.2"
 
 [dependencies]
 # ethrex
-ethrex = { workspace = true, features = ["libmdbx", "c-kzg", "blst", "l2"] }
+ethrex = { workspace = true, features = [
+  "rollup_storage_libmdbx",
+  "libmdbx",
+  "c-kzg",
+  "blst",
+] }
 ethrex-blockchain = { workspace = true }
 ethrex-common = { workspace = true }
 ethrex-l2-common = { workspace = true }

@@ -29,21 +29,11 @@ cleanup() {
     sleep 2
 }
 
-cleanup
 
 echo "Starting all services"
 
-# Start sequencer on port 1739
-ETHREX_HTTP_PORT=1739 just sequencer &
-sleep 5
-
-# Start node on port 8545 with correct sequencer connection
-ETHREX_HTTP_PORT=8545 just node &
-sleep 5
-
-# # Start prover
-# just prover &
-# sleep 2
+bash start.sh &
+sleep 10
 
 echo "All services started. Testing connection..."
 

@@ -9,6 +9,13 @@ default:
 build-mojave:
 	cargo build --release
 
+clean:
+	rm -rf mojave-full-node mojave-sequencer
+
+# Run both node and sequencer in parallel, with sequencer waiting for node
+full: clean
+	./start.sh
+
 node:
     export $(cat .env | xargs) && \
     cargo run --release --bin mojave-full-node init \
@@ -23,7 +30,7 @@ sequencer:
         --http.port 1739 \
         --full_node.addresses http://0.0.0.0:8545 \
         --datadir {{current-dir}}/mojave-sequencer \
-        --private_key ${PRIVATE_KEY}
+        --private_key 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
 generate-key-pair:
 	cargo build --bin mojave
@@ -80,5 +87,5 @@ docker-build:
 docker-run:
 	docker run -p 8545:8545 1sixtech/mojave
 
-test: 
-	sh test_data/tests-e2e.sh
+test: clean
+	bash test_data/tests-e2e.sh
