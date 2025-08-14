@@ -1,4 +1,4 @@
-ndame: Lint Commit Messages
+name: Lint Commit Messages
 on: [pull_request]
 
 permissions:
