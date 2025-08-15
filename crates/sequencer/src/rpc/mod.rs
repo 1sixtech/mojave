@@ -25,6 +25,9 @@ use tower_http::cors::CorsLayer;
 use tracing::info;
 
 use mojave_chain_utils::rpc::rpc_response;
+use crate::rpc::batchproof::SendBatchProofRequest;
+
+pub mod batchproof;
 
 pub const FILTER_DURATION: Duration = {
     if cfg!(test) {
@@ -152,7 +155,7 @@ pub async fn map_mojave_requests(
 ) -> Result<Value, RpcErr> {
     // Err(RpcErr::Internal("Unimplemented".to_owned()))
     match _req.method.as_str() {
-        "mojave_sendBatchProof" => Ok(Value::Null), // Placeholder for actual implementation
+        "mojave_sendBatchProof" => SendBatchProofRequest::call(_req, _context).await,
         _ => Err(RpcErr::MethodNotFound(_req.method.clone())),
     }
 }
