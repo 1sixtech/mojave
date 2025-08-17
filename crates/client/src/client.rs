@@ -45,7 +45,7 @@ impl MojaveClient {
     async fn send_request_race(
         &self,
         request: RpcRequest,
-        parsed_urls: &ParsedUrlsContext, // TODO: check parsed URL is empty or not
+        parsed_urls: &ParsedUrlsContext, 
     ) -> Result<RpcResponse, MojaveClientError> {
         let urls = {
             let guard = parsed_urls.urls.lock().await;
