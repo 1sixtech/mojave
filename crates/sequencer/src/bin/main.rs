@@ -13,14 +13,13 @@ use mojave_chain_utils::{
     },
     logging::init_logging,
 };
-use mojave_client::{MojaveClient, types::ParsedUrlsContext};
+use mojave_client::{MojaveClient, ParsedUrls};
 use mojave_sequencer::{
     block_producer::{BlockProducer, BlockProducerContext},
     cli::{Cli, Command},
     error::Error,
     rpc::start_api,
 };
-use reqwest::Url;
 use std::{path::PathBuf, sync::Arc, time::Duration};
 use tokio::sync::Mutex;
 
@@ -62,19 +61,12 @@ async fn main() -> Result<(), Error> {
                 ELASTICITY_MULTIPLIER,
             );
             let block_producer = BlockProducer::start(context, 100);
-            let parsed_urls = sequencer_options
-                .full_node_addresses
-                .iter()
-                .map(|url| Url::parse(url).unwrap())
-                .collect();
-            let parsed_urls_context = ParsedUrlsContext {
-                urls: Arc::new(Mutex::new(parsed_urls)),
-            };
+            let parsed_urls = ParsedUrls::new(sequencer_options.full_node_addresses);
             tokio::spawn(async move {
                 loop {
                     match block_producer.build_block().await {
                         Ok(block) => mojave_client
-                            .send_broadcast_block(&block, &parsed_urls_context)
+                            .send_broadcast_block(&block, &parsed_urls)
                             .await
                             .unwrap_or_else(|error| tracing::error!("{}", error)),
                         Err(error) => {
