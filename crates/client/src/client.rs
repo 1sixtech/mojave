@@ -1,4 +1,7 @@
-use crate::{MojaveClientError, types::SignedBlock};
+use crate::{
+    MojaveClientError,
+    types::{ParsedUrlsContext, SignedBlock},
+};
 use ethrex_common::types::Block;
 use ethrex_l2_common::prover::BatchProof;
 use ethrex_rpc::{
@@ -42,14 +45,16 @@ impl MojaveClient {
     async fn send_request_race(
         &self,
         request: RpcRequest,
-        target_addresses: &[String],
+        parsed_urls: &ParsedUrlsContext, // TODO: check parsed URL is empty or not
     ) -> Result<RpcResponse, MojaveClientError> {
-        let urls = target_addresses
-            .iter()
-            .map(|url| {
-                Url::parse(url).map_err(|error| MojaveClientError::ParseUrlError(error.to_string()))
-            })
-            .collect::<Result<Vec<_>, _>>()?;
+        let urls = {
+            let guard = parsed_urls.urls.lock().await;
+            guard.clone()
+        };
+
+        if urls.is_empty() {
+            return Err(MojaveClientError::NoRPCUrlsConfigured);
+        }
 
         let requests: Vec<Pin<Box<Fuse<_>>>> = urls
             .iter()
@@ -68,23 +73,25 @@ impl MojaveClient {
     async fn send_request(
         &self,
         request: RpcRequest,
-        target_addresses: &[String],
+        parsed_urls: &ParsedUrlsContext,
     ) -> Result<RpcResponse, MojaveClientError> {
-        let urls = target_addresses
-            .iter()
-            .map(|url| {
-                Url::parse(url).map_err(|error| MojaveClientError::ParseUrlError(error.to_string()))
-            })
-            .collect::<Result<Vec<_>, _>>()?;
+        let urls = {
+            let guard = parsed_urls.urls.lock().await;
+            guard.clone()
+        };
+
+        if urls.is_empty() {
+            return Err(MojaveClientError::NoRPCUrlsConfigured);
+        }
 
         let mut response = Err(MojaveClientError::Custom(
             "All rpc calls failed".to_string(),
         ));
 
         for url in urls.iter() {
-            let maybe_response = self.send_request_to_url(url, &request).await;
-            if maybe_response.is_ok() {
-                response = maybe_response;
+            match self.send_request_to_url(url, &request).await {
+                Ok(resp) => return Ok(resp),
+                Err(e) => response = Err(e),
             }
         }
         response
@@ -112,7 +119,7 @@ impl MojaveClient {
     pub async fn send_broadcast_block(
         &self,
         block: &Block,
-        full_node_addresses: &[String],
+        sequencer_parsed_urls: &ParsedUrlsContext,
     ) -> Result<(), MojaveClientError> {
         let hash = block.hash();
         let signature: Signature = self.inner.signing_key.sign(&hash)?;
@@ -131,7 +138,7 @@ impl MojaveClient {
             params: Some(vec![json!(params)]),
         };
 
-        match self.send_request_race(request, full_node_addresses).await {
+        match self.send_request_race(request, sequencer_parsed_urls).await {
             Ok(RpcResponse::Success(result)) => {
                 serde_json::from_value(result.result).map_err(MojaveClientError::from)
             }
@@ -145,7 +152,7 @@ impl MojaveClient {
     pub async fn send_proof_input(
         &self,
         proof_input: &ProverData,
-        prover_address: &str,
+        prover_parsed_urls: &ParsedUrlsContext,
         sequencer_address: &str,
     ) -> Result<serde_json::Value, MojaveClientError> {
         let request = RpcRequest {
@@ -155,10 +162,7 @@ impl MojaveClient {
             params: Some(vec![json!(proof_input), json!(sequencer_address)]),
         };
 
-        match self
-            .send_request(request, &[prover_address.to_string()])
-            .await
-        {
+        match self.send_request(request, prover_parsed_urls).await {
             Ok(RpcResponse::Success(result)) => {
                 serde_json::from_value(result.result).map_err(MojaveClientError::from)
             }
@@ -171,7 +175,7 @@ impl MojaveClient {
 
     pub async fn get_job_id(
         &self,
-        prover_address: &str,
+        prover_parsed_urls: &ParsedUrlsContext,
     ) -> Result<serde_json::Value, MojaveClientError> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
@@ -180,10 +184,7 @@ impl MojaveClient {
             params: None,
         };
 
-        match self
-            .send_request(request, &[prover_address.to_string()])
-            .await
-        {
+        match self.send_request(request, prover_parsed_urls).await {
             Ok(RpcResponse::Success(result)) => {
                 serde_json::from_value(result.result).map_err(MojaveClientError::from)
             }
@@ -197,7 +198,7 @@ impl MojaveClient {
     pub async fn get_proof(
         &self,
         job_id: &str,
-        prover_address: &str,
+        prover_parsed_urls: &ParsedUrlsContext,
     ) -> Result<BatchProof, MojaveClientError> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
@@ -206,10 +207,7 @@ impl MojaveClient {
             params: Some(vec![json!(job_id)]),
         };
 
-        match self
-            .send_request(request, &[prover_address.to_string()])
-            .await
-        {
+        match self.send_request(request, prover_parsed_urls).await {
             Ok(RpcResponse::Success(result)) => {
                 serde_json::from_value(result.result).map_err(MojaveClientError::from)
             }
@@ -223,7 +221,7 @@ impl MojaveClient {
     pub async fn send_batch_proof(
         &self,
         batch_proof: &BatchProof,
-        sequencer_address: &str,
+        sequencer_parsed_urls: &ParsedUrlsContext,
     ) -> Result<(), MojaveClientError> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
@@ -232,10 +230,7 @@ impl MojaveClient {
             params: Some(vec![json!(batch_proof)]),
         };
 
-        match self
-            .send_request(request, &[sequencer_address.to_string()])
-            .await
-        {
+        match self.send_request(request, sequencer_parsed_urls).await {
             Ok(RpcResponse::Success(result)) => {
                 serde_json::from_value(result.result).map_err(MojaveClientError::from)
             }

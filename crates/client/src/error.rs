@@ -16,6 +16,8 @@ pub enum MojaveClientError {
     MissingSigningKey,
     #[error("Signature error: {0}")]
     SignatureError(#[from] mojave_signature::SignatureError),
+    #[error("No RPC URLs configured")]
+    NoRPCUrlsConfigured,
 }
 
 #[derive(Debug, thiserror::Error)]

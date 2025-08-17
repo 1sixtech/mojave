@@ -56,7 +56,7 @@ pub struct SequencerOpts {
         long = "prover.address",
         help = "Allowed domain(s) and port(s) for the prover in the form 'domain:port'",
         help_heading = "Prover Options",
-        default_value = "0.0.0.0:3900"
+        default_value = "http://0.0.0.0:3900"
     )]
     pub prover_address: String,
     #[arg(
@@ -73,7 +73,6 @@ impl std::fmt::Debug for SequencerOpts {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("SequencerOptions")
             .field("full_node_addresses", &self.full_node_addresses)
-            .field("prover_address", &self.prover_address)
             .field("block_time", &self.block_time)
             .field("private_key", &self.private_key)
             .finish()

@@ -4841,6 +4841,7 @@ dependencies = [
  "mojave-chain-utils",
  "mojave-client",
  "mojave-signature",
+ "reqwest 0.12.22",
  "serde",
  "serde_json",
  "thiserror 2.0.14",
