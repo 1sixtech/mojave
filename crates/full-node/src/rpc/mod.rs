@@ -14,7 +14,6 @@ use ethrex_p2p::{
     types::{Node, NodeRecord},
 };
 use ethrex_rpc::{
-    EthClient, GasTipEstimator, NodeData, RpcApiContext as L1Context, RpcErr, RpcRequestWrapper,
     ActiveFilters, EthClient, GasTipEstimator, NodeData, RpcApiContext as L1Context, RpcErr,
     RpcRequestWrapper,
     utils::{RpcRequest, RpcRequestId},
