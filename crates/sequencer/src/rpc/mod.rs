@@ -1,3 +1,7 @@
+pub mod batchproof;
+
+use crate::rpc::batchproof::SendBatchProofRequest;
+
 use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
 use ethrex_blockchain::Blockchain;
 use ethrex_common::Bytes;
@@ -25,9 +29,6 @@ use tower_http::cors::CorsLayer;
 use tracing::info;
 
 use mojave_chain_utils::rpc::rpc_response;
-use crate::rpc::batchproof::SendBatchProofRequest;
-
-pub mod batchproof;
 
 pub const FILTER_DURATION: Duration = {
     if cfg!(test) {
