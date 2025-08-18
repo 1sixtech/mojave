@@ -69,23 +69,28 @@ async fn main() -> Result<(), Error> {
                     .map(|url| Url::parse(url).unwrap())
                     .collect(),
             ));
-            let full_node_urls_clone = Arc::clone(&full_node_urls);
-            tokio::spawn(async move {
-                loop {
-                    let urls = {
-                        let guard = full_node_urls_clone.lock().await;
-                        guard.clone()
-                    };
-                    match block_producer.build_block().await {
-                        Ok(block) => mojave_client
-                            .send_broadcast_block(&block, urls)
-                            .await
-                            .unwrap_or_else(|error| tracing::error!("{}", error)),
-                        Err(error) => {
-                            tracing::error!("Failed to build a block: {}", error);
+
+            tokio::spawn({
+                let full_node_urls = full_node_urls.clone();
+
+                async move {
+                    loop {
+                        let urls = {
+                            let guard = full_node_urls.lock().await;
+                            guard.clone()
+                        };
+                        match block_producer.build_block().await {
+                            Ok(block) => mojave_client
+                                .send_broadcast_block(&block, &urls)
+                                .await
+                                .unwrap_or_else(|error| tracing::error!("{}", error)),
+                            Err(error) => {
+                                tracing::error!("Failed to build a block: {}", error);
+                            }
                         }
+                        tokio::time::sleep(Duration::from_millis(sequencer_options.block_time))
+                            .await;
                     }
-                    tokio::time::sleep(Duration::from_millis(sequencer_options.block_time)).await;
                 }
             });
 

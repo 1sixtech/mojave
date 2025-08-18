@@ -1,29 +1,21 @@
 #[derive(Debug, thiserror::Error)]
 pub enum MojaveClientError {
-    #[error("reqwest error: {0}")]
-    ReqwestError(#[from] reqwest::Error),
-    #[error("Failed to serialize request body: {0}")]
-    FailedToSerializeRequestBody(String),
+    #[error("Failed to serialize the request body: {0}")]
+    SerializeRequest(serde_json::Error),
+    #[error("Failed to send a request: {0}")]
+    SendRequest(reqwest::Error),
+    #[error("Failed to deserialize the response: {0}")]
+    DeserializeResponse(reqwest::Error),
+    #[error("Failed to deserialize the response result: {0}")]
+    DeserializeResponseResult(serde_json::Error),
+    #[error("RPC error: {0}")]
+    RpcError(String),
     #[error("Error: {0}")]
     Custom(String),
-    #[error("Serde error: {0}")]
-    SerdeError(#[from] serde_json::Error),
-    #[error("RPCError: {0}")]
-    RpcError(String),
     #[error("Failed to parse URL: {0}")]
     ParseUrlError(String),
-    #[error("Missing signing key in environment variable PRIVATE_KEY")]
-    MissingSigningKey,
     #[error("Signature error: {0}")]
     SignatureError(#[from] mojave_signature::SignatureError),
     #[error("No RPC URLs configured")]
     NoRPCUrlsConfigured,
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum ForwardTransactionError {
-    #[error("Serde error: {0}")]
-    SerdeJSONError(#[from] serde_json::Error),
-    #[error("{0}")]
-    RPCError(String),
 }
