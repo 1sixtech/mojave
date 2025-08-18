@@ -1,3 +1,7 @@
+pub mod batchproof;
+
+use crate::rpc::batchproof::SendBatchProofRequest;
+
 use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
 use ethrex_blockchain::Blockchain;
 use ethrex_common::Bytes;
@@ -148,12 +152,14 @@ async fn map_http_requests(req: &RpcRequest, context: RpcApiContext) -> Result<V
     }
 }
 
-/// Leave this unimplemented for now.
 pub async fn map_mojave_requests(
-    _req: &RpcRequest,
-    _context: RpcApiContext,
+    req: &RpcRequest,
+    context: RpcApiContext,
 ) -> Result<Value, RpcErr> {
-    Err(RpcErr::Internal("Unimplemented".to_owned()))
+    match req.method.as_str() {
+        "mojave_sendBatchProof" => SendBatchProofRequest::call(req, context).await,
+        _ => Err(RpcErr::MethodNotFound(req.method.clone())),
+    }
 }
 
 pub enum RpcNamespace {
