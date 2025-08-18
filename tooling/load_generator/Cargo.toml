@@ -1,0 +1,9 @@
+[package]
+name = "load_generator"
+edition.workspace = true
+version.workspace = true
+
+[dependencies]
+tokio = { workspace = true }
+
+clap = { workspace = true }

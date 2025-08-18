@@ -4552,6 +4552,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f5e54036fe321fd421e10d732f155734c4e4afd610dd556d9a82833ab3ee0bed"
 
 [[package]]
+name = "load_generator"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "tokio",
+]
+
+[[package]]
 name = "local-ip-address"
 version = "0.6.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -8,8 +8,13 @@ members = [
   "crates/signature",
   "crates/utils",
   "crates/tests",
+  "tooling/load_generator",
 ]
 resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
 
 [workspace.dependencies]
 # ethrex
