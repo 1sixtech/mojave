@@ -28,6 +28,7 @@ ARG BUILD_FLAGS=""
 COPY crates ./crates
 # COPY cmd ./cmd
 COPY Cargo.* ./
+COPY test_data ./test_data
 RUN cargo build --release $BUILD_FLAGS
 
 FROM ubuntu:24.04
