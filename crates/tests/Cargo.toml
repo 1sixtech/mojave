@@ -28,6 +28,7 @@ mojave-full-node = { workspace = true }
 mojave-sequencer = { workspace = true }
 mojave-chain-utils = { workspace = true }
 
+reqwest = { workspace = true }
 k256 = { workspace = true, features = ["ecdh"] }
 rand = { workspace = true }
 secp256k1 = { workspace = true }
