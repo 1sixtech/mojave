@@ -34,6 +34,10 @@ RUN cargo build --release $BUILD_FLAGS
 FROM ubuntu:24.04
 WORKDIR /usr/local/bin
 
+RUN apt-get update && apt-get install -y  --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY test_data ./test_data
 COPY --from=builder mojave/target/release/mojave-sequencer .
 COPY --from=builder mojave/target/release/mojave-full-node .
