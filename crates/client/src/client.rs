@@ -83,7 +83,7 @@ impl MojaveClient {
         ));
 
         for url in urls.iter() {
-            match self.send_request_to_url(&request, url).await {
+            match self.send_request_to_url(request, url).await {
                 Ok(resp) => return Ok(resp),
                 Err(e) => response = Err(e),
             }
@@ -106,19 +106,19 @@ impl MojaveClient {
             .header("content-type", "application/json")
             .body(
                 serde_json::ser::to_string(&request)
-                    .map_err(|error| MojaveClientError::SerializeRequest(error))?,
+                    .map_err(MojaveClientError::SerializeRequest)?,
             )
             .send()
             .await
-            .map_err(|error| MojaveClientError::SendRequest(error))?
+            .map_err(MojaveClientError::SendRequest)?
             .json::<RpcResponse>()
             .await
-            .map_err(|error| MojaveClientError::DeserializeResponse(error))?;
+            .map_err(MojaveClientError::DeserializeResponse)?;
 
         match response {
             RpcResponse::Success(ok_response) => {
                 let result = serde_json::from_value::<T>(ok_response.result)
-                    .map_err(|error| MojaveClientError::DeserializeResponseResult(error))?;
+                    .map_err(MojaveClientError::DeserializeResponseResult)?;
                 Ok(result)
             }
             RpcResponse::Error(error_response) => {
