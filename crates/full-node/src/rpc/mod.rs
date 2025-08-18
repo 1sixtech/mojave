@@ -14,8 +14,9 @@ use ethrex_p2p::{
     types::{Node, NodeRecord},
 };
 use ethrex_rpc::{
+    EthClient, GasTipEstimator, NodeData, RpcApiContext as L1Context, RpcErr, RpcRequestWrapper,
     ActiveFilters, EthClient, GasTipEstimator, NodeData, RpcApiContext as L1Context, RpcErr,
-    RpcRequestWrapper, rpc_response,
+    RpcRequestWrapper,
     utils::{RpcRequest, RpcRequestId},
 };
 use ethrex_storage::Store;
@@ -32,6 +33,8 @@ use tokio::{net::TcpListener, sync::Mutex as TokioMutex, task::JoinHandle};
 use tokio_util::sync::CancellationToken;
 use tower_http::cors::CorsLayer;
 use tracing::info;
+
+use mojave_chain_utils::rpc::rpc_response;
 
 pub const FILTER_DURATION: Duration = {
     if cfg!(test) {
