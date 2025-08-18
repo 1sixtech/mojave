@@ -149,15 +149,13 @@ async fn map_http_requests(req: &RpcRequest, context: RpcApiContext) -> Result<V
     }
 }
 
-/// Leave this unimplemented for now.
 pub async fn map_mojave_requests(
-    _req: &RpcRequest,
-    _context: RpcApiContext,
+    req: &RpcRequest,
+    context: RpcApiContext,
 ) -> Result<Value, RpcErr> {
-    // Err(RpcErr::Internal("Unimplemented".to_owned()))
-    match _req.method.as_str() {
-        "mojave_sendBatchProof" => SendBatchProofRequest::call(_req, _context).await,
-        _ => Err(RpcErr::MethodNotFound(_req.method.clone())),
+    match req.method.as_str() {
+        "mojave_sendBatchProof" => SendBatchProofRequest::call(req, context).await,
+        _ => Err(RpcErr::MethodNotFound(req.method.clone())),
     }
 }
 
