@@ -12,8 +12,6 @@ pub enum MojaveClientError {
     RpcError(String),
     #[error("Error: {0}")]
     Custom(String),
-    #[error("Failed to parse URL: {0}")]
-    ParseUrlError(String),
     #[error("Signature error: {0}")]
     SignatureError(#[from] mojave_signature::SignatureError),
     #[error("No RPC URLs configured")]
