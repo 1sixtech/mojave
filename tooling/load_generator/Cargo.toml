@@ -3,7 +3,12 @@ name = "load_generator"
 edition.workspace = true
 version.workspace = true
 
-[dependencies]
-tokio = { workspace = true }
+[[bin]]
+name = "load-generator"
+path = "src/main.rs"
 
-clap = { workspace = true }
+[dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "time"] }
+rand = { workspace = true, features = ["std", "std_rng"] }
+
+clap = { workspace = true, features = ["std", "derive"] }

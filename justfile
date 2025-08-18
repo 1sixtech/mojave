@@ -32,6 +32,10 @@ sequencer:
         --datadir {{current-dir}}/mojave-sequencer \
         --private_key 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
+load_generator:
+    export $(cat .env | xargs) && \
+    cargo run --release --bin load-generator
+
 generate-key-pair:
 	cargo build --bin mojave
 	export $(cat .env | xargs) && \
