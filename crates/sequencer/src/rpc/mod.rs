@@ -13,6 +13,7 @@ use ethrex_rpc::{
 };
 use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
+use reqwest::Url;
 use serde_json::Value;
 use std::{
     collections::HashMap,
@@ -36,6 +37,7 @@ pub const FILTER_DURATION: Duration = {
 pub struct RpcApiContext {
     pub l1_context: L1Context,
     pub rollup_store: StoreRollup,
+    pub full_node_urls: Arc<TokioMutex<Vec<Url>>>,
 }
 
 #[expect(clippy::too_many_arguments)]
@@ -51,6 +53,7 @@ pub async fn start_api(
     peer_handler: PeerHandler,
     client_version: String,
     rollup_store: StoreRollup,
+    full_node_urls: Arc<TokioMutex<Vec<Url>>>,
 ) -> Result<(), RpcErr> {
     let active_filters = Arc::new(Mutex::new(HashMap::new()));
     let context = RpcApiContext {
@@ -69,7 +72,7 @@ pub async fn start_api(
             gas_tip_estimator: Arc::new(TokioMutex::new(GasTipEstimator::new())),
         },
         rollup_store,
-        // mojave_client,
+        full_node_urls,
     };
 
     // Periodically clean up the active filters for the filters endpoints.
