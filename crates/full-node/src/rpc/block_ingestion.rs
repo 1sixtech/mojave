@@ -2,7 +2,7 @@ use std::sync::Arc;
 use ethrex_common::types::{Block, BlockBody, Transaction};
 use ethrex_rpc::{types::{block::RpcBlock, block_identifier::BlockIdentifier}, EthClient, RpcErr};
 use mojave_chain_utils::unique_heap::AsyncUniqueHeap;
-use tokio::sync::Mutex;
+use tokio::sync::Mutex as TokioMutex;
 
 use crate::rpc::types::OrderedBlock;
 
@@ -26,40 +26,51 @@ impl BlockIngestion {
         }
     }
 
-    /// Idempotent ingestion: ensures we don’t fetch/push already handled blocks
     pub async fn ingest_block(
-        ingestion: Arc<Mutex<Self>>,
-        eth_client: Arc<EthClient>,
-        block_queue: Arc<AsyncUniqueHeap<OrderedBlock, u64>>,
-        signed_block_number: u64,
+        ingestion: &Arc<TokioMutex<BlockIngestion>>,
+        eth_client: &EthClient,
+        block_queue: &AsyncUniqueHeap<OrderedBlock, u64>,
+        signed_block: Block,
     ) -> Result<(), RpcErr> {
-        // lock only around state check/update
-        {
-            let mut state = ingestion.lock().await;
+        let signed_block_number = signed_block.header.number;
 
-            // skip if already handled
-            if signed_block_number < state.next_expected {
-                tracing::debug!(
-                    "Skipping block {signed_block_number}, already past next_expected={}",
-                    state.next_expected
-                );
-                return Ok(());
-            }
+        // ---- lock to read state
+        let guard = ingestion.lock().await;
+        let expected = guard.next_expected();
 
-            // reserve next expected here, so concurrent calls won’t re-fetch
-            state.advance(signed_block_number + 1);
+        // already processed or behind: skip quickly
+        if signed_block_number < expected {
+            tracing::debug!(
+                "Skipping block {}, next_expected={}",
+                signed_block_number,
+                expected
+            );
+            return Ok(());
         }
 
-        // do the actual work outside of lock
-        let block = eth_client
-            .get_block_by_number(BlockIdentifier::Number(signed_block_number))
-            .await
-            .map_err(|error| RpcErr::Internal(error.to_string()))?;
+        // release lock before doing network I/O
+        drop(guard);
 
-        let block = rpc_block_to_block(block);
-        block_queue.push(OrderedBlock(block)).await;
+        // ---- backfill any missing blocks
+        if signed_block_number > expected {
+            for number in expected..signed_block_number {
+                let rpc_block: RpcBlock = eth_client
+                    .get_block_by_number(BlockIdentifier::Number(number))
+                    .await
+                    .map_err(|e| RpcErr::Internal(e.to_string()))?;
 
-        tracing::info!("Ingested block {signed_block_number}");
+                let block = rpc_block_to_block(rpc_block);
+                block_queue.push(OrderedBlock(block)).await;
+            }
+        }
+
+        // ---- push the provided signed block
+        block_queue.push(OrderedBlock(signed_block)).await;
+
+        // ---- lock again to advance state (only after successful ingestion)
+        let mut guard = ingestion.lock().await;
+        // ensure monotonic progress in case another task advanced meanwhile
+        guard.advance(signed_block_number + 1);
 
         Ok(())
     }

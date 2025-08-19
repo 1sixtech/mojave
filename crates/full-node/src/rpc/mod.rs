@@ -50,7 +50,7 @@ pub struct RpcApiContext {
     pub rollup_store: StoreRollup,
     pub eth_client: EthClient,
     pub block_queue: AsyncUniqueHeap<OrderedBlock, u64>,
-    pub ingestion: Arc<Mutex<BlockIngestion>>,
+    pub ingestion: Arc<TokioMutex<BlockIngestion>>,
 }
 
 #[expect(clippy::too_many_arguments)]
@@ -89,7 +89,7 @@ pub async fn start_api(
         rollup_store,
         eth_client,
         block_queue,
-        ingestion: Arc::new(Mutex::new(BlockIngestion::new(0))),
+        ingestion: Arc::new(TokioMutex::new(BlockIngestion::new(0))),
     };
 
     // Periodically clean up the active filters for the filters endpoints.
@@ -413,7 +413,7 @@ mod tests {
             rollup_store,
             eth_client,
             block_queue: block_queue.clone(),
-            ingestion: Arc::new(Mutex::new(BlockIngestion::new(0))),
+            ingestion: Arc::new(TokioMutex::new(BlockIngestion::new(0))),
         };
 
         let cancel_token = CancellationToken::new();
