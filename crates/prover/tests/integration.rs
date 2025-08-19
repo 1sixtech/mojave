@@ -38,7 +38,7 @@ fn create_mock_prover_data() -> ProverData {
 #[cfg(all(feature = "client", feature = "server"))]
 #[tokio::test]
 async fn test_client_server_communication() {
-    let mut client = create_mock_client().await;
+    let client = create_mock_client().await;
 
     match client.get_proof(create_mock_prover_data()).await {
         Ok(data) => println!("Success! proof is: {data:?}"),
@@ -49,7 +49,7 @@ async fn test_client_server_communication() {
 #[cfg(feature = "client")]
 #[tokio::test]
 async fn test_client_connection_refused() {
-    let mut client = ProverClient::new("127.0.0.1:1", 10, 3);
+    let client = ProverClient::new("127.0.0.1:1", 10, 3);
     match client.get_proof(create_mock_prover_data()).await {
         Ok(_) => panic!("Should receive error"),
         Err(error) => println!("Error! message is: {error:?}"),
@@ -59,7 +59,7 @@ async fn test_client_connection_refused() {
 #[cfg(feature = "client")]
 #[tokio::test]
 async fn test_client_timeout() {
-    let mut client = ProverClient::new("192.0.2.1:12345", 2, 3);
+    let client = ProverClient::new("192.0.2.1:12345", 2, 3);
     match client.get_proof(create_mock_prover_data()).await {
         Ok(_) => panic!("Should receive timeout error"),
         Err(error) => println!("Error! message is: {error:?}"),
@@ -69,15 +69,13 @@ async fn test_client_timeout() {
 #[cfg(feature = "client")]
 #[tokio::test]
 async fn test_client_retry_failed() {
-    let mut client = ProverClient::new("192.0.2.1:12345", 1, 3);
+    let client = ProverClient::new("192.0.2.1:12345", 1, 3);
 
     match client.get_proof(create_mock_prover_data()).await {
         Ok(_) => panic!("Should receive retry failed error"),
         Err(error) => match error {
-            mojave_prover::ProverClientError::RetryFailed(attempts) => {
-                assert_eq!(attempts, 3, "Should have attempted 3 retries");
-            }
-            _ => panic!("Expected RetryFailed error, but got: {:?}", error),
+            mojave_prover::ProverClientError::TimeOut => {}
+            _ => panic!("Expected TimeOut error, but got: {:?}", error),
         },
     }
 }

@@ -57,7 +57,7 @@ impl ProofCoordinator {
         &self,
         prover_data: ProverData,
     ) -> Result<(u64, BatchProof), ProofCoordinatorError> {
-        let mut client = ProverClient::new(&self.prover_tcp_addr, REQUEST_TIMEOUT, MAX_ATTEMPTS);
+        let client = ProverClient::new(&self.prover_tcp_addr, REQUEST_TIMEOUT, MAX_ATTEMPTS);
         let batch_number = prover_data.batch_number;
         let proof = client
             .get_proof(prover_data)

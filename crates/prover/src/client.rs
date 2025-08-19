@@ -60,6 +60,7 @@ impl ProverClient {
     async fn request(&self, request: &Request) -> Result<Response, ProverClientError> {
         let mut attempts = 0;
         let mut delay = INITIAL_RETRY_DELAY;
+        let mut last_error = None;
         while attempts < self.max_attempts {
             attempts += 1;
             match timeout(
@@ -70,19 +71,17 @@ impl ProverClient {
             {
                 Ok(Ok(response)) => return Ok(response),
                 Ok(Err(e)) => {
-                    tracing::error!(
-                        "Prover request failed (attempt {}): {}",
-                        attempts,
-                        e
-                    );
-                    if Self::is_retryable(&e) {
+                    tracing::error!("Prover request failed (attempt {}): {}", attempts, e);
+                    last_error = Some(e);
+                    if Self::is_retryable(last_error.as_ref().unwrap()) {
                         tracing::info!("Retrying request (attempt {})", attempts);
                     } else {
-                        return Err(e);
+                        return Err(last_error.unwrap());
                     }
                 }
                 Err(_) => {
                     tracing::error!("Prover request timed out (attempt {})", attempts);
+                    last_error = Some(ProverClientError::TimeOut);
                 }
             }
 
@@ -95,7 +94,7 @@ impl ProverClient {
                 }
             }
         }
-        Err(ProverClientError::RetryFailed(attempts))
+        Err(last_error.unwrap_or(ProverClientError::RetryFailed(self.max_attempts)))
     }
 
     pub async fn get_proof(&self, data: ProverData) -> Result<BatchProof, ProverClientError> {
