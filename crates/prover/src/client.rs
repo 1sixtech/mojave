@@ -3,7 +3,7 @@ use crate::{
     types::*,
 };
 use ethrex_l2_common::prover::BatchProof;
-use std::time::Duration;
+use std::{io, time::Duration};
 use tokio::{net::TcpStream, time::timeout};
 use tracing::error;
 
@@ -27,13 +27,27 @@ impl ProverClient {
     }
 
     fn is_retryable(error: &ProverClientError) -> bool {
-        !matches!(
-            error,
+        match error {
             ProverClientError::Message(MessageError::MessageTooLarge(_, _))
-                | ProverClientError::Message(MessageError::Serialize(_))
-                | ProverClientError::Message(MessageError::Deserialize(_))
-                | ProverClientError::Internal(_)
-        )
+            | ProverClientError::Message(MessageError::Serialize(_))
+            | ProverClientError::Message(MessageError::Deserialize(_))
+            | ProverClientError::Internal(_) => false,
+
+            ProverClientError::Io(e)
+                if matches!(
+                    e.kind(),
+                    io::ErrorKind::InvalidInput
+                        | io::ErrorKind::InvalidData
+                        | io::ErrorKind::Unsupported
+                        | io::ErrorKind::WriteZero
+                        | io::ErrorKind::UnexpectedEof
+                ) =>
+            {
+                false
+            }
+
+            _ => true,
+        }
     }
 
     async fn request_inner(&mut self, request: &Request) -> Result<Response, ProverClientError> {
