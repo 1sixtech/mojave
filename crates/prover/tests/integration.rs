@@ -24,7 +24,7 @@ async fn start_server() -> String {
 async fn create_mock_client() -> ProverClient {
     let server_addr = start_server().await;
 
-    ProverClient::new(&server_addr, 10)
+    ProverClient::new(&server_addr, 10, 3)
 }
 
 #[cfg(feature = "client")]
