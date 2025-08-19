@@ -21,7 +21,7 @@ mojave-chain-utils = { workspace = true }
 
 # server only dep
 ethrex-prover = { workspace = true, optional = true }
-tracing = { workspace = true, optional = true }
+tracing = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = [
@@ -34,4 +34,4 @@ tokio = { workspace = true, features = [
 [features]
 default = []
 client = []
-server = ["ethrex-prover", "tracing"]
+server = ["ethrex-prover"]
