@@ -62,35 +62,27 @@ async fn main() -> Result<(), Error> {
                 ELASTICITY_MULTIPLIER,
             );
             let block_producer = BlockProducer::start(context, 100);
-            let full_node_urls: Arc<Mutex<Vec<Url>>> = Arc::new(Mutex::new(
-                sequencer_options
-                    .full_node_addresses
-                    .iter()
-                    .map(|url| Url::parse(url).unwrap())
-                    .collect(),
-            ));
+            let full_node_urls: Vec<Url> = sequencer_options
+                .full_node_addresses
+                .iter()
+                .map(|address| {
+                    Url::parse(address)
+                        .unwrap_or_else(|error| panic!("Failed to parse URL: {error}"))
+                })
+                .collect();
 
-            tokio::spawn({
-                let full_node_urls = full_node_urls.clone();
-
-                async move {
-                    loop {
-                        let urls = {
-                            let guard = full_node_urls.lock().await;
-                            guard.clone()
-                        };
-                        match block_producer.build_block().await {
-                            Ok(block) => mojave_client
-                                .send_broadcast_block(&block, &urls)
-                                .await
-                                .unwrap_or_else(|error| tracing::error!("{}", error)),
-                            Err(error) => {
-                                tracing::error!("Failed to build a block: {}", error);
-                            }
+            tokio::spawn(async move {
+                loop {
+                    match block_producer.build_block().await {
+                        Ok(block) => mojave_client
+                            .send_broadcast_block(&block, &full_node_urls)
+                            .await
+                            .unwrap_or_else(|error| tracing::error!("{}", error)),
+                        Err(error) => {
+                            tracing::error!("Failed to build a block: {}", error);
                         }
-                        tokio::time::sleep(Duration::from_millis(sequencer_options.block_time))
-                            .await;
                     }
+                    tokio::time::sleep(Duration::from_millis(sequencer_options.block_time)).await;
                 }
             });
 
@@ -130,7 +122,6 @@ async fn main() -> Result<(), Error> {
                 peer_handler,
                 get_client_version(),
                 rollup_store.clone(),
-                full_node_urls,
             )
             .await?;
 

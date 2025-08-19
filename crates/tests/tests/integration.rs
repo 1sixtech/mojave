@@ -205,7 +205,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_forward_transaction() {
-        let (_, sequencer_rx) = start_test_api_sequencer(None, None, None).await;
+        let (_, sequencer_rx) = start_test_api_sequencer(None, None).await;
         let (full_node_client, full_node_rx) = start_test_api_full_node(None, None, None).await;
         sequencer_rx.await.unwrap();
         full_node_rx.await.unwrap();
@@ -260,12 +260,8 @@ mod tests {
         let full_node_http_addr: SocketAddr = "127.0.0.1:8506".parse().unwrap();
         let full_node_auth_addr: SocketAddr = "127.0.0.1:8507".parse().unwrap();
 
-        let (sequencer_client, sequencer_rx) = start_test_api_sequencer(
-            Some(vec![full_node_http_addr]),
-            Some(sequencer_http_addr),
-            Some(sequencer_auth_addr),
-        )
-        .await;
+        let (sequencer_client, sequencer_rx) =
+            start_test_api_sequencer(Some(sequencer_http_addr), Some(sequencer_auth_addr)).await;
 
         let (_, full_node_rx) = start_test_api_full_node(
             Some(sequencer_http_addr),

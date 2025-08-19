@@ -13,9 +13,8 @@ use mojave_chain_utils::unique_heap::AsyncUniqueHeap;
 use mojave_client::MojaveClient;
 use mojave_full_node::rpc::start_api as start_api_full_node;
 use mojave_sequencer::rpc::start_api as start_api_sequencer;
-use reqwest::Url;
 use std::{net::SocketAddr, str::FromStr, sync::Arc};
-use tokio::sync::{oneshot, Mutex as TokioMutex};
+use tokio::sync::oneshot;
 use tokio_util::sync::CancellationToken;
 
 pub const TEST_GENESIS: &str = include_str!("../../../test_data/genesis.json");
@@ -96,7 +95,6 @@ pub async fn start_test_api_full_node(
 }
 
 pub async fn start_test_api_sequencer(
-    node_addresses: Option<Vec<SocketAddr>>,
     http_addr: Option<SocketAddr>,
     authrpc_addr: Option<SocketAddr>,
 ) -> (MojaveClient, oneshot::Receiver<()>) {
@@ -111,17 +109,6 @@ pub async fn start_test_api_sequencer(
     let jwt_secret = Default::default();
     let local_p2p_node = example_p2p_node();
     let rollup_store = example_rollup_store().await;
-    let default_node_url = format!("http://{TEST_NODE_ADDR}");
-    let node_addresses: Vec<String> = match node_addresses {
-        Some(addrs) => addrs.iter().map(|addr| format!("http://{addr}")).collect(),
-        None => vec![default_node_url.to_string()],
-    };
-    let node_urls = Arc::new(TokioMutex::new(
-        node_addresses
-            .iter()
-            .map(|url| Url::parse(url).unwrap())
-            .collect(),
-    ));
     let private_key = std::env::var("PRIVATE_KEY").unwrap();
     let client = MojaveClient::new(&private_key).unwrap();
 
@@ -137,7 +124,6 @@ pub async fn start_test_api_sequencer(
         PeerHandler::dummy(),
         "ethrex/test".to_string(),
         rollup_store,
-        node_urls,
     );
 
     let (sequencer_tx, sequencer_rx) = tokio::sync::oneshot::channel();
