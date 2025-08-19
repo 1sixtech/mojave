@@ -1,10 +1,11 @@
 pub mod block;
+pub mod block_ingestion;
 pub mod transaction;
 pub mod types;
-pub mod block_ingestion;
 
 use crate::rpc::{
-    block::SendBroadcastBlockRequest, block_ingestion::BlockIngestion, transaction::SendRawTransactionRequest, types::OrderedBlock
+    block::SendBroadcastBlockRequest, block_ingestion::BlockIngestion,
+    transaction::SendRawTransactionRequest, types::OrderedBlock,
 };
 use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
 use ethrex_blockchain::Blockchain;

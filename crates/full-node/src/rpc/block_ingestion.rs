@@ -1,7 +1,10 @@
-use std::sync::Arc;
 use ethrex_common::types::{Block, BlockBody, Transaction};
-use ethrex_rpc::{types::{block::RpcBlock, block_identifier::BlockIdentifier}, EthClient, RpcErr};
+use ethrex_rpc::{
+    EthClient, RpcErr,
+    types::{block::RpcBlock, block_identifier::BlockIdentifier},
+};
 use mojave_chain_utils::unique_heap::AsyncUniqueHeap;
+use std::sync::Arc;
 use tokio::sync::Mutex as TokioMutex;
 
 use crate::rpc::types::OrderedBlock;
@@ -13,7 +16,9 @@ pub struct BlockIngestion {
 
 impl BlockIngestion {
     pub fn new(start: u64) -> Self {
-        Self { next_expected: start }
+        Self {
+            next_expected: start,
+        }
     }
 
     pub fn next_expected(&self) -> u64 {

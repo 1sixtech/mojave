@@ -1,4 +1,4 @@
-use crate::rpc::{block_ingestion::BlockIngestion, RpcApiContext};
+use crate::rpc::{RpcApiContext, block_ingestion::BlockIngestion};
 use ethrex_rpc::{RpcErr, utils::RpcRequest};
 use mojave_client::types::SignedBlock;
 use mojave_signature::Verifier;
@@ -46,11 +46,12 @@ impl SendBroadcastBlockRequest {
         let signed_block_number = signed_block.header.number;
 
         BlockIngestion::ingest_block(
-            &context.ingestion,           // Arc<TokioMutex<BlockIngestion>>
-            &context.eth_client,          // &EthClient
-            &context.block_queue,         // &AsyncUniqueHeap<OrderedBlock, u64>
-            signed_block,                 // Block (the received block)
-        ).await?;
+            &context.ingestion,
+            &context.eth_client,
+            &context.block_queue,
+            signed_block,
+        )
+        .await?;
 
         tracing::info!("Received the block number: {}", signed_block_number);
         Ok(Value::Null)
