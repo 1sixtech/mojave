@@ -70,16 +70,14 @@ async fn test_client_timeout() {
 #[tokio::test]
 async fn test_client_retry_failed() {
     let mut client = ProverClient::new("192.0.2.1:12345", 1, 3);
-    
+
     match client.get_proof(create_mock_prover_data()).await {
         Ok(_) => panic!("Should receive retry failed error"),
-        Err(error) => {
-            match error {
-                mojave_prover::ProverClientError::RetryFailed(attempts) => {
-                    assert_eq!(attempts, 3, "Should have attempted 3 retries");
-                },
-                _ => panic!("Expected RetryFailed error, but got: {:?}", error),
+        Err(error) => match error {
+            mojave_prover::ProverClientError::RetryFailed(attempts) => {
+                assert_eq!(attempts, 3, "Should have attempted 3 retries");
             }
-        }
+            _ => panic!("Expected RetryFailed error, but got: {:?}", error),
+        },
     }
 }

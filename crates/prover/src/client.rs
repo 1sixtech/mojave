@@ -27,16 +27,13 @@ impl ProverClient {
     }
 
     fn is_retryable(error: &ProverClientError) -> bool {
-        match error {
+        !matches!(
+            error,
             ProverClientError::Message(MessageError::MessageTooLarge(_, _))
-            | ProverClientError::Message(MessageError::Serialize(_))
-            | ProverClientError::Message(MessageError::Deserialize(_))
-            | ProverClientError::Internal(_) => {
-                false
-            }
-    
-            _ => true,
-        }
+                | ProverClientError::Message(MessageError::Serialize(_))
+                | ProverClientError::Message(MessageError::Deserialize(_))
+                | ProverClientError::Internal(_)
+        )
     }
 
     async fn request_inner(&mut self, request: &Request) -> Result<Response, ProverClientError> {
@@ -64,7 +61,11 @@ impl ProverClient {
                     } else {
                         return Err(e);
                     }
-                    tracing::error!("Prover request failed (attempt {}): {}", number_of_retries, e);
+                    tracing::error!(
+                        "Prover request failed (attempt {}): {}",
+                        number_of_retries,
+                        e
+                    );
                 }
                 Err(_) => {
                     tracing::error!("Prover request timed out (attempt {})", number_of_retries);
@@ -79,7 +80,6 @@ impl ProverClient {
                     delay = MAX_DELAY;
                 }
             }
-            
         }
         Err(ProverClientError::RetryFailed(self.max_number_of_retries))
     }
