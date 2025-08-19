@@ -56,16 +56,16 @@ impl ProverClient {
             {
                 Ok(Ok(response)) => return Ok(response),
                 Ok(Err(e)) => {
-                    if Self::is_retryable(&e) {
-                        tracing::info!("Retrying request (attempt {})", number_of_retries);
-                    } else {
-                        return Err(e);
-                    }
                     tracing::error!(
                         "Prover request failed (attempt {}): {}",
                         number_of_retries,
                         e
                     );
+                    if Self::is_retryable(&e) {
+                        tracing::info!("Retrying request (attempt {})", number_of_retries);
+                    } else {
+                        return Err(e);
+                    }
                 }
                 Err(_) => {
                     tracing::error!("Prover request timed out (attempt {})", number_of_retries);
