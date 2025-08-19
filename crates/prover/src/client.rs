@@ -14,15 +14,15 @@ const MAX_DELAY: Duration = Duration::from_secs(30);
 pub struct ProverClient {
     server_address: String,
     request_timeout: u64,
-    max_number_of_retries: u64,
+    max_attempts: u64,
 }
 
 impl ProverClient {
-    pub fn new(server_address: &str, request_timeout: u64, max_number_of_retries: u64) -> Self {
+    pub fn new(server_address: &str, request_timeout: u64, max_attempts: u64) -> Self {
         Self {
             server_address: server_address.to_owned(),
             request_timeout,
-            max_number_of_retries,
+            max_attempts,
         }
     }
 
@@ -44,10 +44,10 @@ impl ProverClient {
     }
 
     async fn request(&mut self, request: &Request) -> Result<Response, ProverClientError> {
-        let mut number_of_retries = 0;
+        let mut attempts = 0;
         let mut delay = INITIAL_RETRY_DELAY;
-        while number_of_retries < self.max_number_of_retries {
-            number_of_retries += 1;
+        while attempts < self.max_attempts {
+            attempts += 1;
             match timeout(
                 Duration::from_secs(self.request_timeout),
                 self.request_inner(request),
@@ -58,22 +58,22 @@ impl ProverClient {
                 Ok(Err(e)) => {
                     tracing::error!(
                         "Prover request failed (attempt {}): {}",
-                        number_of_retries,
+                        attempts,
                         e
                     );
                     if Self::is_retryable(&e) {
-                        tracing::info!("Retrying request (attempt {})", number_of_retries);
+                        tracing::info!("Retrying request (attempt {})", attempts);
                     } else {
                         return Err(e);
                     }
                 }
                 Err(_) => {
-                    tracing::error!("Prover request timed out (attempt {})", number_of_retries);
+                    tracing::error!("Prover request timed out (attempt {})", attempts);
                 }
             }
 
             // avoid sleeping on the last attempt
-            if number_of_retries < self.max_number_of_retries {
+            if attempts < self.max_attempts {
                 tokio::time::sleep(delay).await;
                 delay *= BACKOFF_FACTOR;
                 if delay > MAX_DELAY {
@@ -81,7 +81,7 @@ impl ProverClient {
                 }
             }
         }
-        Err(ProverClientError::RetryFailed(self.max_number_of_retries))
+        Err(ProverClientError::RetryFailed(attempts))
     }
 
     pub async fn get_proof(&mut self, data: ProverData) -> Result<BatchProof, ProverClientError> {
