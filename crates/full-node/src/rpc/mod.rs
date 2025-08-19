@@ -1,9 +1,10 @@
 pub mod block;
 pub mod transaction;
 pub mod types;
+pub mod block_ingestion;
 
 use crate::rpc::{
-    block::SendBroadcastBlockRequest, transaction::SendRawTransactionRequest, types::OrderedBlock,
+    block::SendBroadcastBlockRequest, block_ingestion::BlockIngestion, transaction::SendRawTransactionRequest, types::OrderedBlock
 };
 use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
 use ethrex_blockchain::Blockchain;
@@ -49,6 +50,7 @@ pub struct RpcApiContext {
     pub rollup_store: StoreRollup,
     pub eth_client: EthClient,
     pub block_queue: AsyncUniqueHeap<OrderedBlock, u64>,
+    pub ingestion: Arc<Mutex<BlockIngestion>>,
 }
 
 #[expect(clippy::too_many_arguments)]
@@ -87,6 +89,7 @@ pub async fn start_api(
         rollup_store,
         eth_client,
         block_queue,
+        ingestion: Arc::new(Mutex::new(BlockIngestion::new(0))),
     };
 
     // Periodically clean up the active filters for the filters endpoints.
@@ -410,6 +413,7 @@ mod tests {
             rollup_store,
             eth_client,
             block_queue: block_queue.clone(),
+            ingestion: Arc::new(Mutex::new(BlockIngestion::new(0))),
         };
 
         let cancel_token = CancellationToken::new();
