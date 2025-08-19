@@ -50,14 +50,14 @@ impl ProverClient {
         }
     }
 
-    async fn request_inner(&mut self, request: &Request) -> Result<Response, ProverClientError> {
+    async fn request_inner(&self, request: &Request) -> Result<Response, ProverClientError> {
         let mut stream = TcpStream::connect(&self.server_address).await?;
         message::send(&mut stream, request).await?;
         let response = message::receive::<Response>(&mut stream).await?;
         Ok(response)
     }
 
-    async fn request(&mut self, request: &Request) -> Result<Response, ProverClientError> {
+    async fn request(&self, request: &Request) -> Result<Response, ProverClientError> {
         let mut attempts = 0;
         let mut delay = INITIAL_RETRY_DELAY;
         while attempts < self.max_attempts {
@@ -89,7 +89,7 @@ impl ProverClient {
             // avoid sleeping on the last attempt
             if attempts < self.max_attempts {
                 tokio::time::sleep(delay).await;
-                delay *= BACKOFF_FACTOR;
+                delay = delay.saturating_mul(BACKOFF_FACTOR);
                 if delay > MAX_DELAY {
                     delay = MAX_DELAY;
                 }
@@ -98,7 +98,7 @@ impl ProverClient {
         Err(ProverClientError::RetryFailed(attempts))
     }
 
-    pub async fn get_proof(&mut self, data: ProverData) -> Result<BatchProof, ProverClientError> {
+    pub async fn get_proof(&self, data: ProverData) -> Result<BatchProof, ProverClientError> {
         match self.request(&Request::Proof(data)).await? {
             Response::Proof(proof) => Ok(proof),
             Response::Error(error) => Err(ProverClientError::Internal(error)),
