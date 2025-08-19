@@ -47,48 +47,24 @@ impl SendBroadcastBlockRequest {
             )
             .map_err(|error| RpcErr::Internal(error.to_string()))?;
 
-        let latest_block_number = context.l1_context.storage.get_latest_block_number().await? + 1;
-        let signed_block_number = data.signed_block.block.header.number;
-        for block_number in latest_block_number..signed_block_number {
-            let block = context
-                .eth_client
-                .get_block_by_number(BlockIdentifier::Number(block_number))
+        let signed_block = data.signed_block.block.clone();
+        let signed_block_number = signed_block.header.number;
+
+        // Delegate to BlockIngestion
+        {
+            let mut ingestion = context.ingestion.lock().unwrap();
+
+            ingestion
+                .ingest_block(
+                    signed_block,
+                    &context.eth_client,
+                    &context.block_queue,
+                )
                 .await
-                .map_err(|error| RpcErr::Internal(error.to_string()))?;
-            let block = rpc_block_to_block(block);
-            context.block_queue.push(OrderedBlock(block)).await;
+                .map_err(|e| RpcErr::Internal(e.to_string()))?;
         }
 
-        context
-            .block_queue
-            .push(OrderedBlock(data.signed_block.block))
-            .await;
         tracing::info!("Received the block number: {}", signed_block_number);
         Ok(Value::Null)
-    }
-}
-
-fn rpc_block_to_block(rpc_block: RpcBlock) -> Block {
-    match rpc_block.body {
-        ethrex_rpc::types::block::BlockBodyWrapper::Full(full_block_body) => {
-            // transform RPCBlock to normal block
-            let transactions: Vec<Transaction> = full_block_body
-                .transactions
-                .iter()
-                .map(|b| b.tx.clone())
-                .collect();
-
-            Block::new(
-                rpc_block.header,
-                BlockBody {
-                    ommers: vec![],
-                    transactions,
-                    withdrawals: Some(full_block_body.withdrawals),
-                },
-            )
-        }
-        ethrex_rpc::types::block::BlockBodyWrapper::OnlyHashes(..) => {
-            unreachable!()
-        }
     }
 }
