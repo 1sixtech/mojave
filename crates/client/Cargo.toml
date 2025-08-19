@@ -5,7 +5,7 @@ edition = "2024"
 
 [dev-dependencies]
 mockito = "0.31"
-tokio = { workspace = true, features = ["full"] }
+
 
 [dependencies]
 # ethrex
@@ -15,6 +15,7 @@ ethrex-rpc = { workspace = true }
 
 # mojave
 mojave-signature = { workspace = true }
+mojave-prover = { workspace = true }
 
 futures = { workspace = true }
 hex = { workspace = true }
@@ -23,3 +24,4 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
+tokio = { workspace = true, features = ["full"] }

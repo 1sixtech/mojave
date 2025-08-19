@@ -53,6 +53,13 @@ pub struct SequencerOpts {
     )]
     pub full_node_addresses: Vec<String>,
     #[arg(
+        long = "prover.address",
+        help = "Allowed domain(s) and port(s) for the prover in the form 'domain:port'",
+        help_heading = "Prover Options",
+        default_value = "http://0.0.0.0:3900"
+    )]
+    pub prover_address: String,
+    #[arg(
         long = "block_time",
         help = "Block creation interval in milliseconds",
         default_value = "1000"
@@ -67,7 +74,6 @@ impl std::fmt::Debug for SequencerOpts {
         f.debug_struct("SequencerOptions")
             .field("full_node_addresses", &self.full_node_addresses)
             .field("block_time", &self.block_time)
-            .field("private_key", &self.private_key)
             .finish()
     }
 }

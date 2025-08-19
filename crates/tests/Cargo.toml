@@ -30,6 +30,7 @@ mojave-chain-utils = { workspace = true }
 
 k256 = { workspace = true, features = ["ecdh"] }
 rand = { workspace = true }
+reqwest = { workspace = true }
 secp256k1 = { workspace = true }
 
 [dev-dependencies]

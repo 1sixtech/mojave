@@ -75,7 +75,6 @@ pub async fn start_api(
             gas_tip_estimator: Arc::new(TokioMutex::new(GasTipEstimator::new())),
         },
         rollup_store,
-        // mojave_client,
     };
 
     // Periodically clean up the active filters for the filters endpoints.

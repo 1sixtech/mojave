@@ -95,7 +95,6 @@ pub async fn start_test_api_full_node(
 }
 
 pub async fn start_test_api_sequencer(
-    node_urls: Option<Vec<SocketAddr>>,
     http_addr: Option<SocketAddr>,
     authrpc_addr: Option<SocketAddr>,
 ) -> (MojaveClient, oneshot::Receiver<()>) {
@@ -110,13 +109,8 @@ pub async fn start_test_api_sequencer(
     let jwt_secret = Default::default();
     let local_p2p_node = example_p2p_node();
     let rollup_store = example_rollup_store().await;
-    let default_node_url = format!("http://{TEST_NODE_ADDR}");
-    let node_urls: Vec<String> = match node_urls {
-        Some(addrs) => addrs.iter().map(|addr| format!("http://{addr}")).collect(),
-        None => vec![default_node_url.to_string()],
-    };
     let private_key = std::env::var("PRIVATE_KEY").unwrap();
-    let client = MojaveClient::new(&node_urls, &private_key).unwrap();
+    let client = MojaveClient::new(&private_key).unwrap();
 
     let rpc_api = start_api_sequencer(
         http_addr,

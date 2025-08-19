@@ -24,6 +24,7 @@ ethrex-rpc = { workspace = true }
 ethrex-storage = { workspace = true }
 ethrex-storage-rollup = { workspace = true }
 ethrex-vm = { workspace = true }
+reqwest = { workspace = true }
 
 # mojave
 mojave-chain-utils = { workspace = true }

@@ -13,6 +13,7 @@ mod tests {
     };
     use mojave_client::MojaveClient;
     use mojave_tests::{start_test_api_full_node, start_test_api_sequencer};
+    use reqwest::Url;
     use secp256k1::SecretKey;
     use serde_json::{json, Value};
     use std::{
@@ -21,7 +22,6 @@ mod tests {
         time::{SystemTime, UNIX_EPOCH},
     };
     use tokio::time::{sleep, Duration};
-
     #[ctor]
     fn test_setup() {
         unsafe {
@@ -114,8 +114,10 @@ mod tests {
 
         // create mojave client and test block broadcast
         let private_key = std::env::var("PRIVATE_KEY").unwrap();
-        let client = MojaveClient::new(std::slice::from_ref(&server_url), &private_key).unwrap();
-        let result = client.send_broadcast_block(&test_block).await;
+        let client = MojaveClient::new(&private_key).unwrap();
+        let result = client
+            .send_broadcast_block(&test_block, &[Url::parse(&server_url).unwrap()])
+            .await;
 
         server_handle.abort();
 
@@ -192,8 +194,10 @@ mod tests {
 
         // create mojave client and test block broadcast
         let private_key = std::env::var("PRIVATE_KEY").unwrap();
-        let client = MojaveClient::new(std::slice::from_ref(&server_url), &private_key).unwrap();
-        let result = client.send_broadcast_block(&test_block).await;
+        let client = MojaveClient::new(&private_key).unwrap();
+        let result = client
+            .send_broadcast_block(&test_block, &[Url::parse(&server_url).unwrap()])
+            .await;
 
         // assert the response
         assert!(result.is_err(), "Should fail when server is unavailable");
@@ -201,7 +205,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_forward_transaction() {
-        let (_, sequencer_rx) = start_test_api_sequencer(None, None, None).await;
+        let (_, sequencer_rx) = start_test_api_sequencer(None, None).await;
         let (full_node_client, full_node_rx) = start_test_api_full_node(None, None, None).await;
         sequencer_rx.await.unwrap();
         full_node_rx.await.unwrap();
@@ -256,12 +260,8 @@ mod tests {
         let full_node_http_addr: SocketAddr = "127.0.0.1:8506".parse().unwrap();
         let full_node_auth_addr: SocketAddr = "127.0.0.1:8507".parse().unwrap();
 
-        let (sequencer_client, sequencer_rx) = start_test_api_sequencer(
-            Some(vec![full_node_http_addr]),
-            Some(sequencer_http_addr),
-            Some(sequencer_auth_addr),
-        )
-        .await;
+        let (sequencer_client, sequencer_rx) =
+            start_test_api_sequencer(Some(sequencer_http_addr), Some(sequencer_auth_addr)).await;
 
         let (_, full_node_rx) = start_test_api_full_node(
             Some(sequencer_http_addr),
@@ -337,6 +337,11 @@ mod tests {
             },
         };
 
-        sequencer_client.send_broadcast_block(&block).await.unwrap();
+        let full_node_urls = vec![Url::parse(&format!("http://{full_node_http_addr}")).unwrap()];
+
+        sequencer_client
+            .send_broadcast_block(&block, &full_node_urls)
+            .await
+            .unwrap();
     }
 }

@@ -20,6 +20,7 @@ use mojave_sequencer::{
     error::Error,
     rpc::start_api,
 };
+use reqwest::Url;
 use std::{path::PathBuf, sync::Arc, time::Duration};
 use tokio::sync::Mutex;
 
@@ -51,10 +52,7 @@ async fn main() -> Result<(), Error> {
 
             let blockchain = init_blockchain(EvmEngine::LEVM, store.clone(), BlockchainType::L2);
 
-            let mojave_client = MojaveClient::new(
-                &sequencer_options.full_node_addresses,
-                sequencer_options.private_key.as_str(),
-            )?;
+            let mojave_client = MojaveClient::new(sequencer_options.private_key.as_str())?;
 
             let context = BlockProducerContext::new(
                 store.clone(),
@@ -64,11 +62,20 @@ async fn main() -> Result<(), Error> {
                 ELASTICITY_MULTIPLIER,
             );
             let block_producer = BlockProducer::start(context, 100);
+            let full_node_urls: Vec<Url> = sequencer_options
+                .full_node_addresses
+                .iter()
+                .map(|address| {
+                    Url::parse(address)
+                        .unwrap_or_else(|error| panic!("Failed to parse URL: {error}"))
+                })
+                .collect();
+
             tokio::spawn(async move {
                 loop {
                     match block_producer.build_block().await {
                         Ok(block) => mojave_client
-                            .send_broadcast_block(&block)
+                            .send_broadcast_block(&block, &full_node_urls)
                             .await
                             .unwrap_or_else(|error| tracing::error!("{}", error)),
                         Err(error) => {
