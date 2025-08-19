@@ -74,7 +74,6 @@ impl std::fmt::Debug for SequencerOpts {
         f.debug_struct("SequencerOptions")
             .field("full_node_addresses", &self.full_node_addresses)
             .field("block_time", &self.block_time)
-            .field("private_key", &self.private_key)
             .finish()
     }
 }
