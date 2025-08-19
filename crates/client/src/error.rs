@@ -1,13 +1,9 @@
 #[derive(Debug, thiserror::Error)]
 pub enum MojaveClientError {
-    #[error("Failed to serialize the request body: {0}")]
-    SerializeRequest(serde_json::Error),
-    #[error("Failed to send a request: {0}")]
-    SendRequest(reqwest::Error),
-    #[error("Failed to deserialize the response: {0}")]
-    DeserializeResponse(reqwest::Error),
-    #[error("Failed to deserialize the response result: {0}")]
-    DeserializeResponseResult(serde_json::Error),
+    #[error("Reqwest error: {0}")]
+    Reqwest(#[from] reqwest::Error),
+    #[error("Serde JSON error: {0}")]
+    SerdeJson(#[from] serde_json::Error),
     #[error("RPC error: {0}")]
     RpcError(String),
     #[error("Error: {0}")]
