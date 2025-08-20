@@ -4809,14 +4809,20 @@ dependencies = [
 name = "mojave-prover"
 version = "0.1.0"
 dependencies = [
+ "axum",
+ "bincode",
  "clap",
  "ethrex-l2-common",
  "ethrex-prover",
+ "ethrex-rpc",
+ "hex",
  "mojave-chain-utils",
  "serde",
  "serde_json",
  "thiserror 2.0.14",
+ "tiny-keccak",
  "tokio",
+ "tower-http",
  "tracing",
  "zkvm_interface",
 ]
