@@ -1,8 +1,7 @@
-#[cfg(feature = "client")]
-use mojave_prover::ProverClient;
-use mojave_prover::ProverData;
 #[cfg(feature = "server")]
-use mojave_prover::ProverServer;
+use mojave_prover_lib::ProverServer;
+#[cfg(feature = "client")]
+use mojave_prover_lib::{ProverClient, ProverData};
 use tokio::net::TcpListener;
 use zkvm_interface::io::ProgramInput;
 
