@@ -7,8 +7,8 @@ set -e  # Exit on error
 
 echo "Running e2e tests"
 
-# Check if rex is installed
-REX_PATH=$(command -v rex 2>/dev/null)
+echo "Checking if rex is installed"
+REX_PATH=$(command -v rex 2>/dev/null || true)
 if [ -z "$REX_PATH" ]; then
     echo "ERROR: 'rex' command not found!"
     exit 1
@@ -28,7 +28,7 @@ cleanup() {
     pkill -f mojave-sequencer || true
     sleep 2
 }
-
+trap cleanup INT TERM EXIT
 
 echo "Starting all services"
 
@@ -68,7 +68,6 @@ else
     echo "Expected: 0x0000000000000000000000000000000000000000000000000000000000000001"
     echo "Got: $NUMBER"
 
-    cleanup
     exit 1
 fi
 
@@ -87,7 +86,6 @@ else
     echo "Expected: 0x0000000000000000000000000000000000000000000000000000000000000005"
     echo "Got: $NUMBER"
 
-    cleanup
     exit 1
 fi
 
@@ -96,6 +94,4 @@ fi
 # Clean up
 # ================================
 
-cleanup
-
-echo "ALL TESTS PASSED SUCCESSFULLY!"
+echo "ALL TESTS PASSED SUCCESSFULLY!"   
