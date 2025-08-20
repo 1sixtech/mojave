@@ -1,4 +1,4 @@
-use crate::block_producer::{BlockProducerContext, BlockProducerError};
+use crate::{BlockProducerContext, BlockProducerError};
 use ethrex_common::types::Block;
 use tokio::sync::{
     mpsc::{self, error::TrySendError},

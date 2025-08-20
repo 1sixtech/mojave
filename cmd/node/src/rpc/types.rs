@@ -57,7 +57,7 @@ impl UniqueHeapItem<u64> for OrderedBlock {
 mod tests {
     use super::*;
     use ethrex_common::types::{BlockBody, BlockHeader};
-    use mojave_chain_utils::unique_heap::AsyncUniqueHeap;
+    use mojave_utils::unique_heap::AsyncUniqueHeap;
 
     fn create_test_block(number: u64) -> OrderedBlock {
         let header = BlockHeader {

@@ -4,14 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-tokio = { workspace = true, features = ["full"] }
-axum = { workspace = true }
-tower-http = { workspace = true, features = ["cors"] }
-serde_json = { workspace = true }
-thiserror = { workspace = true }
-tokio-util = { workspace = true }
+mojave-client = { workspace = true }
+mojave-node-lib = { workspace = true }
+mojave-utils = { workspace = true }
 
-# ethrex
 ethrex-common = { workspace = true }
 ethrex-rpc = { workspace = true }
 ethrex-storage = { workspace = true }
@@ -22,11 +18,12 @@ ethrex-rlp = { workspace = true }
 ethrex-l2 = { workspace = true }
 ethrex-l2-rpc = { workspace = true }
 
-# mojave
-mojave-client = { workspace = true }
-mojave-node = { path = "../../cmd/node" }
-mojave-sequencer = { path = "../../cmd/sequencer" }
-mojave-utils = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+axum = { workspace = true }
+tower-http = { workspace = true, features = ["cors"] }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio-util = { workspace = true }
 
 k256 = { workspace = true, features = ["ecdh"] }
 rand = { workspace = true }

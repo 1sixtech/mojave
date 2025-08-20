@@ -1,4 +1,4 @@
-use crate::block_producer::BlockProducerError;
+use crate::BlockProducerError;
 use ethrex_blockchain::{
     Blockchain,
     constants::TX_GAS_COST,

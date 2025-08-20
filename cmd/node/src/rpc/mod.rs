@@ -295,7 +295,7 @@ mod tests {
     use ethrex_rpc::{ActiveFilters, GasTipEstimator, NodeData};
     use ethrex_storage::{EngineType, Store};
     use ethrex_storage_rollup::{EngineTypeRollup, StoreRollup};
-    use mojave_chain_utils::unique_heap::AsyncUniqueHeap;
+    use mojave_utils::unique_heap::AsyncUniqueHeap;
     use std::{
         collections::{BTreeMap, HashMap},
         net::{IpAddr, Ipv4Addr},
