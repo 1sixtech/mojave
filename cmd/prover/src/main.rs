@@ -1,12 +1,7 @@
-pub mod cli;
-pub mod message;
-pub mod server;
-pub mod types;
+mod cli;
 
-use crate::{
-    cli::{Cli, Command},
-    server::ProverServer,
-};
+use crate::cli::{Cli, Command};
+use mojave_prover_lib::ProverServer;
 use mojave_utils::logging::init_logging;
 
 #[tokio::main]

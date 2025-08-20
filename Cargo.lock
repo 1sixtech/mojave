@@ -4754,15 +4754,10 @@ name = "mojave-prover"
 version = "0.1.0"
 dependencies = [
  "clap",
- "ethrex-l2-common",
- "ethrex-prover",
+ "mojave-prover-lib",
  "mojave-utils",
- "serde",
- "serde_json",
- "thiserror 2.0.16",
  "tokio",
  "tracing",
- "zkvm_interface",
 ]
 
 [[package]]
