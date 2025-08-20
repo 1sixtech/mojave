@@ -24,9 +24,9 @@ ethrex-l2-rpc = { workspace = true }
 
 # mojave
 mojave-client = { workspace = true }
-mojave-full-node = { workspace = true }
-mojave-sequencer = { workspace = true }
-mojave-chain-utils = { workspace = true }
+mojave-node = { path = "../../cmd/node" }
+mojave-sequencer = { path = "../../cmd/sequencer" }
+mojave-utils = { workspace = true }
 
 k256 = { workspace = true, features = ["ecdh"] }
 rand = { workspace = true }

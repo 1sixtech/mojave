@@ -1,8 +1,17 @@
 use crate::network::Network;
 use clap::{ArgAction, Parser};
-use ethrex::utils;
 use ethrex_p2p::{sync::SyncMode, types::Node};
 use std::fmt;
+
+pub fn parse_sync_mode(s: &str) -> eyre::Result<SyncMode> {
+    match s {
+        "full" => Ok(SyncMode::Full),
+        "snap" => Ok(SyncMode::Snap),
+        other => Err(eyre::eyre!(
+            "Invalid syncmode {other:?} expected either snap or full",
+        )),
+    }
+}
 
 #[derive(Parser)]
 pub struct Options {
@@ -21,7 +30,7 @@ pub struct Options {
     #[arg(long = "bootnodes", value_parser = clap::value_parser!(Node), value_name = "BOOTNODE_LIST", value_delimiter = ',', num_args = 1.., help = "Comma separated enode URLs for P2P discovery bootstrap.", help_heading = "P2P options")]
     pub bootnodes: Vec<Node>,
 
-    #[arg(long = "syncmode", default_value = "full", value_name = "SYNC_MODE", value_parser = utils::parse_sync_mode, help = "The way in which the node will sync its state.", long_help = "Can be either \"full\" or \"snap\" with \"full\" as default value.", help_heading = "P2P options")]
+    #[arg(long = "syncmode", default_value = "full", value_name = "SYNC_MODE", value_parser = parse_sync_mode, help = "The way in which the node will sync its state.", long_help = "Can be either \"full\" or \"snap\" with \"full\" as default value.", help_heading = "P2P options")]
     pub syncmode: SyncMode,
 
     #[arg(
