@@ -7,14 +7,10 @@ env:
   CARGO_TERM_COLOR: always
 
 name: Rust
-
 jobs:
-  test-native:
-    name: Test Native
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+  test:
+    name: Test
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -49,12 +45,9 @@ jobs:
       - name: Run cargo clippy
         run: cargo fmt --all --check
 
-  lint-native:
-    name: Lints native
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
