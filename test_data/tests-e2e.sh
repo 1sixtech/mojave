@@ -28,7 +28,6 @@ cleanup() {
     pkill -f mojave-sequencer || true
     sleep 2
 }
-trap cleanup INT TERM EXIT
 
 echo "Starting all services"
 
@@ -37,6 +36,7 @@ sleep 10
 
 echo "All services started. Testing connection..."
 
+trap cleanup INT TERM EXIT
 
 
 # ================================
