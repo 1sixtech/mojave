@@ -14,6 +14,9 @@ use mojave_prover::{ProverClient, ProverData};
 
 mod errors;
 
+const MAX_ATTEMPTS: u64 = 5;
+const REQUEST_TIMEOUT: u64 = 300;
+
 pub struct ProofCoordinator {
     /// Come from the block builder
     proof_data_receiver: Receiver<u64>,
@@ -54,7 +57,7 @@ impl ProofCoordinator {
         &self,
         prover_data: ProverData,
     ) -> Result<(u64, BatchProof), ProofCoordinatorError> {
-        let mut client = ProverClient::new(&self.prover_tcp_addr, 300);
+        let client = ProverClient::new(&self.prover_tcp_addr, REQUEST_TIMEOUT, MAX_ATTEMPTS);
         let batch_number = prover_data.batch_number;
         let proof = client
             .get_proof(prover_data)
