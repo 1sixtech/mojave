@@ -12,13 +12,5 @@ mojave-prover-lib = { workspace = true, features = ["server"] }
 mojave-utils = { workspace = true }
 
 clap = { workspace = true }
-tokio = { workspace = true, features = ["sync", "net"] }
+tokio = { workspace = true }
 tracing = { workspace = true }
-
-[dev-dependencies]
-tokio = { workspace = true, features = [
-	"io-util",
-	"macros",
-	"rt-multi-thread",
-	"time",
-] }
