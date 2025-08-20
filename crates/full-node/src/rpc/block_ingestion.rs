@@ -40,7 +40,7 @@ impl BlockIngestion {
         let signed_block_number = signed_block.header.number;
 
         // ---- lock to read state
-        let guard = ingestion.lock().await;
+        let mut guard = ingestion.lock().await;
         let expected = guard.next_expected();
 
         // already processed or behind: skip quickly
@@ -52,9 +52,6 @@ impl BlockIngestion {
             );
             return Ok(());
         }
-
-        // release lock before doing network I/O
-        drop(guard);
 
         // ---- backfill any missing blocks
         if signed_block_number > expected {
@@ -72,8 +69,6 @@ impl BlockIngestion {
         // ---- push the provided signed block
         block_queue.push(OrderedBlock(signed_block)).await;
 
-        // ---- lock again to advance state (only after successful ingestion)
-        let mut guard = ingestion.lock().await;
         // ensure monotonic progress in case another task advanced meanwhile
         guard.advance(signed_block_number + 1);
 

@@ -90,7 +90,7 @@ pub async fn start_api(
         rollup_store,
         eth_client,
         block_queue,
-        ingestion: Arc::new(TokioMutex::new(BlockIngestion::new(0))),
+        ingestion: Arc::new(TokioMutex::new(BlockIngestion::new(1))),
     };
 
     // Periodically clean up the active filters for the filters endpoints.
@@ -414,7 +414,7 @@ mod tests {
             rollup_store,
             eth_client,
             block_queue: block_queue.clone(),
-            ingestion: Arc::new(TokioMutex::new(BlockIngestion::new(0))),
+            ingestion: Arc::new(TokioMutex::new(BlockIngestion::new(1))),
         };
 
         let cancel_token = CancellationToken::new();
