@@ -1,7 +1,6 @@
 pub mod cli;
 
 use crate::cli::{Cli, Command};
-use ethrex_common::types::ELASTICITY_MULTIPLIER;
 use mojave_block_producer::{BlockProducer, BlockProducerContext};
 use mojave_client::MojaveClient;
 use mojave_node_lib::Node;
@@ -29,7 +28,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 node.blockchain.clone(),
                 node.rollup_store.clone(),
                 node.genesis.coinbase,
-                ELASTICITY_MULTIPLIER,
             );
             let block_producer = BlockProducer::start(context, 100);
             let full_node_urls: Vec<Url> = sequencer_options

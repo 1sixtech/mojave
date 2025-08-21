@@ -11,29 +11,9 @@ path = "src/main.rs"
 mojave-block-producer = { workspace = true }
 mojave-client = { workspace = true }
 mojave-node-lib = { workspace = true }
-mojave-signature = { workspace = true }
 mojave-utils = { workspace = true }
 
-ethrex-blockchain = { workspace = true }
-ethrex-common = { workspace = true }
-ethrex-l2-common = { workspace = true }
-ethrex-p2p = { workspace = true }
-ethrex-rpc = { workspace = true }
-ethrex-storage = { workspace = true }
-ethrex-storage-rollup = { workspace = true }
-ethrex-vm = { workspace = true }
-
-reqwest = { workspace = true }
-axum = { workspace = true }
 clap = { workspace = true }
-hex = { workspace = true }
-futures = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
-serde_json = { workspace = true }
-thiserror = { workspace = true }
-tokio = { workspace = true, features = ["full"] }
-tokio-stream = { workspace = true }
-tokio-util = { workspace = true }
-tower-http = { workspace = true, features = ["cors"] }
+reqwest = { workspace = true }
+tokio = { workspace = true }
 tracing = { workspace = true }
-tracing-subscriber = { workspace = true }

@@ -1,7 +1,6 @@
 use clap::{Parser, Subcommand};
-use tracing::Level;
-
 use mojave_utils::prover_options::ProverOpts;
+use tracing::Level;
 
 #[derive(Parser)]
 #[command(

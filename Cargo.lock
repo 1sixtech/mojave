@@ -4666,9 +4666,6 @@ name = "mojave-node"
 version = "0.1.0"
 dependencies = [
  "clap",
- "ctor",
- "ethrex-rlp",
- "mockito",
  "mojave-node-lib",
  "mojave-utils",
  "tokio",
@@ -4760,33 +4757,14 @@ dependencies = [
 name = "mojave-sequencer"
 version = "0.1.0"
 dependencies = [
- "axum",
  "clap",
- "ethrex-blockchain",
- "ethrex-common",
- "ethrex-l2-common",
- "ethrex-p2p",
- "ethrex-rpc",
- "ethrex-storage",
- "ethrex-storage-rollup",
- "ethrex-vm",
- "futures",
- "hex",
  "mojave-block-producer",
  "mojave-client",
  "mojave-node-lib",
- "mojave-signature",
  "mojave-utils",
  "reqwest 0.12.23",
- "serde",
- "serde_json",
- "thiserror 2.0.16",
  "tokio",
- "tokio-stream",
- "tokio-util",
- "tower-http",
  "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]

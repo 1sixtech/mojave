@@ -1,6 +1,5 @@
-use mojave_utils::options::Options;
-
 use clap::{Parser, Subcommand};
+use mojave_utils::options::Options;
 use tracing::Level;
 
 #[allow(clippy::upper_case_acronyms)]

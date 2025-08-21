@@ -3,15 +3,6 @@ name = "mojave-node"
 version = "0.1.0"
 edition = "2024"
 
-[[bin]]
-name = "mojave-node"
-path = "src/main.rs"
-
-[dev-dependencies]
-mockito = "0.31"
-ethrex-rlp = { workspace = true }
-ctor = "0.4.2"
-
 [dependencies]
 mojave-node-lib = { workspace = true }
 mojave-utils = { workspace = true }

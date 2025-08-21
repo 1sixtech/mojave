@@ -14,8 +14,8 @@ use ethrex_common::{
     Address, Bloom, Bytes, H256, U256,
     constants::{DEFAULT_OMMERS_HASH, DEFAULT_REQUESTS_HASH},
     types::{
-        Block, BlockBody, BlockHeader, Receipt, SAFE_BYTES_PER_BLOB, Transaction,
-        calc_excess_blob_gas, calculate_base_fee_per_gas, compute_receipts_root,
+        Block, BlockBody, BlockHeader, ELASTICITY_MULTIPLIER, Receipt, SAFE_BYTES_PER_BLOB,
+        Transaction, calc_excess_blob_gas, calculate_base_fee_per_gas, compute_receipts_root,
         compute_transactions_root, compute_withdrawals_root,
     },
 };
@@ -43,7 +43,6 @@ pub struct BlockProducerContext {
     blockchain: Arc<Blockchain>,
     rollup_store: StoreRollup,
     coinbase_address: Address,
-    elasticity_multiplier: u64,
 }
 
 impl BlockProducerContext {
@@ -52,14 +51,12 @@ impl BlockProducerContext {
         blockchain: Arc<Blockchain>,
         rollup_store: StoreRollup,
         coinbase_address: Address,
-        elasticity_multiplier: u64,
     ) -> Self {
         Self {
             store,
             blockchain,
             rollup_store,
             coinbase_address,
-            elasticity_multiplier,
         }
     }
 
@@ -91,7 +88,7 @@ impl BlockProducerContext {
             withdrawals: Default::default(),
             beacon_root: Some(head_beacon_block_root),
             version,
-            elasticity_multiplier: self.elasticity_multiplier,
+            elasticity_multiplier: ELASTICITY_MULTIPLIER,
         };
         let payload = self.create_payload(&args)?;
 
@@ -105,12 +102,7 @@ impl BlockProducerContext {
         // Blockchain stores block
         let block = payload_build_result.payload;
         let chain_config = self.store.get_chain_config()?;
-        validate_block(
-            &block,
-            &head_header,
-            &chain_config,
-            self.elasticity_multiplier,
-        )?;
+        validate_block(&block, &head_header, &chain_config, ELASTICITY_MULTIPLIER)?;
 
         let account_updates = payload_build_result.account_updates;
 
