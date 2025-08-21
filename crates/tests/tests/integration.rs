@@ -12,7 +12,7 @@ mod tests {
         EthClient,
     };
     use mojave_client::MojaveClient;
-    use mojave_tests::{start_test_api_full_node, start_test_api_sequencer};
+    use mojave_tests::{start_test_api_node, start_test_api_sequencer};
     use reqwest::Url;
     use secp256k1::SecretKey;
     use serde_json::{json, Value};
@@ -206,7 +206,7 @@ mod tests {
     #[tokio::test]
     async fn test_forward_transaction() {
         let (_, sequencer_rx) = start_test_api_sequencer(None, None).await;
-        let (full_node_client, full_node_rx) = start_test_api_full_node(None, None, None).await;
+        let (full_node_client, full_node_rx) = start_test_api_node(None, None, None).await;
         sequencer_rx.await.unwrap();
         full_node_rx.await.unwrap();
 
@@ -263,7 +263,7 @@ mod tests {
         let (sequencer_client, sequencer_rx) =
             start_test_api_sequencer(Some(sequencer_http_addr), Some(sequencer_auth_addr)).await;
 
-        let (_, full_node_rx) = start_test_api_full_node(
+        let (_, full_node_rx) = start_test_api_node(
             Some(sequencer_http_addr),
             Some(full_node_http_addr),
             Some(full_node_auth_addr),
