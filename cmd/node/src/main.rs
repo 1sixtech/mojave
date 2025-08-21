@@ -15,8 +15,10 @@ async fn main() -> Result<(), Error> {
                 std::process::exit(1);
             });
             tokio::select! {
-                _ = node.run(&options) => {
-                    tracing::error!("Node stopped unexpectedly");
+                res = node.run(&options) => {
+                    if let Err(err) = res {
+                        tracing::error!("Node stopped unexpectedly: {}", err);
+                    }
                 }
                 _ = tokio::signal::ctrl_c() => {
                     tracing::info!("Shutting down the full node..");

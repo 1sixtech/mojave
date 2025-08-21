@@ -48,7 +48,7 @@ pub struct SequencerOpts {
         long = "full_node.addresses",
         help = "Allowed domain(s) and port(s) for the sequencer in the form 'domain:port', can be specified multiple times",
         help_heading = "Full Node Options",
-        default_value = "0.0.0.0:8545",
+        default_value = "http://0.0.0.0:8545",
         value_delimiter = ','
     )]
     pub full_node_addresses: Vec<String>,

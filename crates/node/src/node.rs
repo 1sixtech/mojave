@@ -105,7 +105,7 @@ impl Node {
 
     pub async fn run(self, options: &Options) -> Result<(), Error> {
         let rpc_shutdown = CancellationToken::new();
-        let eth_client = EthClient::new("127.0.0.1")?;
+        let eth_client = EthClient::new("http://127.0.0.1")?;
         start_api(
             get_http_socket_addr(options),
             get_authrpc_socket_addr(options),
