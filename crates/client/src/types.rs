@@ -1,7 +1,7 @@
 use ethrex_common::types::Block;
+use mojave_chain_utils::prover_types::ProofResponse;
 use mojave_signature::{Signature, VerifyingKey};
 use serde::{Deserialize, Serialize};
-use mojave_chain_utils::prover_types::ProofResponse;
 
 // need to check whether we will use Message and contain other data or not
 #[derive(Serialize, Deserialize)]

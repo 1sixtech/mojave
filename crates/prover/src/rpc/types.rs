@@ -49,7 +49,7 @@ impl ProverRpcContext {
         }
     }
 
-    pub fn aligned_mode(&self) -> bool{
+    pub fn aligned_mode(&self) -> bool {
         self.aligned_mode
     }
 
@@ -78,7 +78,7 @@ impl ProverRpcContext {
                 Ok(())
             }
             Err(err) => {
-                let msg = format!("Error sending job to channel: {:}", err);
+                let msg = format!("Error sending job to channel: {err}");
                 tracing::error!("{}", &msg);
                 Err(RpcErr::Internal(msg))
             }

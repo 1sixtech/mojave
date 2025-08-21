@@ -1,4 +1,7 @@
-use crate::{MojaveClientError, types::{SignedBlock, SignedProofResponse}};
+use crate::{
+    MojaveClientError,
+    types::{SignedBlock, SignedProofResponse},
+};
 use ethrex_common::types::Block;
 use ethrex_rpc::{
     clients::eth::RpcResponse,

@@ -24,9 +24,7 @@ impl SendBatchProofRequest {
         let signed_proof = serde_json::from_value::<SignedProofResponse>(params[0].clone())
             .map_err(|e| RpcErr::BadParams(format!("Invalid SignedProofResponse: {e}")))?;
 
-        Ok(Self {
-            signed_proof
-        })
+        Ok(Self { signed_proof })
     }
 
     pub async fn call(request: &RpcRequest, context: RpcApiContext) -> Result<Value, RpcErr> {
@@ -50,9 +48,9 @@ impl SendBatchProofRequest {
             .signed_proof
             .proof_response
             .batch_proof
-            .ok_or(RpcErr::Internal(format!(
-                "Empty proof received from prover"
-            )))?;
+            .ok_or(RpcErr::Internal(
+                "Empty proof received from prover".to_string(),
+            ))?;
 
         let proof_type = proof.prover_type();
 
