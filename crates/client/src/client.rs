@@ -9,7 +9,7 @@ use futures::{
     FutureExt,
     future::{Fuse, select_ok},
 };
-use mojave_prover::ProverData;
+use mojave_chain_utils::prover_types::{ProofResponse, ProverData};
 use mojave_signature::{Signature, Signer, SigningKey};
 use reqwest::Url;
 use serde::de::DeserializeOwned;
@@ -186,16 +186,16 @@ impl MojaveClient {
         self.send_request_to_url(&request, prover_url).await
     }
 
-    pub async fn send_batch_proof(
+    pub async fn send_proof_response(
         &self,
-        batch_proof: &BatchProof,
+        proof_response: &ProofResponse,
         sequencer_url: &Url,
     ) -> Result<(), MojaveClientError> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
             jsonrpc: "2.0".to_string(),
             method: "mojave_sendBatchProof".to_string(),
-            params: Some(vec![json!(batch_proof)]),
+            params: Some(vec![json!(proof_response)]),
         };
         self.send_request_to_url(&request, sequencer_url).await
     }
