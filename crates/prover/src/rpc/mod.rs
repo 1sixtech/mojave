@@ -4,22 +4,18 @@ use proof::{GetJobIdRequest, GetProofRequest, SendProofInputRequest};
 mod types;
 use types::{JobRecord, ProverRpcContext};
 
+use std::sync::Arc;
+
 use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
+use serde_json::Value;
+use tokio::{net::TcpListener, sync::mpsc};
+use tower_http::cors::CorsLayer;
+use tracing::info;
+
 use ethrex_rpc::{
     RpcErr, RpcRequestWrapper,
     utils::{RpcRequest, RpcRequestId},
 };
-use serde_json::Value;
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
-use tokio::{
-    net::TcpListener,
-    sync::{Mutex, mpsc},
-};
-use tower_http::cors::CorsLayer;
-use tracing::info;
 
 use mojave_chain_utils::rpc::rpc_response;
 
@@ -31,13 +27,7 @@ pub async fn start_api(
     private_key: &str,
 ) -> Result<(), RpcErr> {
     let (job_sender, job_receiver) = mpsc::channel::<JobRecord>(100);
-    let context = Arc::new(ProverRpcContext {
-        aligned_mode,
-        job_status: Mutex::new(HashMap::new()),
-        pending_jobs: Mutex::new(HashSet::new()),
-        proofs: Mutex::new(HashMap::new()),
-        sender: job_sender,
-    });
+    let context = Arc::new(ProverRpcContext::new(aligned_mode, job_sender));
 
     // All request headers allowed.
     // All methods allowed.

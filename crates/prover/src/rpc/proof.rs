@@ -50,7 +50,7 @@ impl SendProofInputRequest {
         let proof_input = Self::get_proof_input(&req.params)?;
 
         let job_id = Self::calculate_job_id(&proof_input.prover_data.input)?;
-        if ctx.get_job_status(&job_id).await.is_some() {
+        if ctx.already_requested(&job_id).await {
             return Err(RpcErr::BadParams("This batch already requested".to_owned()));
         }
 
@@ -156,8 +156,8 @@ pub async fn start_proof_worker(
                     }
                 };
 
-                let try_generate_proof = prove(Backend::Exec, program_input, ctx.aligned_mode)
-                    .and_then(|output| to_batch_proof(output, ctx.aligned_mode))
+                let try_generate_proof = prove(Backend::Exec, program_input, ctx.aligned_mode())
+                    .and_then(|output| to_batch_proof(output, ctx.aligned_mode()))
                     .map_err(|err| {
                         RpcErr::Internal(format!("Error while generate proof: {:}", err))
                     });

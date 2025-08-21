@@ -1,21 +1,14 @@
-use reqwest::Url;
 use std::{
     collections::{HashMap, HashSet},
-    hash::Hash,
     sync::Arc,
 };
+
+use reqwest::Url;
 use tokio::sync::{Mutex, mpsc};
 
 use ethrex_rpc::{RpcErr, utils::RpcRequest};
 
 use mojave_chain_utils::prover_types::{ProofResponse, ProverData};
-
-#[derive(Clone)]
-pub enum JobStatus {
-    Pending,
-    Done,
-    Error,
-}
 
 #[derive(Clone)]
 pub struct JobRecord {
@@ -42,54 +35,43 @@ impl RpcNamespace {
 }
 
 pub struct ProverRpcContext {
-    pub aligned_mode: bool,
-    pub job_status: Mutex<HashMap<String, JobStatus>>,
-    pub pending_jobs: Mutex<HashSet<String>>,
-    pub proofs: Mutex<HashMap<String, ProofResponse>>,
-    pub sender: mpsc::Sender<JobRecord>,
+    aligned_mode: bool,
+    job_store: JobStore,
+    sender: mpsc::Sender<JobRecord>,
 }
 
 impl ProverRpcContext {
-    pub async fn get_job_status(&self, job_id: &str) -> Option<JobStatus> {
-        get_map(&self.job_status, job_id).await
+    pub fn new(aligned_mode: bool, sender: mpsc::Sender<JobRecord>) -> Self {
+        ProverRpcContext {
+            aligned_mode,
+            job_store: JobStore::default(),
+            sender,
+        }
     }
 
-    pub async fn upsert_job_status(&self, job_id: &str, job_status: JobStatus) {
-        match job_status {
-            JobStatus::Pending => {
-                let mut g = self.pending_jobs.lock().await;
-                g.insert(job_id.to_owned());
-            }
-            _ => {
-                let mut g = self.pending_jobs.lock().await;
-                g.remove(job_id);
-            }
-        }
+    pub fn aligned_mode(&self) -> bool{
+        self.aligned_mode
+    }
 
-        upsert_map(&self.job_status, job_id.to_owned(), job_status).await;
+    pub async fn already_requested(&self, job_id: &str) -> bool {
+        self.job_store.already_requested(job_id).await
     }
 
     pub async fn get_pending_jobs(&self) -> Vec<String> {
-        let g = self.pending_jobs.lock().await;
-        g.iter().cloned().collect()
+        self.job_store.get_pending_jobs().await
     }
 
     pub async fn get_proof_by_id(&self, job_id: &str) -> Option<ProofResponse> {
-        get_map(&self.proofs, job_id).await
+        self.job_store.get_proof_by_id(job_id).await
     }
 
     pub async fn upsert_proof(&self, job_id: &str, proof_response: ProofResponse) {
-        match proof_response.error {
-            Some(_) => self.upsert_job_status(job_id, JobStatus::Error).await,
-            None => self.upsert_job_status(job_id, JobStatus::Done).await,
-        };
-
-        upsert_map(&self.proofs, job_id.to_owned(), proof_response).await;
+        self.job_store.upsert_proof(job_id, proof_response).await;
     }
-    
 
     pub async fn insert_job_sender(&self, job_record: JobRecord) -> Result<(), RpcErr> {
-        self.upsert_job_status(&job_record.job_id, JobStatus::Pending).await;
+        self.job_store.insert_job(&job_record.job_id).await;
+
         match self.sender.send(job_record).await {
             Ok(()) => {
                 tracing::info!("Job inserted into channel");
@@ -104,20 +86,47 @@ impl ProverRpcContext {
     }
 }
 
-async fn get_map<K, V, Q>(map: &Mutex<HashMap<K, V>>, key: &Q) -> Option<V>
-where
-    K: Eq + Hash + std::borrow::Borrow<Q>,
-    Q: Eq + Hash + ?Sized,
-    V: Clone,
-{
-    let g = map.lock().await;
-    g.get(key).cloned()
+pub struct JobStore {
+    pending: Mutex<HashSet<String>>,
+    proofs: Mutex<HashMap<String, ProofResponse>>,
 }
 
-async fn upsert_map<K, V>(map: &Mutex<HashMap<K, V>>, key: K, value: V)
-where
-    K: Eq + Hash,
-{
-    let mut g = map.lock().await;
-    g.insert(key, value);
+impl Default for JobStore {
+    fn default() -> Self {
+        JobStore {
+            pending: Mutex::new(HashSet::new()),
+            proofs: Mutex::new(HashMap::new()),
+        }
+    }
+}
+
+impl JobStore {
+    pub async fn already_requested(&self, job_id: &str) -> bool {
+        if self.pending.lock().await.contains(job_id) {
+            true
+        } else {
+            self.proofs.lock().await.contains_key(job_id)
+        }
+    }
+
+    pub async fn get_pending_jobs(&self) -> Vec<String> {
+        let g = self.pending.lock().await;
+        g.iter().cloned().collect()
+    }
+
+    pub async fn insert_job(&self, job_id: &str) {
+        self.pending.lock().await.insert(job_id.to_owned());
+    }
+
+    pub async fn get_proof_by_id(&self, job_id: &str) -> Option<ProofResponse> {
+        self.proofs.lock().await.get(job_id).cloned()
+    }
+
+    pub async fn upsert_proof(&self, job_id: &str, proof_response: ProofResponse) {
+        self.pending.lock().await.remove(job_id);
+        self.proofs
+            .lock()
+            .await
+            .insert(job_id.to_owned(), proof_response);
+    }
 }
