@@ -47,7 +47,8 @@ pub async fn start_api(
     let http_server = axum::serve(http_listener, http_router).into_future();
     info!("Starting HTTP server at {http_addr}");
 
-    let client = MojaveClient::new(private_key).expect("Error to start client to send proof back!");
+    let client = MojaveClient::new(private_key)
+        .map_err(|err| RpcErr::Internal(format!("Error to start client to send proof back: {err}")))?;
     tracing::info!("MojaveClient initialized");
 
     // Start the proof worker in the background.
@@ -116,7 +117,7 @@ pub async fn map_mojave_requests(
     tracing::debug!(method = %req.method, "Handling Mojave namespace request");
     match req.method.as_str() {
         "mojave_sendProofInput" => SendProofInputRequest::call(req, context).await,
-        "mojave_getJobID" => GetJobIdRequest::call(req, context).await,
+        "mojave_getJobId" => GetJobIdRequest::call(req, context).await,
         "mojave_getProof" => GetProofRequest::call(req, context).await,
         _others => Err(RpcErr::MethodNotFound(req.method.clone())),
     }
