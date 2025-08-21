@@ -1,13 +1,7 @@
-mod rpc;
 mod cli;
-mod client;
-mod message;
-mod server;
-mod types;
+mod error;
+mod rpc;
 
-pub use cli::*;
-pub use client::{ProverClient, ProverClientError};
-pub use server::ProverServer;
-
-// TODOs: rm message, client 
-//        change server to user mpsc?
+pub use cli::{Cli, Command};
+pub use rpc::start_api;
+pub use error::Error;

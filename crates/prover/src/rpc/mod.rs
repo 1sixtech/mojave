@@ -1,43 +1,41 @@
 mod proof;
-use proof::*;
-mod types;
-use types::*;
+use proof::{GetJobIdRequest, GetProofRequest, SendProofInputRequest};
+pub mod types;
+use types::{JobRecord, ProverRpcContext};
 
 use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
-use ethrex_rpc::{utils::{RpcRequest, RpcRequestId}, RpcErr, RpcRequestWrapper};
+use ethrex_rpc::{
+    RpcErr, RpcRequestWrapper,
+    utils::{RpcRequest, RpcRequestId},
+};
 use serde_json::Value;
 use std::{
-    collections::HashMap,
-    net::SocketAddr,
+    collections::{HashMap, HashSet},
     sync::Arc,
-    time::Duration,
 };
 use tokio::{
     net::TcpListener,
-    sync::{Mutex, RwLock},
+    sync::{Mutex, mpsc},
 };
 use tower_http::cors::CorsLayer;
 use tracing::info;
 
 use mojave_chain_utils::rpc::rpc_response;
 
-pub const FILTER_DURATION: Duration = {
-    if cfg!(test) {
-        Duration::from_secs(1)
-    } else {
-        Duration::from_secs(5 * 60)
-    }
-};
+use crate::rpc::types::RpcNamespace;
 
 pub async fn start_api(
     aligned_mode: bool,
-    http_addr: SocketAddr,
+    http_addr: &str,
     // client_version: String,
 ) -> Result<(), RpcErr> {
+    let (job_sender, job_receiver) = mpsc::channel::<JobRecord>(100);
     let context = Arc::new(ProverRpcContext {
         aligned_mode,
-        job_queue: Mutex::new(HashMap::new()),
+        job_status: Mutex::new(HashMap::new()),
+        pending_jobs: Mutex::new(HashSet::new()),
         proofs: Mutex::new(HashMap::new()),
+        sender: job_sender,
     });
 
     // All request headers allowed.
@@ -62,11 +60,17 @@ pub async fn start_api(
         .into_future();
     info!("Starting HTTP server at {http_addr}");
 
-    if let Err(e) = http_server.await.map_err(|e| RpcErr::Internal(e.to_string())) {
+    // Start the proof worker in the background.
+    tokio::spawn(proof::start_proof_worker(context, job_receiver));
+
+    if let Err(e) = http_server
+        .await
+        .map_err(|e| RpcErr::Internal(e.to_string()))
+    {
         info!("Error shutting down server: {e:?}");
         return Err(e);
     }
-    
+
     Ok(())
 }
 
@@ -96,7 +100,10 @@ async fn handle_http_request(
     Ok(Json(res))
 }
 
-async fn map_http_requests(req: &RpcRequest, context: Arc<ProverRpcContext>) -> Result<Value, RpcErr> {
+async fn map_http_requests(
+    req: &RpcRequest,
+    context: Arc<ProverRpcContext>,
+) -> Result<Value, RpcErr> {
     match RpcNamespace::resolve_namespace(req) {
         Ok(RpcNamespace::Mojave) => map_mojave_requests(req, context).await,
         Err(err) => Err(err),
@@ -112,7 +119,6 @@ pub async fn map_mojave_requests(
         "mojave_sendProofInput" => SendProofInputRequest::call(req, context).await,
         "mojave_getJobID" => GetJobIdRequest::call(req, context).await,
         "mojave_getProof" => GetProofRequest::call(req, context).await,
-        _others => Err(RpcErr::MethodNotFound(req.method)),
+        _others => Err(RpcErr::MethodNotFound(req.method.clone())),
     }
 }
-

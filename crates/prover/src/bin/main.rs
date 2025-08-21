@@ -1,8 +1,8 @@
 use mojave_chain_utils::logging::init_logging;
-use mojave_prover::{Cli, Command, ProverServer};
+use mojave_prover::{Cli, Command, Error, start_api};
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Error> {
     let cli = Cli::run();
     init_logging(cli.log_level);
     match cli.command {
@@ -18,11 +18,13 @@ async fn main() {
                 "{}:{}",
                 prover_options.prover_host, prover_options.prover_port
             );
-            let mut server = ProverServer::new(prover_options.aligned_mode, &bind_addr).await;
 
             tokio::select! {
-                _ = server.start() => {
-                    tracing::error!("Prover stopped unexpectedly");
+                res = start_api(prover_options.aligned_mode,  &bind_addr) => {
+                    match res {
+                        Ok(()) => tracing::error!("Prover stopped unexpectedly"),
+                        Err(err) => tracing::error!("Prover stopped with error: {:}", err),
+                    }
                 }
                 _ = tokio::signal::ctrl_c() => {
                     tracing::info!("Shutting down prover...");
@@ -30,4 +32,5 @@ async fn main() {
             }
         }
     }
+    Ok(())
 }
