@@ -8,7 +8,11 @@ name = "mojave-sequencer"
 path = "src/main.rs"
 
 [dependencies]
-# ethrex
+mojave-block-producer = { workspace = true }
+mojave-client = { workspace = true }
+mojave-node-lib = { workspace = true }
+mojave-signature = { workspace = true }
+mojave-utils = { workspace = true }
 
 ethrex-blockchain = { workspace = true }
 ethrex-common = { workspace = true }
@@ -18,14 +22,8 @@ ethrex-rpc = { workspace = true }
 ethrex-storage = { workspace = true }
 ethrex-storage-rollup = { workspace = true }
 ethrex-vm = { workspace = true }
+
 reqwest = { workspace = true }
-
-# mojave
-mojave-utils = { workspace = true }
-mojave-client = { workspace = true }
-mojave-signature = { workspace = true }
-mojave-node-lib = { workspace = true }
-
 axum = { workspace = true }
 clap = { workspace = true }
 hex = { workspace = true }

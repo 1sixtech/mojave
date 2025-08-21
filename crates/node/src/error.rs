@@ -4,6 +4,8 @@ use ethrex_storage_rollup::RollupStoreError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error("Failed to initiate the node: {0}")]
+    NodeInit(std::io::Error),
     #[error("Failed to force remove the database: {0}")]
     ForceRemoveDatabase(std::io::Error),
     #[error(transparent)]

@@ -4772,6 +4772,7 @@ dependencies = [
  "ethrex-vm",
  "futures",
  "hex",
+ "mojave-block-producer",
  "mojave-client",
  "mojave-node-lib",
  "mojave-signature",

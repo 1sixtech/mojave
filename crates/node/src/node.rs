@@ -1,13 +1,20 @@
-use ethrex_p2p::{sync::SyncMode, types::Node as EthNode};
-use mojave_utils::{network::Network, options::Options};
+use ethrex_common::types::Genesis;
+use ethrex_storage::Store;
+use mojave_utils::options::Options;
 
 use crate::{
     error::Error,
     initializers::{get_local_node_record, get_signer, init_blockchain, init_store},
     rpc::start_api,
 };
-use ethrex_blockchain::BlockchainType;
-use ethrex_p2p::{network::peer_table, peer_handler::PeerHandler, sync_manager::SyncManager};
+use ethrex_blockchain::{Blockchain, BlockchainType};
+use ethrex_p2p::{
+    kademlia::KademliaTable,
+    network::peer_table,
+    peer_handler::PeerHandler,
+    sync_manager::SyncManager,
+    types::{Node as RexNode, NodeRecord},
+};
 use ethrex_rpc::EthClient;
 use ethrex_storage_rollup::{EngineTypeRollup, StoreRollup};
 use ethrex_vm::EvmEngine;
@@ -22,14 +29,22 @@ use std::{path::PathBuf, sync::Arc, time::Duration};
 use tokio::sync::Mutex;
 use tokio_util::sync::CancellationToken;
 
-pub struct Node {}
+pub struct Node {
+    pub data_dir: String,
+    pub genesis: Genesis,
+    pub store: Store,
+    pub rollup_store: StoreRollup,
+    pub blockchain: Arc<Blockchain>,
+    pub cancel_token: CancellationToken,
+    pub local_p2p_node: RexNode,
+    pub local_node_record: Arc<Mutex<NodeRecord>>,
+    pub syncer: SyncManager,
+    pub peer_table: Arc<Mutex<KademliaTable>>,
+    pub peer_handler: PeerHandler,
+}
 
 impl Node {
-    pub async fn new() -> Self {
-        Node {}
-    }
-
-    pub async fn run(&mut self, options: Options) -> Result<(), Error> {
+    pub async fn init(options: &Options) -> Result<Self, Error> {
         let data_dir = resolve_data_dir(&options.datadir);
         tracing::info!("Data directory resolved to: {:?}", data_dir);
 
@@ -53,7 +68,7 @@ impl Node {
 
         let signer = get_signer(&data_dir);
 
-        let local_p2p_node = get_local_p2p_node(&options, &signer);
+        let local_p2p_node = get_local_p2p_node(options, &signer);
         let local_node_record = Arc::new(Mutex::new(get_local_node_record(
             &data_dir,
             &local_p2p_node,
@@ -73,20 +88,36 @@ impl Node {
         )
         .await;
 
+        Ok(Node {
+            data_dir,
+            genesis,
+            store,
+            rollup_store,
+            blockchain,
+            cancel_token,
+            local_p2p_node,
+            local_node_record,
+            syncer,
+            peer_table,
+            peer_handler,
+        })
+    }
+
+    pub async fn run(self, options: &Options) -> Result<(), Error> {
         let rpc_shutdown = CancellationToken::new();
         let eth_client = EthClient::new("127.0.0.1")?;
         start_api(
-            get_http_socket_addr(&options),
-            get_authrpc_socket_addr(&options),
-            store,
-            blockchain,
+            get_http_socket_addr(options),
+            get_authrpc_socket_addr(options),
+            self.store,
+            self.blockchain,
             read_jwtsecret_file(&options.authrpc_jwtsecret),
-            local_p2p_node,
-            local_node_record.lock().await.clone(),
-            syncer,
-            peer_handler,
+            self.local_p2p_node,
+            self.local_node_record.lock().await.clone(),
+            self.syncer,
+            self.peer_handler,
             get_client_version(),
-            rollup_store.clone(),
+            self.rollup_store.clone(),
             eth_client,
             AsyncUniqueHeap::new(),
             rpc_shutdown.clone(),
@@ -96,10 +127,10 @@ impl Node {
             _ = tokio::signal::ctrl_c() => {
                 tracing::info!("Shutting down the full node..");
                 rpc_shutdown.cancel();
-                let node_config_path = PathBuf::from(data_dir).join("node_config.json");
+                let node_config_path = PathBuf::from(self.data_dir).join("node_config.json");
                 tracing::info!("Storing config at {:?}...", node_config_path);
-                cancel_token.cancel();
-                let node_config = NodeConfigFile::new(peer_table, local_node_record.lock().await.clone()).await;
+                self.cancel_token.cancel();
+                let node_config = NodeConfigFile::new(self.peer_table, self.local_node_record.lock().await.clone()).await;
                 store_node_config_file(node_config, node_config_path).await;
                 tokio::time::sleep(Duration::from_secs(1)).await;
                 tracing::info!("Successfully shut down the full node.");

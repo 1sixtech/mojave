@@ -37,35 +37,5 @@ pub enum Command {
     Init {
         #[command(flatten)]
         options: Options,
-        #[command(flatten)]
-        full_node_options: FullNodeOptions,
     },
-}
-
-#[derive(Parser)]
-pub struct FullNodeOptions {
-    #[arg(
-        long = "sequencer.address",
-        default_value = "0.0.0.0:1739",
-        help = "Allowed domain and port for the sequencer in the form 'domain:port'",
-        help_heading = "Full Node Options",
-        required = true
-    )]
-    pub sequencer_address: String,
-}
-
-impl Default for FullNodeOptions {
-    fn default() -> Self {
-        Self {
-            sequencer_address: "0.0.0.0:1739".to_string(),
-        }
-    }
-}
-
-impl std::fmt::Debug for FullNodeOptions {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("FullNodeOptions")
-            .field("sequencer_address", &self.sequencer_address)
-            .finish()
-    }
 }

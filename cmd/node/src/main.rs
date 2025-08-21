@@ -9,13 +9,13 @@ async fn main() -> Result<(), Error> {
     let cli = Cli::run();
     init_logging(cli.log_level);
     match cli.command {
-        Command::Init {
-            options,
-            full_node_options,
-        } => {
-            let mut node = Node::new().await;
+        Command::Init { options } => {
+            let node = Node::init(&options).await.unwrap_or_else(|error| {
+                tracing::error!("Failed to initialize the node: {}", error);
+                std::process::exit(1);
+            });
             tokio::select! {
-                _ = node.run(options) => {
+                _ = node.run(&options) => {
                     tracing::error!("Node stopped unexpectedly");
                 }
                 _ = tokio::signal::ctrl_c() => {
