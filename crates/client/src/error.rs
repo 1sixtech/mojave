@@ -12,4 +12,16 @@ pub enum MojaveClientError {
     SignatureError(#[from] mojave_signature::SignatureError),
     #[error("No RPC URLs configured")]
     NoRPCUrlsConfigured,
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+    #[error("Message error: {0}")]
+    Message(#[from] mojave_prover::MessageError),
+    #[error("Internal server error: {0}")]
+    Internal(String),
+    #[error("Unexpected error: {0}")]
+    Unexpected(String),
+    #[error("Connection timed out")]
+    TimeOut,
+    #[error("Retry failed after {0} attempts")]
+    RetryFailed(u64),
 }

@@ -14,3 +14,4 @@ pub use client::{ProverClient, ProverClientError};
 #[cfg(feature = "server")]
 pub use server::ProverServer;
 pub use types::*;
+pub use message::MessageError;
