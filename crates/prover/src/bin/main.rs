@@ -20,7 +20,7 @@ async fn main() -> Result<(), Error> {
             );
 
             tokio::select! {
-                res = start_api(prover_options.aligned_mode,  &bind_addr) => {
+                res = start_api(prover_options.aligned_mode,  &bind_addr, &prover_options.private_key) => {
                     match res {
                         Ok(()) => tracing::error!("Prover stopped unexpectedly"),
                         Err(err) => tracing::error!("Prover stopped with error: {:}", err),

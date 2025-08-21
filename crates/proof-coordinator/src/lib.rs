@@ -21,14 +21,14 @@ pub struct ProofCoordinator {
     /// Come from the block builder
     proof_data_receiver: Receiver<u64>,
     /// Send to the prover
-    prover_tcp_addr: String,
+    _prover_tcp_addr: String,
 }
 
 impl ProofCoordinator {
     pub fn new(proof_data_receiver: Receiver<u64>, prover_tcp_addr: String) -> Self {
         Self {
             proof_data_receiver,
-            prover_tcp_addr,
+            _prover_tcp_addr: prover_tcp_addr,
         }
     }
 

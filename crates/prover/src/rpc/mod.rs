@@ -1,6 +1,7 @@
 mod proof;
+use mojave_client::MojaveClient;
 use proof::{GetJobIdRequest, GetProofRequest, SendProofInputRequest};
-pub mod types;
+mod types;
 use types::{JobRecord, ProverRpcContext};
 
 use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
@@ -27,7 +28,7 @@ use crate::rpc::types::RpcNamespace;
 pub async fn start_api(
     aligned_mode: bool,
     http_addr: &str,
-    // client_version: String,
+    private_key: &str,
 ) -> Result<(), RpcErr> {
     let (job_sender, job_receiver) = mpsc::channel::<JobRecord>(100);
     let context = Arc::new(ProverRpcContext {
@@ -51,17 +52,13 @@ pub async fn start_api(
     let http_listener = TcpListener::bind(http_addr)
         .await
         .map_err(|error| RpcErr::Internal(error.to_string()))?;
-    let http_server = axum::serve(http_listener, http_router)
-        .with_graceful_shutdown(async {
-            tokio::signal::ctrl_c()
-                .await
-                .expect("failed to install Ctrl+C handler");
-        })
-        .into_future();
+    let http_server = axum::serve(http_listener, http_router).into_future();
     info!("Starting HTTP server at {http_addr}");
 
+    let client = MojaveClient::new(private_key).expect("Error to start client to send proof back!");
+
     // Start the proof worker in the background.
-    tokio::spawn(proof::start_proof_worker(context, job_receiver));
+    tokio::spawn(proof::start_proof_worker(context, job_receiver, client));
 
     if let Err(e) = http_server
         .await

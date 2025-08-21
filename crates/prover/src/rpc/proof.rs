@@ -1,9 +1,10 @@
+use std::sync::Arc;
+
 use reqwest::Url;
 use serde_json::{Value, json};
-use tracing::info;
-use std::sync::Arc;
 use tiny_keccak::{Hasher, Keccak};
 use tokio::sync::mpsc;
+use tracing::info;
 
 use ethrex_prover_lib::{backends::Backend, prove, to_batch_proof};
 use ethrex_rpc::{RpcErr, utils::RpcRequest};
@@ -36,10 +37,8 @@ impl SendProofInputRequest {
             serde_json::from_value::<ProverData>(params[0].clone()).map_err(|err| {
                 RpcErr::BadParams(format!("Can't parse 1st param as ProverData: {}", err))
             })?;
-        let sequencer_addr =
-            serde_json::from_value::<Url>(params[1].clone()).map_err(|err| {
-                RpcErr::BadParams(format!("Can't parse 2nd param as Url: {}", err))
-            })?;
+        let sequencer_addr = serde_json::from_value::<Url>(params[1].clone())
+            .map_err(|err| RpcErr::BadParams(format!("Can't parse 2nd param as Url: {}", err)))?;
 
         Ok(SendProofInputRequest {
             prover_data,
@@ -134,9 +133,8 @@ impl GetProofRequest {
 pub async fn start_proof_worker(
     ctx: Arc<ProverRpcContext>,
     mut receiver: mpsc::Receiver<JobRecord>,
+    client: MojaveClient,
 ) {
-    // TODO: implement sign while sending proof?
-    let client = MojaveClient::new("0x1").expect("Error to start client to send proof back!");
     loop {
         match receiver.recv().await {
             Some(job) => {
@@ -179,17 +177,18 @@ pub async fn start_proof_worker(
                 ctx.upsert_proof(&job_id, proof_response.clone()).await;
                 match client
                     .send_proof_response(&proof_response, &job.sequencer_url)
-                    .await{
-                        Ok(_) => {
-                            info!("");
-                        }
-                        Err(err) => {
-                            tracing::error!("Proof sending error: {:}", err.to_string());
-                        }
+                    .await
+                {
+                    Ok(_) => {
+                        info!("");
                     }
+                    Err(err) => {
+                        tracing::error!("Proof sending error: {:}", err.to_string());
+                    }
+                }
             }
             None => {
-                continue;
+                break;
             }
         }
     }

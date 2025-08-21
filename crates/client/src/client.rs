@@ -1,6 +1,5 @@
-use crate::{MojaveClientError, types::SignedBlock};
+use crate::{MojaveClientError, types::{SignedBlock, SignedProofResponse}};
 use ethrex_common::types::Block;
-use ethrex_l2_common::prover::BatchProof;
 use ethrex_rpc::{
     clients::eth::RpcResponse,
     utils::{RpcRequest, RpcRequestId},
@@ -176,7 +175,7 @@ impl MojaveClient {
         &self,
         job_id: &str,
         prover_url: &Url,
-    ) -> Result<BatchProof, MojaveClientError> {
+    ) -> Result<ProofResponse, MojaveClientError> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
             jsonrpc: "2.0".to_string(),
@@ -191,11 +190,20 @@ impl MojaveClient {
         proof_response: &ProofResponse,
         sequencer_url: &Url,
     ) -> Result<(), MojaveClientError> {
+        let signature: Signature = self.inner.signing_key.sign(proof_response)?;
+        let verifying_key = self.inner.signing_key.verifying_key();
+
+        let params = SignedProofResponse {
+            proof_response: proof_response.clone(),
+            signature,
+            verifying_key,
+        };
+
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
             jsonrpc: "2.0".to_string(),
-            method: "mojave_sendBatchProof".to_string(),
-            params: Some(vec![json!(proof_response)]),
+            method: "mojave_sendProofResponse".to_string(),
+            params: Some(vec![json!(params)]),
         };
         self.send_request_to_url(&request, sequencer_url).await
     }

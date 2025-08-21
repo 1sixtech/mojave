@@ -51,16 +51,12 @@ pub struct ProverOpts {
         help_heading = "Prover Options"
     )]
     pub aligned_mode: bool,
-}
-
-impl Default for ProverOpts {
-    fn default() -> Self {
-        Self {
-            prover_port: 3900,
-            prover_host: "0.0.0.0".to_string(),
-            aligned_mode: false,
-        }
-    }
+    #[arg(
+        long = "prover.private_key",
+        help = "Private key used for signing proofs",
+        help_heading = "Prover Options"
+    )]
+    pub private_key: String,
 }
 
 impl fmt::Debug for ProverOpts {
@@ -69,6 +65,7 @@ impl fmt::Debug for ProverOpts {
             .field("prover_port", &self.prover_port)
             .field("prover_host", &self.prover_host)
             .field("aligned_mode", &self.aligned_mode)
+            .field("private_key", &self.private_key)
             .finish()
     }
 }
