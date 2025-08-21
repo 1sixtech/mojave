@@ -16,7 +16,11 @@ COPY . .
 ARG BUILD_FLAGS=""
 RUN cargo build --release $BUILD_FLAGS
 
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+	libssl3 ca-certificates curl \
+	&& rm -rf /var/lib/apt/lists/*
 
 COPY data /usr/local/bin/data
 COPY --from=builder /build/target/release/mojave-node /usr/local/bin/mojave-node
