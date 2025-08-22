@@ -1,77 +1,80 @@
 use ethrex_common::types::{Block, BlockBody, Transaction};
 use ethrex_rpc::{
-    EthClient, RpcErr,
-    types::{block::RpcBlock, block_identifier::BlockIdentifier},
+    types::{block::RpcBlock, block_identifier::BlockIdentifier}, RpcErr
 };
-use mojave_chain_utils::unique_heap::AsyncUniqueHeap;
-use std::sync::Arc;
-use tokio::sync::Mutex as TokioMutex;
+// use mojave_chain_utils::unique_heap::AsyncUniqueHeap;
+// use std::sync::Arc;
+// use tokio::sync::Mutex as TokioMutex;
 
-use crate::rpc::types::OrderedBlock;
+use crate::rpc::{types::OrderedBlock, RpcApiContext};
 
-#[derive(Debug)]
+use tokio::sync::{
+    mpsc::{self, error::TrySendError},
+    oneshot,
+};
+use tokio_stream::{StreamExt, wrappers::ReceiverStream};
+
+#[derive(Debug, Clone)]
 pub struct BlockIngestion {
-    next_expected: u64,
+    sender: mpsc::Sender<Message>,
+    expected_block_number: u64,
 }
 
 impl BlockIngestion {
-    pub fn new(start: u64) -> Self {
-        Self {
-            next_expected: start,
-        }
-    }
+    pub fn start(context: RpcApiContext, channel_capacity: usize, start_block_number: u64) -> Self {
+        let (sender, receiver) = mpsc::channel(channel_capacity);
+        let mut receiver = ReceiverStream::new(receiver);
 
-    pub fn next_expected(&self) -> u64 {
-        self.next_expected
-    }
-
-    fn advance(&mut self, new: u64) {
-        if new > self.next_expected {
-            self.next_expected = new;
-        }
-    }
-
-    pub async fn ingest_block(
-        ingestion: &Arc<TokioMutex<BlockIngestion>>,
-        eth_client: &EthClient,
-        block_queue: &AsyncUniqueHeap<OrderedBlock, u64>,
-        signed_block: Block,
-    ) -> Result<(), RpcErr> {
-        let signed_block_number = signed_block.header.number;
-
-        // ---- lock to read state
-        let mut guard = ingestion.lock().await;
-        let expected = guard.next_expected();
-
-        // already processed or behind: skip quickly
-        if signed_block_number < expected {
-            tracing::debug!(
-                "Skipping block {}, next_expected={}",
-                signed_block_number,
-                expected
-            );
-            return Ok(());
-        }
-
-        // ---- backfill any missing blocks
-        if signed_block_number > expected {
-            for number in expected..signed_block_number {
-                let rpc_block: RpcBlock = eth_client
-                    .get_block_by_number(BlockIdentifier::Number(number))
-                    .await
-                    .map_err(|e| RpcErr::Internal(e.to_string()))?;
-
-                let block = rpc_block_to_block(rpc_block);
-                block_queue.push(OrderedBlock(block)).await;
+        tokio::spawn(async move {
+            while let Some(message) = receiver.next().await {
+                handle_message(&context, message).await;
             }
+        });
+        Self { sender, expected_block_number: start_block_number }
+    }
+
+    pub async fn ingest_block(&self) -> Result<(), RpcErr> {
+        let (sender, receiver) = oneshot::channel();
+        let block_number = self.expected_block_number;
+        self.sender
+            .try_send(Message::IngestBlock(sender, block_number))
+            .map_err(|error| match error {
+                TrySendError::Full(_) => RpcErr::Internal("Block ingestion channel full".to_string()),
+                TrySendError::Closed(_) => RpcErr::Internal("Block ingestion channel closed".to_string()),
+            })?;
+        receiver.await
+            .map_err(|_| RpcErr::Internal("Failed to receive block ingestion result".to_string()))
+            .map_err(|e| RpcErr::Internal(e.to_string()))
+            .map(|_| ())
+    }
+
+    pub fn advance_block_number(&mut self, amount: u64) {
+        self.expected_block_number += amount;
+    }
+}
+
+async fn handle_message(context: &RpcApiContext, message: Message) {
+    match message {
+        Message::IngestBlock(sender, block_number) => {
+            // Here you would implement the logic to process the block
+            let _ = sender.send(context.block_ingestion(block_number).await);
         }
+    }
+}
 
-        // ---- push the provided signed block
-        block_queue.push(OrderedBlock(signed_block)).await;
+enum Message {
+    IngestBlock(oneshot::Sender<Result<(), RpcErr>>, u64),
+}
 
-        // ensure monotonic progress in case another task advanced meanwhile
-        guard.advance(signed_block_number + 1);
+impl RpcApiContext {
+    pub(crate) async fn block_ingestion(&self, block_number: u64) -> Result<(), RpcErr> {
+        let rpc_block = self.eth_client.get_block_by_number(BlockIdentifier::Number(block_number))
+            .await
+            .map_err(|e| RpcErr::Internal(e.to_string()))?;
 
+        let block = rpc_block_to_block(rpc_block);
+
+        self.block_queue.push(OrderedBlock(block)).await;
         Ok(())
     }
 }

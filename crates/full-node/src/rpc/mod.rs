@@ -51,7 +51,6 @@ pub struct RpcApiContext {
     pub rollup_store: StoreRollup,
     pub eth_client: EthClient,
     pub block_queue: AsyncUniqueHeap<OrderedBlock, u64>,
-    pub ingestion: Arc<TokioMutex<BlockIngestion>>,
 }
 
 #[expect(clippy::too_many_arguments)]
@@ -90,7 +89,6 @@ pub async fn start_api(
         rollup_store,
         eth_client,
         block_queue,
-        ingestion: Arc::new(TokioMutex::new(BlockIngestion::new(1))),
     };
 
     // Periodically clean up the active filters for the filters endpoints.
@@ -202,6 +200,35 @@ fn spawn_block_processing_task(
                 }
                 _ = shutdown_token.cancelled() => {
                     tracing::info!("Shutting down block processing loop");
+                    break;
+                }
+            }
+        }
+    })
+}
+
+#[allow(unused)]
+fn spawn_block_ingestion_task(
+    context: RpcApiContext,
+    shutdown_token: CancellationToken,
+) -> JoinHandle<()> {
+    let mut block_ingestion = BlockIngestion::start(context, 100, 1);
+    tokio::task::spawn(async move {
+        tracing::info!("Starting block ingestion loop");
+        loop {
+            match block_ingestion.ingest_block().await {
+                Ok(()) => {
+                    block_ingestion.advance_block_number(1);
+                },
+                Err(error) => {
+                    tracing::error!("Failed to ingest a block: {}", error);
+                }
+            }
+            tokio::time::sleep(Duration::from_millis(100)).await;
+
+            tokio::select! {
+                _ = shutdown_token.cancelled() => {
+                    tracing::info!("Shutting down block ingestion loop");
                     break;
                 }
             }
@@ -414,7 +441,6 @@ mod tests {
             rollup_store,
             eth_client,
             block_queue: block_queue.clone(),
-            ingestion: Arc::new(TokioMutex::new(BlockIngestion::new(1))),
         };
 
         let cancel_token = CancellationToken::new();

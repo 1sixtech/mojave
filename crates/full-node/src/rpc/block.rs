@@ -1,4 +1,4 @@
-use crate::rpc::{RpcApiContext, block_ingestion::BlockIngestion};
+use crate::rpc::{types::OrderedBlock, RpcApiContext};
 use ethrex_rpc::{RpcErr, utils::RpcRequest};
 use mojave_client::types::SignedBlock;
 use mojave_signature::Verifier;
@@ -45,13 +45,13 @@ impl SendBroadcastBlockRequest {
         let signed_block = data.signed_block.block;
         let signed_block_number = signed_block.header.number;
 
-        BlockIngestion::ingest_block(
-            &context.ingestion,
-            &context.eth_client,
-            &context.block_queue,
-            signed_block,
-        )
-        .await?;
+        // Wait for block ingestion to backfill all missing blocks
+
+        // Push the signed block to the block queue for processing
+        context
+            .block_queue
+            .push(OrderedBlock(signed_block.clone()))
+            .await;
 
         tracing::info!("Received the block number: {}", signed_block_number);
         Ok(Value::Null)
