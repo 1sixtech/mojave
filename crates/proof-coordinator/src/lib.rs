@@ -5,12 +5,14 @@ use ethrex_common::types::{BlobsBundle, Block};
 use ethrex_l2_common::prover::BatchProof;
 use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
+use reqwest::Url;
 use tokio::sync::mpsc::Receiver;
 use zkvm_interface::io::ProgramInput;
 
 use crate::errors::ProofCoordinatorError;
 
-use mojave_prover::{ProverClient, ProverData};
+use mojave_client::MojaveClient;
+use mojave_prover::ProverData;
 
 mod errors;
 
@@ -22,13 +24,24 @@ pub struct ProofCoordinator {
     proof_data_receiver: Receiver<u64>,
     /// Send to the prover
     prover_tcp_addr: String,
+    /// Sequencer address
+    sequencer_address: String,
+    /// Mojave client
+    client: MojaveClient,
 }
 
 impl ProofCoordinator {
-    pub fn new(proof_data_receiver: Receiver<u64>, prover_tcp_addr: String) -> Self {
+    pub fn new(
+        proof_data_receiver: Receiver<u64>,
+        prover_tcp_addr: String,
+        sequencer_address: String,
+        private_key: &str,
+    ) -> Self {
         Self {
             proof_data_receiver,
             prover_tcp_addr,
+            sequencer_address,
+            client: MojaveClient::new(private_key).unwrap(),
         }
     }
 
@@ -46,7 +59,15 @@ impl ProofCoordinator {
             Err(e) => return Err(e),
         };
 
-        let (batch_number, batch_proof) = self.request_proof_from_prover(input).await?;
+        // send proof input to the prover
+        let prover_url = Url::parse(&self.prover_tcp_addr).unwrap();
+        let job_id = self
+            .client
+            .send_proof_input(&input, &self.sequencer_address, &prover_url)
+            .await
+            .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?;
+
+        let (batch_number, batch_proof) = self.request_proof_from_prover(input, job_id.as_str().unwrap()).await?;
 
         context.store_proof(batch_proof, batch_number).await?;
 
@@ -56,11 +77,13 @@ impl ProofCoordinator {
     async fn request_proof_from_prover(
         &self,
         prover_data: ProverData,
+        job_id: &str,
     ) -> Result<(u64, BatchProof), ProofCoordinatorError> {
-        let client = ProverClient::new(&self.prover_tcp_addr, REQUEST_TIMEOUT, MAX_ATTEMPTS);
         let batch_number = prover_data.batch_number;
-        let proof = client
-            .get_proof(prover_data)
+        let prover_url = Url::parse(&self.prover_tcp_addr).unwrap();
+        let proof = self
+            .client
+            .get_proof(job_id, &prover_url, MAX_ATTEMPTS, REQUEST_TIMEOUT)
             .await
             .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?;
         Ok((batch_number, proof))

@@ -9,7 +9,7 @@ use futures::{
     FutureExt,
     future::{Fuse, select_ok},
 };
-use mojave_prover::{ProverData, MessageError};
+use mojave_prover::{MessageError, ProverData};
 use mojave_signature::{Signature, Signer, SigningKey};
 use reqwest::Url;
 use serde::de::DeserializeOwned;
@@ -152,11 +152,11 @@ impl MojaveClient {
     pub async fn send_request_to_url_with_retry<T>(
         &self,
         request: &RpcRequest,
-        url: &Url, 
+        url: &Url,
         max_attempts: u64,
         request_timeout: u64,
-    ) -> Result<T, MojaveClientError> 
-    where 
+    ) -> Result<T, MojaveClientError>
+    where
         T: DeserializeOwned,
     {
         let mut attempts = 0;
@@ -263,7 +263,8 @@ impl MojaveClient {
             method: "mojave_getProof".to_string(),
             params: Some(vec![json!(job_id)]),
         };
-        self.send_request_to_url_with_retry(&request, prover_url, max_attempts, request_timeout).await
+        self.send_request_to_url_with_retry(&request, prover_url, max_attempts, request_timeout)
+            .await
     }
 
     pub async fn send_batch_proof(

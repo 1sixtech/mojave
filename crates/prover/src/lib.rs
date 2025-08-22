@@ -11,7 +11,7 @@ mod types;
 pub use cli::*;
 #[cfg(feature = "client")]
 pub use client::{ProverClient, ProverClientError};
+pub use message::MessageError;
 #[cfg(feature = "server")]
 pub use server::ProverServer;
 pub use types::*;
-pub use message::MessageError;
