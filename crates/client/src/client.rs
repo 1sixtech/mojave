@@ -11,7 +11,7 @@ use futures::{
     FutureExt,
     future::{Fuse, select_ok},
 };
-use mojave_chain_utils::prover_types::{ProofResponse, ProverData};
+use mojave_chain_utils::prover_types::{JobId, ProofResponse, ProverData};
 use mojave_signature::{Signature, Signer, SigningKey};
 use reqwest::Url;
 use serde::de::DeserializeOwned;
@@ -151,7 +151,7 @@ impl MojaveClient {
         proof_input: &ProverData,
         sequencer_address: &str,
         prover_url: &Url,
-    ) -> Result<serde_json::Value, MojaveClientError> {
+    ) -> Result<JobId, MojaveClientError> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
             jsonrpc: "2.0".to_string(),
@@ -161,10 +161,7 @@ impl MojaveClient {
         self.send_request_to_url(&request, prover_url).await
     }
 
-    pub async fn get_job_id(
-        &self,
-        prover_url: &Url,
-    ) -> Result<serde_json::Value, MojaveClientError> {
+    pub async fn get_job_id(&self, prover_url: &Url) -> Result<Vec<JobId>, MojaveClientError> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
             jsonrpc: "2.0".to_string(),

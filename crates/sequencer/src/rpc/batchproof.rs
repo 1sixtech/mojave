@@ -1,5 +1,6 @@
 use crate::rpc::RpcApiContext;
 use ethrex_rpc::{RpcErr, utils::RpcRequest};
+use mojave_chain_utils::prover_types::ProofResult;
 use mojave_client::types::SignedProofResponse;
 use mojave_signature::Verifier;
 use serde_json::Value;
@@ -39,18 +40,14 @@ impl SendBatchProofRequest {
             .map_err(|err| RpcErr::Internal(format!("Invalid signature: {err}")))?;
 
         let batch_number = data.signed_proof.proof_response.batch_number;
-        if let Some(err) = data.signed_proof.proof_response.error {
-            return Err(RpcErr::Internal(format!(
-                "Error while generate proof: {err}"
-            )));
-        }
-        let proof = data
-            .signed_proof
-            .proof_response
-            .batch_proof
-            .ok_or(RpcErr::Internal(
-                "Empty proof received from prover".to_string(),
-            ))?;
+        let proof = match data.signed_proof.proof_response.result {
+            ProofResult::Proof(proof) => proof,
+            ProofResult::Error(err) => {
+                return Err(RpcErr::Internal(format!(
+                    "Error while generate proof: {err}"
+                )));
+            }
+        };
 
         let proof_type = proof.prover_type();
 

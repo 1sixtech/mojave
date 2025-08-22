@@ -46,6 +46,14 @@ pub struct ProverOpts {
     )]
     pub prover_host: String,
     #[arg(
+        long = "prover.queue-capacity",
+        default_value_t = 100,
+        value_name = "CAPACITY",
+        help = "Bounded mpsc queue capacity for proof jobs",
+        help_heading = "Prover Options"
+    )]
+    pub queue_capacity: usize,
+    #[arg(
         long = "prover.aligned-mode",
         help = "Enable aligned mode for proof generation",
         help_heading = "Prover Options"
@@ -64,8 +72,9 @@ impl fmt::Debug for ProverOpts {
         f.debug_struct("ProverOpts")
             .field("prover_port", &self.prover_port)
             .field("prover_host", &self.prover_host)
+            .field("queue_capacity", &self.queue_capacity)
             .field("aligned_mode", &self.aligned_mode)
-            .field("private_key", &self.private_key)
+            .field("private_key", &"[REDACTED]")
             .finish()
     }
 }
