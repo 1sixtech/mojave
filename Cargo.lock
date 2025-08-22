@@ -4746,7 +4746,6 @@ dependencies = [
  "futures",
  "hex",
  "mockito",
- "mojave-chain-utils",
  "mojave-signature",
  "reqwest 0.12.22",
  "serde",
@@ -4754,6 +4753,7 @@ dependencies = [
  "thiserror 2.0.14",
  "tokio",
  "tracing",
+ "zkvm_interface",
 ]
 
 [[package]]
@@ -4800,7 +4800,7 @@ dependencies = [
  "ethrex-l2-common",
  "ethrex-storage",
  "ethrex-storage-rollup",
- "mojave-chain-utils",
+ "mojave-client",
  "serde_json",
  "thiserror 2.0.14",
  "tokio",

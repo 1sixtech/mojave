@@ -10,7 +10,7 @@ use zkvm_interface::io::ProgramInput;
 
 use crate::errors::ProofCoordinatorError;
 
-use mojave_chain_utils::prover_types::ProverData;
+use mojave_client::types::ProverData;
 
 mod errors;
 

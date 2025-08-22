@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use reqwest::Url;
 use tokio::sync::Mutex;
 
-use mojave_chain_utils::prover_types::{ProofResponse, ProverData};
+use mojave_client::types::{ProofResponse, ProverData};
 
 pub struct JobRecord {
     pub job_id: String,

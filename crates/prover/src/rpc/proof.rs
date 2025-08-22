@@ -8,7 +8,7 @@ use tracing::info;
 use ethrex_rpc::{RpcErr, utils::RpcRequest};
 use zkvm_interface::io::ProgramInput;
 
-use mojave_chain_utils::prover_types::ProverData;
+use mojave_client::types::ProverData;
 
 use crate::rpc::{ProverRpcContext, types::JobRecord};
 

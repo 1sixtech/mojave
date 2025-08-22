@@ -1,7 +1,6 @@
 use crate::rpc::RpcApiContext;
 use ethrex_rpc::{RpcErr, utils::RpcRequest};
-use mojave_chain_utils::prover_types::ProofResult;
-use mojave_client::types::SignedProofResponse;
+use mojave_client::types::{ProofResult, SignedProofResponse};
 use mojave_signature::Verifier;
 use serde_json::Value;
 

@@ -1,6 +1,6 @@
 use crate::{
     MojaveClientError,
-    types::{SignedBlock, SignedProofResponse},
+    types::{JobId, ProofResponse, ProverData, SignedBlock, SignedProofResponse},
 };
 use ethrex_common::types::Block;
 use ethrex_rpc::{
@@ -11,7 +11,7 @@ use futures::{
     FutureExt,
     future::{Fuse, select_ok},
 };
-use mojave_chain_utils::prover_types::{JobId, ProofResponse, ProverData};
+
 use mojave_signature::{Signature, Signer, SigningKey};
 use reqwest::Url;
 use serde::de::DeserializeOwned;
