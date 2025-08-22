@@ -14,9 +14,6 @@ use mojave_chain_utils::prover_types::ProverData;
 
 mod errors;
 
-const MAX_ATTEMPTS: u64 = 5;
-const REQUEST_TIMEOUT: u64 = 300;
-
 pub struct ProofCoordinator {
     /// Come from the block builder
     proof_data_receiver: Receiver<u64>,
