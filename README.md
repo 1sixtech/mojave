@@ -1,39 +1,87 @@
-# Prerequisites
+<p align="center">
+  <img src="assets/header.avif" alt="Mojave Banner" width="600"/>
+</p>
 
-## Install Rust
-https://www.rust-lang.org/tools/install
+<div align="center">
+  <a href="https://github.com/1sixtech/mojave/actions/workflows/rust.yml">
+    <img src="https://github.com/1sixtech/mojave/actions/workflows/rust.yml/badge.svg" alt="CI"/>
+  </a>
+  <a href="https://github.com/1sixtech/mojave/actions/workflows/lint-toml.yml">
+    <img src="https://github.com/1sixtech/mojave/actions/workflows/lint-toml.yml/badge.svg" alt="TOML Lint"/>
+  </a>
+  <a href="https://github.com/1sixtech/mojave/actions/workflows/commitlint.yml">
+    <img src="https://github.com/1sixtech/mojave/actions/workflows/commitlint.yml/badge.svg" alt="Commit Lint"/>
+  </a>
+  <a href="https://github.com/1sixtech/mojave/blob/main/LICENSE">
+    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"/>
+  </a>
 
-## Install CometBFT
-https://docs.cometbft.com/v1.0/tutorials/install
+  <a href="https://github.com/1sixtech/mojave">
+	<img src="https://img.shields.io/github/stars/1sixtech/mojave?style=social"/>
+  </a>
+  <a href="https://twitter.com/intent/follow?screen_name=mojavezk">
+    <img src="https://img.shields.io/twitter/follow/mojavezk?style=social" alt="Follow on Twitter"/>
+  </a>
+  <a href="https://t.me/mojavezk">
+    <img src="https://img.shields.io/badge/Telegram-white.svg?logo=telegram" alt="Join Telegram"/>
+  </a>
+  <a href="https://twitter.com/intent/follow?screen_name=mojavezk">
+    <img src="https://img.shields.io/badge/Discord-white.svg?logo=discord" alt="Join Discord"/>
+  </a>
+</div>
 
-## Build & Run
-1. Clone the repository:
-```
-https://github.com/d-roak/rs-drip_chain
-```
+---
 
-2. Build the chain:
-```
-cd rs-drip_chain
+## About
+
+**Mojave** is a new layer built on top of Bitcoin. It brings scalability, programmability, and fast transaction speed—without compromising Bitcoin’s core strengths: security and decentralization.
+
+---
+
+## Quickstart
+
+### Clone & Build
+
+```bash
+git clone https://github.com/1sixtech/mojave
+cd mojave
 cargo build --release
 ```
 
-3. Initialize CometBFT configuration:
-```
-cometbft init --home $COMETBFT_HOME_PATH
+### Running
+
+```bash
+# Node
+cargo run --bin mojave-node
+
+# Sequencer
+cargo run --bin mojave-sequencer
+
+# Prover
+cargo run --bin mojave-prover
 ```
 
-4. [Recommended] Change the `timeout_commit` field of `config.toml`:
-```
-# How long we wait after committing a block, before starting on the new
-# height (this gives us a chance to receive some more precommits, even
-# though we already have +2/3).
-# Set to 0 if you want to make progress as soon as the node has all the precommits.
-# Default to 1 second.
-timeout_commit = "1s" 
+### Testing
+
+```bash
+cargo test --workspace
+
+# e2e tests
+bash test_data/tests-e2e.sh
 ```
 
-6. Run the chain:
-```
-./target/release/drip-chain-node $COMETBFT_HOME_PATH
-```
+## License
+
+Mojave is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+
+## Contributing
+
+PRs are welcome! Read [CONTRIBUTING](CONTRIBUTING.md) to start contributing.
+
+## Acknowledgements
+
+Thanks to the following projects and libraries that made Mojave possible:
+
+- [Bitcoin](https://bitcoin.org/)
+- [ethrex](https://github.com/lambdaclass/ethrex)
+- [ColliderVM](https://www.collidervm.org/)
