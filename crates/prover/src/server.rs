@@ -2,10 +2,6 @@ use crate::message::{self, MessageError, Request, Response};
 use ethrex_prover_lib::{backends::Backend, prove, to_batch_proof};
 use tokio::net::{TcpListener, TcpStream};
 
-#[allow(unused)]
-const QUEUE_SIZE: usize = 100;
-
-#[allow(unused)]
 pub struct ProverServer {
     aligned_mode: bool,
     tcp_listener: TcpListener,
@@ -22,7 +18,6 @@ impl ProverServer {
     ///     prover.start().await;
     /// });
     /// ```
-    #[allow(unused)]
     pub async fn new(aligned_mode: bool, bind_addr: &str) -> Self {
         let tcp_listener = TcpListener::bind(bind_addr)
             .await
@@ -33,11 +28,10 @@ impl ProverServer {
         }
     }
 
-    #[allow(unused)]
     pub async fn start(&mut self) {
         loop {
             match self.tcp_listener.accept().await {
-                Ok((mut stream, _)) => {
+                Ok((stream, _)) => {
                     let aligned_mode = self.aligned_mode;
                     tokio::spawn(async move {
                         handle_connection(stream, aligned_mode).await;

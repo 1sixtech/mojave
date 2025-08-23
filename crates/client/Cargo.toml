@@ -1,21 +1,23 @@
 [package]
 name = "mojave-client"
-version = "0.1.0"
-edition = "2024"
+version = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+license = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+documentation = { workspace = true }
 
 [dev-dependencies]
 mockito = "0.31"
 
-
 [dependencies]
-# ethrex
+mojave-signature = { workspace = true }
+mojave-prover-lib = { workspace = true }
+
 ethrex-common = { workspace = true }
 ethrex-l2-common = { workspace = true }
 ethrex-rpc = { workspace = true }
-
-# mojave
-mojave-signature = { workspace = true }
-mojave-prover-lib = { workspace = true }
 
 futures = { workspace = true }
 hex = { workspace = true }

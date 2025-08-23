@@ -1,10 +1,18 @@
 [package]
 name = "mojave-block-producer"
-version = "0.1.0"
-edition = "2024"
+version = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+license = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+documentation = { workspace = true }
 
 [dependencies]
-# ethrex
+mojave-utils = { workspace = true }
+mojave-client = { workspace = true }
+mojave-signature = { workspace = true }
+
 ethrex-blockchain = { workspace = true }
 ethrex-common = { workspace = true }
 ethrex-l2-common = { workspace = true }
@@ -14,11 +22,6 @@ ethrex-storage = { workspace = true }
 ethrex-storage-rollup = { workspace = true }
 ethrex-vm = { workspace = true }
 reqwest = { workspace = true }
-
-# mojave
-mojave-utils = { workspace = true }
-mojave-client = { workspace = true }
-mojave-signature = { workspace = true }
 
 axum = { workspace = true }
 clap = { workspace = true }
