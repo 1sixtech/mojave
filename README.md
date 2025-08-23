@@ -15,7 +15,7 @@
   <a href="https://github.com/1sixtech/mojave/blob/main/LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"/>
   </a>
-
+  <br/>
   <a href="https://github.com/1sixtech/mojave">
 	<img src="https://img.shields.io/github/stars/1sixtech/mojave?style=social"/>
   </a>
