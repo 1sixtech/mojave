@@ -51,6 +51,7 @@ pub struct RpcApiContext {
     pub rollup_store: StoreRollup,
     pub eth_client: EthClient,
     pub block_queue: AsyncUniqueHeap<OrderedBlock, u64>,
+    pub next_signed_block_number: Arc<TokioMutex<u64>>,
 }
 
 #[expect(clippy::too_many_arguments)]
@@ -89,11 +90,14 @@ pub async fn start_api(
         rollup_store,
         eth_client,
         block_queue,
+        next_signed_block_number: Arc::new(TokioMutex::new(0)),
     };
 
     // Periodically clean up the active filters for the filters endpoints.
     let filter_handle = spawn_filter_cleanup_task(active_filters.clone(), shutdown_token.clone());
     let block_handle = spawn_block_processing_task(context.clone(), shutdown_token.clone());
+    let block_ingestion_handle =
+        spawn_block_ingestion_task(context.clone(), shutdown_token.clone());
 
     // All request headers allowed.
     // All methods allowed.
@@ -131,6 +135,11 @@ pub async fn start_api(
                 .await
                 .map_err(|e| RpcErr::Internal(e.to_string()))
         },
+        async {
+            block_ingestion_handle
+                .await
+                .map_err(|e| RpcErr::Internal(e.to_string()))
+        }
     )
     .inspect_err(|e| info!("Error shutting down servers: {e:?}"));
 
@@ -207,7 +216,6 @@ fn spawn_block_processing_task(
     })
 }
 
-#[allow(unused)]
 fn spawn_block_ingestion_task(
     context: RpcApiContext,
     shutdown_token: CancellationToken,
@@ -216,17 +224,17 @@ fn spawn_block_ingestion_task(
     tokio::task::spawn(async move {
         tracing::info!("Starting block ingestion loop");
         loop {
-            match block_ingestion.ingest_block().await {
-                Ok(()) => {
-                    block_ingestion.advance_block_number(1);
-                },
-                Err(error) => {
-                    tracing::error!("Failed to ingest a block: {}", error);
-                }
-            }
-            tokio::time::sleep(Duration::from_millis(100)).await;
-
             tokio::select! {
+                result = block_ingestion.ingest_block() => {
+                    match result {
+                        Ok(()) => {
+                            block_ingestion.advance_block_number(1);
+                        },
+                        Err(error) => {
+                            tracing::error!("Failed to ingest a block: {}", error);
+                        }
+                    };
+                }
                 _ = shutdown_token.cancelled() => {
                     tracing::info!("Shutting down block ingestion loop");
                     break;
@@ -441,6 +449,7 @@ mod tests {
             rollup_store,
             eth_client,
             block_queue: block_queue.clone(),
+            next_signed_block_number: Arc::new(TokioMutex::new(0)),
         };
 
         let cancel_token = CancellationToken::new();

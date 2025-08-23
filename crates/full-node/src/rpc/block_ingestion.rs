@@ -1,12 +1,10 @@
 use ethrex_common::types::{Block, BlockBody, Transaction};
 use ethrex_rpc::{
-    types::{block::RpcBlock, block_identifier::BlockIdentifier}, RpcErr
+    RpcErr,
+    types::{block::RpcBlock, block_identifier::BlockIdentifier},
 };
-// use mojave_chain_utils::unique_heap::AsyncUniqueHeap;
-// use std::sync::Arc;
-// use tokio::sync::Mutex as TokioMutex;
 
-use crate::rpc::{types::OrderedBlock, RpcApiContext};
+use crate::rpc::{RpcApiContext, types::OrderedBlock};
 
 use tokio::sync::{
     mpsc::{self, error::TrySendError},
@@ -17,7 +15,7 @@ use tokio_stream::{StreamExt, wrappers::ReceiverStream};
 #[derive(Debug, Clone)]
 pub struct BlockIngestion {
     sender: mpsc::Sender<Message>,
-    expected_block_number: u64,
+    current_block_number: u64,
 }
 
 impl BlockIngestion {
@@ -30,26 +28,39 @@ impl BlockIngestion {
                 handle_message(&context, message).await;
             }
         });
-        Self { sender, expected_block_number: start_block_number }
+        Self {
+            sender,
+            current_block_number: start_block_number,
+        }
     }
 
     pub async fn ingest_block(&self) -> Result<(), RpcErr> {
         let (sender, receiver) = oneshot::channel();
-        let block_number = self.expected_block_number;
+        let block_number = self.current_block_number;
+
         self.sender
             .try_send(Message::IngestBlock(sender, block_number))
             .map_err(|error| match error {
-                TrySendError::Full(_) => RpcErr::Internal("Block ingestion channel full".to_string()),
-                TrySendError::Closed(_) => RpcErr::Internal("Block ingestion channel closed".to_string()),
+                TrySendError::Full(_) => {
+                    RpcErr::Internal("Block ingestion channel full".to_string())
+                }
+                TrySendError::Closed(_) => {
+                    RpcErr::Internal("Block ingestion channel closed".to_string())
+                }
             })?;
-        receiver.await
+        receiver
+            .await
             .map_err(|_| RpcErr::Internal("Failed to receive block ingestion result".to_string()))
             .map_err(|e| RpcErr::Internal(e.to_string()))
             .map(|_| ())
     }
 
     pub fn advance_block_number(&mut self, amount: u64) {
-        self.expected_block_number += amount;
+        self.current_block_number += amount;
+    }
+
+    pub fn get_current_block_number(&self) -> u64 {
+        self.current_block_number
     }
 }
 
@@ -68,13 +79,22 @@ enum Message {
 
 impl RpcApiContext {
     pub(crate) async fn block_ingestion(&self, block_number: u64) -> Result<(), RpcErr> {
-        let rpc_block = self.eth_client.get_block_by_number(BlockIdentifier::Number(block_number))
+        let rpc_block = self
+            .eth_client
+            .get_block_by_number(BlockIdentifier::Number(block_number))
             .await
             .map_err(|e| RpcErr::Internal(e.to_string()))?;
 
         let block = rpc_block_to_block(rpc_block);
 
         self.block_queue.push(OrderedBlock(block)).await;
+        Ok(())
+    }
+
+    pub(crate) async fn update_next_signed_block(&self, block_number: u64) -> Result<(), RpcErr> {
+        // Logic to update the next signed block
+        let mut next_block_number = self.next_signed_block_number.lock().await;
+        *next_block_number = block_number;
         Ok(())
     }
 }
