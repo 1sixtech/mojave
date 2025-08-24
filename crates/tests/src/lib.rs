@@ -16,7 +16,7 @@ use std::{net::SocketAddr, str::FromStr, sync::Arc};
 use tokio::sync::oneshot;
 use tokio_util::sync::CancellationToken;
 
-pub const TEST_GENESIS: &str = include_str!("../../../test_data/genesis.json");
+pub const TEST_GENESIS: &str = include_str!("../../../tests/mock-genesis.json");
 pub const TEST_SEQUENCER_ADDR: &str = "127.0.0.1:8502";
 pub const TEST_NODE_ADDR: &str = "127.0.0.1:8500";
 

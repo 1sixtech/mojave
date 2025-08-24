@@ -1,22 +1,29 @@
 pub mod cli;
 
-use crate::cli::{Cli, Command};
-use mojave_node_lib::Node;
-use mojave_utils::logging::init_logging;
+use crate::cli::Command;
+use mojave_node_lib::types::MojaveNode;
 use std::error::Error;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let cli = Cli::run();
-    init_logging(cli.log_level);
+    mojave_utils::logging::init();
+    let cli = cli::Cli::run();
+
+    //if Some(cli.log_level) {
+    //    mojave_utils::logging::change_level(cli.log_level);
+    //}
+
     match cli.command {
-        Command::Init { options } => {
-            let node = Node::init(&options).await.unwrap_or_else(|error| {
-                tracing::error!("Failed to initialize the node: {}", error);
-                std::process::exit(1);
-            });
+        Command::Start { options } => {
+            let node_options: mojave_node_lib::types::NodeOptions = (&options).into();
+            let node = MojaveNode::init(&node_options)
+                .await
+                .unwrap_or_else(|error| {
+                    tracing::error!("Failed to initialize the node: {}", error);
+                    std::process::exit(1);
+                });
             tokio::select! {
-                res = node.run(&options) => {
+                res = node.run(&node_options) => {
                     if let Err(err) = res {
                         tracing::error!("Node stopped unexpectedly: {}", err);
                     }

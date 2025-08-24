@@ -1,13 +1,14 @@
-mod cli;
+pub mod cli;
+pub mod options;
 
-use crate::cli::{Cli, Command};
+use crate::cli::Command;
 use mojave_prover_lib::ProverServer;
-use mojave_utils::logging::init_logging;
 
 #[tokio::main]
 async fn main() {
-    let cli = Cli::run();
-    init_logging(cli.log_level);
+    mojave_utils::logging::init();
+    let cli = cli::Cli::run();
+    // init_logging(cli.log_level);
     match cli.command {
         Command::Init { prover_options } => {
             tracing::info!(

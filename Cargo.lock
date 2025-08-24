@@ -4611,6 +4611,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "mojave-batch-submitter"
+version = "0.1.0"
+
+[[package]]
 name = "mojave-block-producer"
 version = "0.1.0"
 dependencies = [
@@ -4642,6 +4646,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "mojave-btc-watcher"
+version = "0.1.0"
+
+[[package]]
 name = "mojave-client"
 version = "0.1.0"
 dependencies = [
@@ -4666,6 +4674,7 @@ name = "mojave-node"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "eyre",
  "mojave-node-lib",
  "mojave-utils",
  "tokio",
@@ -4677,6 +4686,7 @@ name = "mojave-node-lib"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "bytes",
  "clap",
  "ctor",
  "ethrex-blockchain",
@@ -4691,6 +4701,7 @@ dependencies = [
  "eyre",
  "futures",
  "hex",
+ "local-ip-address",
  "mockito",
  "mojave-client",
  "mojave-signature",
@@ -4758,6 +4769,7 @@ name = "mojave-sequencer"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "eyre",
  "mojave-block-producer",
  "mojave-client",
  "mojave-node-lib",
@@ -4793,7 +4805,6 @@ dependencies = [
  "ctor",
  "ethrex-blockchain",
  "ethrex-common",
- "ethrex-l2",
  "ethrex-l2-rpc",
  "ethrex-p2p",
  "ethrex-rlp",
@@ -4808,7 +4819,6 @@ dependencies = [
  "reqwest 0.12.23",
  "secp256k1",
  "serde_json",
- "thiserror 2.0.16",
  "tokio",
  "tokio-util",
  "tower-http",
@@ -4820,7 +4830,6 @@ version = "0.1.0"
 dependencies = [
  "bytes",
  "cfg-if 1.0.3",
- "clap",
  "ethrex-blockchain",
  "ethrex-common",
  "ethrex-l2",
@@ -4834,7 +4843,6 @@ dependencies = [
  "hex",
  "k256",
  "lazy_static",
- "local-ip-address",
  "rand 0.8.5",
  "secp256k1",
  "serde",

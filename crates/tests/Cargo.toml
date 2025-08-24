@@ -8,32 +8,29 @@ homepage = { workspace = true }
 repository = { workspace = true }
 documentation = { workspace = true }
 
+[dev-dependencies]
+ctor = "0.4.2"
+
 [dependencies]
 mojave-client = { workspace = true }
 mojave-node-lib = { workspace = true }
 mojave-utils = { workspace = true }
 
-ethrex-common = { workspace = true }
-ethrex-rpc = { workspace = true }
-ethrex-storage = { workspace = true }
 ethrex-blockchain = { workspace = true }
-ethrex-storage-rollup = { workspace = true }
+ethrex-common = { workspace = true }
+ethrex-l2-rpc = { workspace = true }
 ethrex-p2p = { workspace = true }
 ethrex-rlp = { workspace = true }
-ethrex-l2 = { workspace = true }
-ethrex-l2-rpc = { workspace = true }
+ethrex-rpc = { workspace = true }
+ethrex-storage = { workspace = true }
+ethrex-storage-rollup = { workspace = true }
 
-tokio = { workspace = true, features = ["full"] }
 axum = { workspace = true }
-tower-http = { workspace = true, features = ["cors"] }
-serde_json = { workspace = true }
-thiserror = { workspace = true }
-tokio-util = { workspace = true }
-
-k256 = { workspace = true, features = ["ecdh"] }
+k256 = { workspace = true }
 rand = { workspace = true }
 reqwest = { workspace = true }
 secp256k1 = { workspace = true }
-
-[dev-dependencies]
-ctor = "0.4.2"
+serde_json = { workspace = true }
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+tower-http = { workspace = true }

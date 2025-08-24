@@ -1,7 +1,3 @@
-use crate::{
-    network::{MAINNET_BOOTNODES, Network, TESTNET_BOOTNODES},
-    options::Options,
-};
 use bytes::Bytes;
 use ethrex_common::Address;
 use ethrex_p2p::{
@@ -10,6 +6,7 @@ use ethrex_p2p::{
     types::{Node, NodeRecord},
 };
 use ethrex_storage_rollup::{EngineTypeRollup, StoreRollup};
+use mojave_utils::network::{MAINNET_BOOTNODES, Network, TESTNET_BOOTNODES};
 use secp256k1::SecretKey;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -122,8 +119,8 @@ pub fn resolve_data_dir(data_dir: &str) -> String {
         .to_owned()
 }
 
-pub fn get_bootnodes(opts: &Options, network: &Network, data_dir: &str) -> Vec<Node> {
-    let mut bootnodes: Vec<Node> = opts.bootnodes.clone();
+pub fn get_bootnodes(bootnodes: Vec<Node>, network: &Network, data_dir: &str) -> Vec<Node> {
+    let mut bootnodes: Vec<Node> = bootnodes.clone();
 
     match network {
         Network::Mainnet => {
@@ -166,21 +163,25 @@ pub fn parse_socket_addr(addr: &str, port: &str) -> io::Result<SocketAddr> {
         ))
 }
 
-pub fn get_http_socket_addr(opts: &Options) -> SocketAddr {
-    parse_socket_addr(&opts.http_addr, &opts.http_port)
-        .expect("Failed to parse http address and port")
+pub fn get_http_socket_addr(http_addr: &str, http_port: &str) -> SocketAddr {
+    parse_socket_addr(http_addr, http_port).expect("Failed to parse http address and port")
 }
 
-pub fn get_authrpc_socket_addr(opts: &Options) -> SocketAddr {
-    parse_socket_addr(&opts.authrpc_addr, &opts.authrpc_port)
-        .expect("Failed to parse authrpc address and port")
+pub fn get_authrpc_socket_addr(authrpc_addr: &str, authrpc_port: &str) -> SocketAddr {
+    parse_socket_addr(authrpc_addr, authrpc_port).expect("Failed to parse authrpc address and port")
 }
 
-pub fn get_local_p2p_node(opts: &Options, signer: &SecretKey) -> Node {
-    let udp_socket_addr = parse_socket_addr(&opts.discovery_addr, &opts.discovery_port)
+pub fn get_local_p2p_node(
+    discovery_addr: &str,
+    discovery_port: &str,
+    p2p_addr: &str,
+    p2p_port: &str,
+    signer: &SecretKey,
+) -> Node {
+    let udp_socket_addr = parse_socket_addr(discovery_addr, discovery_port)
         .expect("Failed to parse discovery address and port");
     let tcp_socket_addr =
-        parse_socket_addr(&opts.p2p_addr, &opts.p2p_port).expect("Failed to parse addr and port");
+        parse_socket_addr(p2p_addr, p2p_port).expect("Failed to parse addr and port");
 
     // TODO: If hhtp.addr is 0.0.0.0 we get the local ip as the one of the node, otherwise we use the provided one.
     // This is fine for now, but we might need to support more options in the future.
@@ -207,8 +208,10 @@ pub fn get_local_p2p_node(opts: &Options, signer: &SecretKey) -> Node {
     node
 }
 
-pub fn get_valid_delegation_addresses(opts: &Options) -> Vec<Address> {
-    let Some(ref path) = opts.sponsorable_addresses_file_path else {
+pub fn get_valid_delegation_addresses(
+    sponsorable_addresses_file_path: Option<String>,
+) -> Vec<Address> {
+    let Some(ref path) = sponsorable_addresses_file_path else {
         tracing::warn!("No valid addresses provided, ethrex_SendTransaction will always fail");
         return Vec::new();
     };

@@ -29,12 +29,10 @@ ethrex-storage = { workspace = true }
 
 bytes = { workspace = true, features = ["serde"] }
 cfg-if = "1.0"
-clap = { workspace = true }
 eyre = { workspace = true }
 hex = { workspace = true }
 k256 = { workspace = true, features = ["ecdh"] }
 lazy_static = { workspace = true }
-local-ip-address = { version = "0.6" }
 rand = { version = "0.8.5" }
 secp256k1 = { workspace = true }
 serde = { workspace = true }

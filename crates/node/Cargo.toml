@@ -29,10 +29,12 @@ ethrex-vm = { workspace = true }
 
 
 axum = { workspace = true }
+bytes = { workspace = true, features = ["serde"] }
 clap = { workspace = true }
 hex = { workspace = true }
 eyre = { workspace = true }
 futures = { workspace = true }
+local-ip-address = { workspace = true }
 rand = { workspace = true }
 secp256k1 = { workspace = true }
 serde = { workspace = true, features = ["derive"] }

@@ -1,50 +1,25 @@
-use ethrex_common::types::Genesis;
-use ethrex_storage::Store;
-use mojave_utils::options::Options;
-
 use crate::{
     error::Error,
     initializers::{get_local_node_record, get_signer, init_blockchain, init_store},
     rpc::start_api,
-};
-use ethrex_blockchain::{Blockchain, BlockchainType};
-use ethrex_p2p::{
-    kademlia::KademliaTable,
-    network::peer_table,
-    peer_handler::PeerHandler,
-    sync_manager::SyncManager,
-    types::{Node as RexNode, NodeRecord},
-};
-use ethrex_rpc::EthClient;
-use ethrex_storage_rollup::{EngineTypeRollup, StoreRollup};
-use ethrex_vm::EvmEngine;
-use mojave_utils::{
-    initializer::{
+    types::{MojaveNode, NodeOptions},
+    utils::{
         NodeConfigFile, get_authrpc_socket_addr, get_http_socket_addr, get_local_p2p_node,
         read_jwtsecret_file, resolve_data_dir, store_node_config_file,
     },
-    unique_heap::AsyncUniqueHeap,
 };
+use ethrex_blockchain::BlockchainType;
+use ethrex_p2p::{network::peer_table, peer_handler::PeerHandler, sync_manager::SyncManager};
+use ethrex_rpc::EthClient;
+use ethrex_storage_rollup::{EngineTypeRollup, StoreRollup};
+use ethrex_vm::EvmEngine;
+use mojave_utils::unique_heap::AsyncUniqueHeap;
 use std::{path::PathBuf, sync::Arc, time::Duration};
 use tokio::sync::Mutex;
 use tokio_util::sync::CancellationToken;
 
-pub struct Node {
-    pub data_dir: String,
-    pub genesis: Genesis,
-    pub store: Store,
-    pub rollup_store: StoreRollup,
-    pub blockchain: Arc<Blockchain>,
-    pub cancel_token: CancellationToken,
-    pub local_p2p_node: RexNode,
-    pub local_node_record: Arc<Mutex<NodeRecord>>,
-    pub syncer: SyncManager,
-    pub peer_table: Arc<Mutex<KademliaTable>>,
-    pub peer_handler: PeerHandler,
-}
-
-impl Node {
-    pub async fn init(options: &Options) -> Result<Self, Error> {
+impl MojaveNode {
+    pub async fn init(options: &NodeOptions) -> Result<Self, Error> {
         let data_dir = resolve_data_dir(&options.datadir);
         tracing::info!("Data directory resolved to: {:?}", data_dir);
 
@@ -68,7 +43,13 @@ impl Node {
 
         let signer = get_signer(&data_dir);
 
-        let local_p2p_node = get_local_p2p_node(options, &signer);
+        let local_p2p_node = get_local_p2p_node(
+            &options.discovery_addr,
+            &options.discovery_port,
+            &options.p2p_addr,
+            &options.p2p_port,
+            &signer,
+        );
         let local_node_record = Arc::new(Mutex::new(get_local_node_record(
             &data_dir,
             &local_p2p_node,
@@ -81,14 +62,14 @@ impl Node {
         // Create SyncManager
         let syncer = SyncManager::new(
             peer_handler.clone(),
-            options.syncmode.clone(),
+            options.syncmode.into(),
             cancel_token.clone(),
             blockchain.clone(),
             store.clone(),
         )
         .await;
 
-        Ok(Node {
+        Ok(MojaveNode {
             data_dir,
             genesis,
             store,
@@ -103,12 +84,12 @@ impl Node {
         })
     }
 
-    pub async fn run(self, options: &Options) -> Result<(), Error> {
+    pub async fn run(self, options: &NodeOptions) -> Result<(), Error> {
         let rpc_shutdown = CancellationToken::new();
         let eth_client = EthClient::new("http://127.0.0.1")?;
         start_api(
-            get_http_socket_addr(options),
-            get_authrpc_socket_addr(options),
+            get_http_socket_addr(&options.http_addr, &options.http_port),
+            get_authrpc_socket_addr(&options.authrpc_addr, &options.authrpc_port),
             self.store,
             self.blockchain,
             read_jwtsecret_file(&options.authrpc_jwtsecret),

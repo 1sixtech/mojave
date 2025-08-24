@@ -1,4 +1,4 @@
-use mojave_utils::initializer::read_node_config_file;
+use crate::utils::read_node_config_file;
 
 use ethrex_blockchain::{Blockchain, BlockchainType};
 use ethrex_common::types::Genesis;

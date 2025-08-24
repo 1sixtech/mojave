@@ -15,6 +15,7 @@ mojave-node-lib = { workspace = true }
 mojave-utils = { workspace = true }
 
 clap = { workspace = true }
+eyre = { workspace = true }
 reqwest = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }

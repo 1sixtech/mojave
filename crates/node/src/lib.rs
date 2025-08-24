@@ -1,6 +1,6 @@
 pub mod error;
 pub mod initializers;
-mod node;
+pub mod node;
 pub mod rpc;
-
-pub use node::Node;
+pub mod types;
+pub mod utils;

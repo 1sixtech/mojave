@@ -1,5 +1,6 @@
+use crate::options::Options;
+
 use clap::{Parser, Subcommand};
-use mojave_utils::prover_options::ProverOpts;
 use tracing::Level;
 
 #[derive(Parser)]
@@ -34,6 +35,6 @@ pub enum Command {
     #[command(name = "init", about = "Run the prover")]
     Init {
         #[command(flatten)]
-        prover_options: ProverOpts,
+        prover_options: Options,
     },
 }

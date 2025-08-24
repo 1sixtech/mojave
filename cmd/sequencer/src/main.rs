@@ -1,26 +1,32 @@
 pub mod cli;
 
-use crate::cli::{Cli, Command};
+use crate::cli::Command;
 use mojave_block_producer::{BlockProducer, BlockProducerContext};
 use mojave_client::MojaveClient;
-use mojave_node_lib::Node;
-use mojave_utils::logging::init_logging;
+use mojave_node_lib::types::MojaveNode;
 use reqwest::Url;
 use std::{error::Error, time::Duration};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let cli = Cli::run();
-    init_logging(cli.log_level);
+    mojave_utils::logging::init();
+    let cli = cli::Cli::run();
+
+    //if Some(cli.log_level) {
+    //    mojave_utils::logging::change_level(cli.log_level);
+    //}
     match cli.command {
-        Command::Init {
+        Command::Start {
             options,
             sequencer_options,
         } => {
-            let node = Node::init(&options).await.unwrap_or_else(|error| {
-                tracing::error!("Failed to initialize the node: {}", error);
-                std::process::exit(1);
-            });
+            let node_options: mojave_node_lib::types::NodeOptions = (&options).into();
+            let node = MojaveNode::init(&node_options)
+                .await
+                .unwrap_or_else(|error| {
+                    tracing::error!("Failed to initialize the node: {}", error);
+                    std::process::exit(1);
+                });
 
             let mojave_client = MojaveClient::new(sequencer_options.private_key.as_str())?;
             let context = BlockProducerContext::new(
@@ -55,7 +61,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             });
 
             tokio::select! {
-                res = node.run(&options) => {
+                res = node.run(&node_options) => {
                     if let Err(err) = res {
                         tracing::error!("Node stopped unexpectedly: {}", err);
                     }

@@ -2,26 +2,26 @@
 mod tests {
     use ctor::ctor;
     use ethrex_common::{
-        types::{Block, BlockBody, BlockHeader, EIP1559Transaction, TxKind, TxType},
         Address, Bloom, Bytes, H256, U256,
+        types::{Block, BlockBody, BlockHeader, EIP1559Transaction, TxKind, TxType},
     };
     use ethrex_l2_rpc::signer::{LocalSigner, Signable, Signer};
     use ethrex_rlp::encode::RLPEncode;
     use ethrex_rpc::{
-        types::block_identifier::{BlockIdentifier, BlockTag},
         EthClient,
+        types::block_identifier::{BlockIdentifier, BlockTag},
     };
     use mojave_client::MojaveClient;
     use mojave_tests::{start_test_api_node, start_test_api_sequencer};
     use reqwest::Url;
     use secp256k1::SecretKey;
-    use serde_json::{json, Value};
+    use serde_json::{Value, json};
     use std::{
         net::SocketAddr,
         str::FromStr,
         time::{SystemTime, UNIX_EPOCH},
     };
-    use tokio::time::{sleep, Duration};
+    use tokio::time::{Duration, sleep};
     #[ctor]
     fn test_setup() {
         unsafe {
@@ -81,7 +81,7 @@ mod tests {
 
         // spawn full node server
         let server_handle = tokio::spawn(async move {
-            use axum::{http::StatusCode, routing::post, Json, Router};
+            use axum::{Json, Router, http::StatusCode, routing::post};
             use tower_http::cors::CorsLayer;
 
             async fn handle_rpc(body: String) -> Result<Json<Value>, StatusCode> {
@@ -139,7 +139,7 @@ mod tests {
 
         // spawn sequencer server
         let server_handle = tokio::spawn(async move {
-            use axum::{http::StatusCode, routing::post, Json, Router};
+            use axum::{Json, Router, http::StatusCode, routing::post};
             use tower_http::cors::CorsLayer;
 
             async fn handle_rpc(body: String) -> Result<Json<Value>, StatusCode> {

@@ -1,9 +1,8 @@
+use clap::Parser;
 use std::fmt;
 
-use clap::Parser;
-
 #[derive(Parser)]
-pub struct ProverOpts {
+pub struct Options {
     #[arg(
         long = "prover.port",
         default_value = "3900",
@@ -26,7 +25,7 @@ pub struct ProverOpts {
     pub aligned_mode: bool,
 }
 
-impl Default for ProverOpts {
+impl Default for Options {
     fn default() -> Self {
         Self {
             prover_port: 3900,
@@ -36,9 +35,9 @@ impl Default for ProverOpts {
     }
 }
 
-impl fmt::Debug for ProverOpts {
+impl fmt::Debug for Options {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("ProverOpts")
+        f.debug_struct("ProverOptions")
             .field("prover_port", &self.prover_port)
             .field("prover_host", &self.prover_host)
             .field("aligned_mode", &self.aligned_mode)
