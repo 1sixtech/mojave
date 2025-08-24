@@ -241,7 +241,7 @@ impl MojaveClient {
 
     pub async fn get_proof(
         &self,
-        job_id: &str,
+        job_id: JobId,
         prover_url: &Url,
         max_attempts: u64,
         request_timeout: u64,

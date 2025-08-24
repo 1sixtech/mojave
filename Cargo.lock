@@ -4801,6 +4801,8 @@ dependencies = [
  "ethrex-storage",
  "ethrex-storage-rollup",
  "mojave-client",
+ "mojave-prover",
+ "reqwest 0.12.22",
  "serde_json",
  "thiserror 2.0.14",
  "tokio",
