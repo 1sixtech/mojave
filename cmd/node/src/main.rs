@@ -9,9 +9,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     mojave_utils::logging::init();
     let cli = cli::Cli::run();
 
-    //if Some(cli.log_level) {
-    //    mojave_utils::logging::change_level(cli.log_level);
-    //}
+    if let Some(log_level) = cli.log_level {
+        mojave_utils::logging::change_level(log_level);
+    }
 
     match cli.command {
         Command::Start { options } => {
