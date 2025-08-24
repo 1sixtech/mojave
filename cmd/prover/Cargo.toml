@@ -9,7 +9,7 @@ repository = { workspace = true }
 documentation = { workspace = true }
 
 [dependencies]
-mojave-prover-lib = { workspace = true, features = ["server"] }
+mojave-prover-lib = { workspace = true }
 mojave-utils = { workspace = true }
 
 clap = { workspace = true }

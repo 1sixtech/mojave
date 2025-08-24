@@ -10,25 +10,22 @@ use zkvm_interface::io::ProgramInput;
 
 use crate::errors::ProofCoordinatorError;
 
-use mojave_prover_lib::{ProverClient, ProverData};
+use mojave_client::types::ProverData;
 
 mod errors;
-
-const MAX_ATTEMPTS: u64 = 5;
-const REQUEST_TIMEOUT: u64 = 300;
 
 pub struct ProofCoordinator {
     /// Come from the block builder
     proof_data_receiver: Receiver<u64>,
     /// Send to the prover
-    prover_tcp_addr: String,
+    _prover_tcp_addr: String,
 }
 
 impl ProofCoordinator {
     pub fn new(proof_data_receiver: Receiver<u64>, prover_tcp_addr: String) -> Self {
         Self {
             proof_data_receiver,
-            prover_tcp_addr,
+            _prover_tcp_addr: prover_tcp_addr,
         }
     }
 
@@ -55,15 +52,9 @@ impl ProofCoordinator {
 
     async fn request_proof_from_prover(
         &self,
-        prover_data: ProverData,
+        _prover_data: ProverData,
     ) -> Result<(u64, BatchProof), ProofCoordinatorError> {
-        let client = ProverClient::new(&self.prover_tcp_addr, REQUEST_TIMEOUT, MAX_ATTEMPTS);
-        let batch_number = prover_data.batch_number;
-        let proof = client
-            .get_proof(prover_data)
-            .await
-            .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?;
-        Ok((batch_number, proof))
+        todo!("Use Client to request proof")
     }
 }
 
