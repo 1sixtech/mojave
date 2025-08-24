@@ -7,8 +7,8 @@ set -e  # Exit on error
 
 echo "Running e2e tests"
 
-# Check if rex is installed
-REX_PATH=$(command -v rex 2>/dev/null)
+echo "Checking if rex is installed"
+REX_PATH=$(command -v rex 2>/dev/null || true)
 if [ -z "$REX_PATH" ]; then
     echo "ERROR: 'rex' command not found!"
     exit 1
@@ -29,7 +29,6 @@ cleanup() {
     sleep 2
 }
 
-
 echo "Starting all services"
 
 bash start.sh &
@@ -37,6 +36,7 @@ sleep 10
 
 echo "All services started. Testing connection..."
 
+trap cleanup INT TERM EXIT
 
 
 # ================================
@@ -68,12 +68,11 @@ else
     echo "Expected: 0x0000000000000000000000000000000000000000000000000000000000000001"
     echo "Got: $NUMBER"
 
-    cleanup
     exit 1
 fi
 
 # Set number to 5
-rex send "$CONTRACT_ADDRESS" 0 "$PRIVATE_KEY" --calldata 0x3fb5c1cb0000000000000000000000000000000000000000000000000000000000000005 
+rex send "$CONTRACT_ADDRESS" 0 --calldata 0x3fb5c1cb0000000000000000000000000000000000000000000000000000000000000005 --private-key "$PRIVATE_KEY"
 
 # sleep to wait for the transaction to be mined
 sleep 2
@@ -87,7 +86,6 @@ else
     echo "Expected: 0x0000000000000000000000000000000000000000000000000000000000000005"
     echo "Got: $NUMBER"
 
-    cleanup
     exit 1
 fi
 
@@ -96,6 +94,4 @@ fi
 # Clean up
 # ================================
 
-cleanup
-
-echo "ALL TESTS PASSED SUCCESSFULLY!"
+echo "ALL TESTS PASSED SUCCESSFULLY!"   
