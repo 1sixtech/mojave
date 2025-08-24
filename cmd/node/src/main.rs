@@ -12,7 +12,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     if let Some(log_level) = cli.log_level {
         mojave_utils::logging::change_level(log_level);
     }
-
     match cli.command {
         Command::Start { options } => {
             let node_options: mojave_node_lib::types::NodeOptions = (&options).into();
