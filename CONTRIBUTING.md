@@ -42,6 +42,7 @@ This document outlines the process and guidelines to help you contribute effecti
 ### Code Style
 
 - Follow Rust API Guidelines.
+- Read [PROJECT_STRUCTURE](PROJECT_STRUCTURE.md), for more details on the codebase structure.
 - Run `cargo fmt` and `cargo clippy` before pushing.
 - Prefer small, composable functions and explicit error handling.
 
