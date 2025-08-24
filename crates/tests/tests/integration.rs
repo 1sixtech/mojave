@@ -88,15 +88,15 @@ mod tests {
                 let request: Value =
                     serde_json::from_str(&body).map_err(|_| StatusCode::BAD_REQUEST)?;
 
-                if let Some(method) = request.get("method").and_then(|m| m.as_str()) {
-                    if method == "mojave_sendBroadcastBlock" {
-                        let response = json!({
-                            "id": request.get("id").unwrap_or(&json!(1)),
-                            "jsonrpc": "2.0",
-                            "result": null
-                        });
-                        return Ok(Json(response));
-                    }
+                if let Some(method) = request.get("method").and_then(|m| m.as_str())
+                    && method == "mojave_sendBroadcastBlock"
+                {
+                    let response = json!({
+                        "id": request.get("id").unwrap_or(&json!(1)),
+                        "jsonrpc": "2.0",
+                        "result": null
+                    });
+                    return Ok(Json(response));
                 }
                 Err(StatusCode::METHOD_NOT_ALLOWED)
             }
@@ -146,15 +146,15 @@ mod tests {
                 let request: Value =
                     serde_json::from_str(&body).map_err(|_| StatusCode::BAD_REQUEST)?;
 
-                if let Some(method) = request.get("method").and_then(|m| m.as_str()) {
-                    if method == "eth_sendRawTransaction" {
-                        let response = json!({
-                            "id": request.get("id").unwrap_or(&json!(1)),
-                            "jsonrpc": "2.0",
-                            "result": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
-                        });
-                        return Ok(Json(response));
-                    }
+                if let Some(method) = request.get("method").and_then(|m| m.as_str())
+                    && method == "eth_sendRawTransaction"
+                {
+                    let response = json!({
+                        "id": request.get("id").unwrap_or(&json!(1)),
+                        "jsonrpc": "2.0",
+                        "result": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+                    });
+                    return Ok(Json(response));
                 }
                 Err(StatusCode::METHOD_NOT_ALLOWED)
             }
