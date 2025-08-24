@@ -9,7 +9,7 @@ use futures::{
     FutureExt,
     future::{Fuse, select_ok},
 };
-use mojave_prover::{MessageError, ProverData};
+use mojave_prover::ProverData;
 use mojave_signature::{Signature, Signer, SigningKey};
 use reqwest::Url;
 use serde::de::DeserializeOwned;
@@ -127,25 +127,15 @@ impl MojaveClient {
 
     fn is_retryable(error: &MojaveClientError) -> bool {
         match error {
-            MojaveClientError::Message(MessageError::MessageTooLarge(_, _))
-            | MojaveClientError::Message(MessageError::Serialize(_))
-            | MojaveClientError::Message(MessageError::Deserialize(_))
-            | MojaveClientError::Internal(_) => false,
-
-            MojaveClientError::Io(e)
-                if matches!(
-                    e.kind(),
-                    io::ErrorKind::InvalidInput
-                        | io::ErrorKind::InvalidData
-                        | io::ErrorKind::Unsupported
-                        | io::ErrorKind::WriteZero
-                        | io::ErrorKind::UnexpectedEof
-                ) =>
-            {
-                false
+            MojaveClientError::RpcError(e) => {
+                let error_msg = e.to_string();
+                match error_msg.as_str() {
+                    "Internal Error" => true,
+                    "Unknown payload" => true,
+                    _ => false,
+                }
             }
-
-            _ => true,
+            _ => false,
         }
     }
 

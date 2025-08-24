@@ -67,7 +67,9 @@ impl ProofCoordinator {
             .await
             .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?;
 
-        let (batch_number, batch_proof) = self.request_proof_from_prover(input, job_id.as_str().unwrap()).await?;
+        let (batch_number, batch_proof) = self
+            .request_proof_from_prover(input, job_id.as_str().unwrap())
+            .await?;
 
         context.store_proof(batch_proof, batch_number).await?;
 
