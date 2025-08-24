@@ -18,5 +18,5 @@ ethrex-storage-rollup = { workspace = true }
 ethrex-blockchain = { workspace = true }
 zkvm_interface = { workspace = true }
 
-mojave-prover = { workspace = true, features = ["client"] }
+mojave-prover = { workspace = true }
 mojave-client = { workspace = true }

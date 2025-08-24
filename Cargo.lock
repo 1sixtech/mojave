@@ -4717,6 +4717,7 @@ dependencies = [
  "ethrex-blockchain",
  "ethrex-common",
  "ethrex-l2",
+ "ethrex-l2-common",
  "ethrex-metrics",
  "ethrex-p2p",
  "ethrex-rpc",
@@ -4727,10 +4728,12 @@ dependencies = [
  "lazy_static",
  "local-ip-address",
  "secp256k1",
+ "serde",
  "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "zkvm_interface",
 ]
 
 [[package]]
@@ -4743,7 +4746,6 @@ dependencies = [
  "futures",
  "hex",
  "mockito",
- "mojave-prover",
  "mojave-signature",
  "reqwest 0.12.22",
  "serde",
@@ -4751,6 +4753,7 @@ dependencies = [
  "thiserror 2.0.14",
  "tokio",
  "tracing",
+ "zkvm_interface",
 ]
 
 [[package]]
@@ -4798,8 +4801,6 @@ dependencies = [
  "ethrex-storage",
  "ethrex-storage-rollup",
  "mojave-client",
- "mojave-prover",
- "reqwest 0.12.22",
  "serde_json",
  "thiserror 2.0.14",
  "tokio",
@@ -4811,14 +4812,22 @@ dependencies = [
 name = "mojave-prover"
 version = "0.1.0"
 dependencies = [
+ "axum",
+ "bincode",
  "clap",
  "ethrex-l2-common",
  "ethrex-prover",
+ "ethrex-rpc",
+ "hex",
  "mojave-chain-utils",
+ "mojave-client",
+ "reqwest 0.12.22",
  "serde",
  "serde_json",
  "thiserror 2.0.14",
+ "tiny-keccak",
  "tokio",
+ "tower-http",
  "tracing",
  "zkvm_interface",
 ]
