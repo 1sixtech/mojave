@@ -130,8 +130,8 @@ impl MojaveClient {
             MojaveClientError::RpcError(e) => {
                 let error_msg = e.to_string();
                 match error_msg.as_str() {
-                    "Internal Error" => true,
-                    "Unknown payload" => true,
+                    msg if msg.starts_with("Internal Error") => true,
+                    msg if msg.starts_with("Unknown payload") => true,
                     _ => false,
                 }
             }
