@@ -14,7 +14,7 @@ use mojave_signature::{Signature, Signer, SigningKey};
 use reqwest::Url;
 use serde::de::DeserializeOwned;
 use serde_json::json;
-use std::{io, pin::Pin, str::FromStr, sync::Arc, time::Duration};
+use std::{pin::Pin, str::FromStr, sync::Arc, time::Duration};
 use tokio::time::timeout;
 
 const INITIAL_RETRY_DELAY: Duration = Duration::from_millis(100);
