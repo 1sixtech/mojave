@@ -5,7 +5,7 @@ pub mod types;
 
 use crate::rpc::{
     block::SendBroadcastBlockRequest, block_ingestion::ingest_block,
-    transaction::SendRawTransactionRequest, types::OrderedBlock,
+    transaction::SendRawTransactionRequest, types::{OrderedBlock, PendingHeap},
 };
 use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
 use ethrex_blockchain::Blockchain;
@@ -51,7 +51,7 @@ pub struct RpcApiContext {
     pub rollup_store: StoreRollup,
     pub eth_client: EthClient,
     pub block_queue: AsyncUniqueHeap<OrderedBlock, u64>,
-    pub pending_signed_blocks: AsyncUniqueHeap<OrderedBlock, u64>,
+    pub pending_signed_blocks: PendingHeap,
 }
 
 #[expect(clippy::too_many_arguments)]
@@ -90,7 +90,7 @@ pub async fn start_api(
         rollup_store,
         eth_client,
         block_queue,
-        pending_signed_blocks: AsyncUniqueHeap::new(),
+        pending_signed_blocks: PendingHeap(AsyncUniqueHeap::new()),
     };
 
     // Periodically clean up the active filters for the filters endpoints.
@@ -451,7 +451,7 @@ mod tests {
             rollup_store,
             eth_client,
             block_queue: block_queue.clone(),
-            pending_signed_blocks: AsyncUniqueHeap::new(),
+            pending_signed_blocks: PendingHeap(AsyncUniqueHeap::new()),
         };
 
         let cancel_token = CancellationToken::new();
