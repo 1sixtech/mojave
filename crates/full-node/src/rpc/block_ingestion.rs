@@ -67,7 +67,6 @@ impl BlockIngestion {
 async fn handle_message(context: &RpcApiContext, message: Message) {
     match message {
         Message::IngestBlock(sender, block_number) => {
-            // Here you would implement the logic to process the block
             let _ = sender.send(context.block_ingestion(block_number).await);
         }
     }
@@ -79,22 +78,37 @@ enum Message {
 
 impl RpcApiContext {
     pub(crate) async fn block_ingestion(&self, block_number: u64) -> Result<(), RpcErr> {
-        let rpc_block = self
-            .eth_client
-            .get_block_by_number(BlockIdentifier::Number(block_number))
-            .await
-            .map_err(|e| RpcErr::Internal(e.to_string()))?;
+        if self.pending_signed_blocks.len().await == 0 {
+            return Err(RpcErr::Internal(
+                "No pending signed blocks, no ingestion needed".to_string(),
+            ));
+        }
 
-        let block = rpc_block_to_block(rpc_block);
+        let peek = self.pending_signed_blocks.peek().await;
 
-        self.block_queue.push(OrderedBlock(block)).await;
-        Ok(())
-    }
+        // peek must be not none now
+        if peek.is_none() {
+            return Err(RpcErr::Internal(
+                "No pending signed blocks, no ingestion needed".to_string(),
+            ));
+        }
 
-    pub(crate) async fn update_next_signed_block(&self, block_number: u64) -> Result<(), RpcErr> {
-        // Logic to update the next signed block
-        let mut next_block_number = self.next_signed_block_number.lock().await;
-        *next_block_number = block_number;
+        if block_number != peek.unwrap().0.header.number {
+            let rpc_block = self
+                .eth_client
+                .get_block_by_number(BlockIdentifier::Number(block_number))
+                .await
+                .map_err(|e| RpcErr::Internal(e.to_string()))?;
+
+            let block = rpc_block_to_block(rpc_block);
+
+            self.block_queue.push(OrderedBlock(block)).await;
+        } else {
+            let signed_block = self.pending_signed_blocks.pop().await.unwrap();
+
+            self.block_queue.push(signed_block).await;
+        }
+
         Ok(())
     }
 }

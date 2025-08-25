@@ -45,15 +45,9 @@ impl SendBroadcastBlockRequest {
         let signed_block = data.signed_block.block;
         let signed_block_number = signed_block.header.number;
 
-        // Update the next signed block number in the context (allow block ingestion task to continue processing)
-        context
-            .update_next_signed_block(signed_block_number)
-            .await
-            .map_err(|e| RpcErr::Internal(e.to_string()))?;
-
         // Push the signed block to the block queue for processing
         context
-            .block_queue
+            .pending_signed_blocks
             .push(OrderedBlock(signed_block.clone()))
             .await;
 

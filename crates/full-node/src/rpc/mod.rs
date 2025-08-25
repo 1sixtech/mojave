@@ -51,7 +51,7 @@ pub struct RpcApiContext {
     pub rollup_store: StoreRollup,
     pub eth_client: EthClient,
     pub block_queue: AsyncUniqueHeap<OrderedBlock, u64>,
-    pub next_signed_block_number: Arc<TokioMutex<u64>>,
+    pub pending_signed_blocks: AsyncUniqueHeap<OrderedBlock, u64>,
 }
 
 #[expect(clippy::too_many_arguments)]
@@ -90,7 +90,7 @@ pub async fn start_api(
         rollup_store,
         eth_client,
         block_queue,
-        next_signed_block_number: Arc::new(TokioMutex::new(0)),
+        pending_signed_blocks: AsyncUniqueHeap::new(),
     };
 
     // Periodically clean up the active filters for the filters endpoints.
@@ -449,7 +449,7 @@ mod tests {
             rollup_store,
             eth_client,
             block_queue: block_queue.clone(),
-            next_signed_block_number: Arc::new(TokioMutex::new(0)),
+            pending_signed_blocks: AsyncUniqueHeap::new(),
         };
 
         let cancel_token = CancellationToken::new();
