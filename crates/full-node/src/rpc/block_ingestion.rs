@@ -94,6 +94,7 @@ impl RpcApiContext {
         }
 
         if block_number != peek.unwrap().0.header.number {
+            // Back fill missing block
             let rpc_block = self
                 .eth_client
                 .get_block_by_number(BlockIdentifier::Number(block_number))
@@ -104,6 +105,7 @@ impl RpcApiContext {
 
             self.block_queue.push(OrderedBlock(block)).await;
         } else {
+            // Push the signed block from pending queue to block queue
             let signed_block = self.pending_signed_blocks.pop().await.unwrap();
 
             self.block_queue.push(signed_block).await;

@@ -45,7 +45,7 @@ impl SendBroadcastBlockRequest {
         let signed_block = data.signed_block.block;
         let signed_block_number = signed_block.header.number;
 
-        // Push the signed block to the block queue for processing
+        // Push the signed block to the pending queue for processing
         context
             .pending_signed_blocks
             .push(OrderedBlock(signed_block.clone()))
