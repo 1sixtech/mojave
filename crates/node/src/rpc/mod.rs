@@ -1,9 +1,13 @@
 pub mod block;
+pub mod block_ingestion;
 pub mod transaction;
 pub mod types;
 
 use crate::rpc::{
-    block::SendBroadcastBlockRequest, transaction::SendRawTransactionRequest, types::OrderedBlock,
+    block::SendBroadcastBlockRequest,
+    block_ingestion::ingest_block,
+    transaction::SendRawTransactionRequest,
+    types::{OrderedBlock, PendingHeap},
 };
 use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
 use ethrex_blockchain::Blockchain;
@@ -49,6 +53,7 @@ pub struct RpcApiContext {
     pub rollup_store: StoreRollup,
     pub eth_client: EthClient,
     pub block_queue: AsyncUniqueHeap<OrderedBlock, u64>,
+    pub pending_signed_blocks: PendingHeap,
 }
 
 #[expect(clippy::too_many_arguments)]
@@ -87,11 +92,14 @@ pub async fn start_api(
         rollup_store,
         eth_client,
         block_queue,
+        pending_signed_blocks: PendingHeap::new(),
     };
 
     // Periodically clean up the active filters for the filters endpoints.
     let filter_handle = spawn_filter_cleanup_task(active_filters.clone(), shutdown_token.clone());
     let block_handle = spawn_block_processing_task(context.clone(), shutdown_token.clone());
+    let block_ingestion_handle =
+        spawn_block_ingestion_task(context.clone(), shutdown_token.clone());
 
     // All request headers allowed.
     // All methods allowed.
@@ -129,6 +137,11 @@ pub async fn start_api(
                 .await
                 .map_err(|e| RpcErr::Internal(e.to_string()))
         },
+        async {
+            block_ingestion_handle
+                .await
+                .map_err(|e| RpcErr::Internal(e.to_string()))
+        }
     )
     .inspect_err(|e| info!("Error shutting down servers: {e:?}"));
 
@@ -198,6 +211,43 @@ fn spawn_block_processing_task(
                 }
                 _ = shutdown_token.cancelled() => {
                     tracing::info!("Shutting down block processing loop");
+                    break;
+                }
+            }
+        }
+    })
+}
+
+fn spawn_block_ingestion_task(
+    context: RpcApiContext,
+    shutdown_token: CancellationToken,
+) -> JoinHandle<()> {
+    tokio::task::spawn(async move {
+        let mut current_block_number =
+            match context.l1_context.storage.get_latest_block_number().await {
+                Ok(num) => num.saturating_add(1),
+                Err(_) => {
+                    tracing::error!("Failed to get latest block number from storage");
+                    1
+                }
+            };
+
+        tracing::info!("Starting block ingestion loop @ {current_block_number}");
+        loop {
+            tokio::select! {
+                result = ingest_block(context.clone(), current_block_number) => {
+                    match result {
+                        Ok(()) => {
+                            current_block_number += 1;
+                            tracing::info!("Ingested block number: {}", current_block_number - 1);
+                        },
+                        Err(error) => {
+                            tracing::error!("Failed to ingest a block: {}", error);
+                        }
+                    };
+                }
+                _ = shutdown_token.cancelled() => {
+                    tracing::info!("Shutting down block ingestion loop");
                     break;
                 }
             }
@@ -410,6 +460,7 @@ mod tests {
             rollup_store,
             eth_client,
             block_queue: block_queue.clone(),
+            pending_signed_blocks: PendingHeap::new(),
         };
 
         let cancel_token = CancellationToken::new();
