@@ -22,7 +22,7 @@ pub struct ProofCoordinator {
     /// Come from the block builder
     proof_data_receiver: Receiver<u64>,
     /// Send to the prover
-    prover_tcp_addr: String,
+    prover_url: Url,
     /// Sequencer address
     sequencer_address: String,
     /// Mojave client
@@ -32,16 +32,18 @@ pub struct ProofCoordinator {
 impl ProofCoordinator {
     pub fn new(
         proof_data_receiver: Receiver<u64>,
-        prover_tcp_addr: String,
+        prover_tcp_address: &str,
         sequencer_address: String,
         private_key: &str,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, ProofCoordinatorError> {
+        Ok(Self {
             proof_data_receiver,
-            prover_tcp_addr,
+            prover_url: Url::parse(prover_tcp_address)
+                .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?,
             sequencer_address,
-            client: MojaveClient::new(private_key).unwrap(),
-        }
+            client: MojaveClient::new(private_key)
+                .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?,
+        })
     }
 
     pub async fn process_new_block(
@@ -59,10 +61,9 @@ impl ProofCoordinator {
         };
 
         // send proof input to the prover
-        let prover_url = Url::parse(&self.prover_tcp_addr).unwrap();
         let job_id = self
             .client
-            .send_proof_input(&input, &self.sequencer_address, &prover_url)
+            .send_proof_input(&input, &self.sequencer_address, &self.prover_url)
             .await
             .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?;
 
@@ -80,10 +81,9 @@ impl ProofCoordinator {
         job_id: JobId,
     ) -> Result<(u64, ProofResponse), ProofCoordinatorError> {
         let batch_number = prover_data.batch_number;
-        let prover_url = Url::parse(&self.prover_tcp_addr).unwrap();
         let proof = self
             .client
-            .get_proof(job_id, &prover_url, MAX_ATTEMPTS, REQUEST_TIMEOUT)
+            .get_proof(job_id, &self.prover_url, MAX_ATTEMPTS, REQUEST_TIMEOUT)
             .await
             .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?;
         Ok((batch_number, proof))
