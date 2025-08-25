@@ -12,6 +12,7 @@ documentation = { workspace = true }
 ctor = "0.4.2"
 
 [dependencies]
+mojave-block-producer = { workspace = true }
 mojave-client = { workspace = true }
 mojave-node-lib = { workspace = true }
 mojave-utils = { workspace = true }
