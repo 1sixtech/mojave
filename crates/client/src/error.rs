@@ -16,4 +16,6 @@ pub enum MojaveClientError {
     TimeOut,
     #[error("Retry failed after {0} attempts")]
     RetryFailed(u64),
+    #[error("Invalid max attempts: {0}")]
+    InvalidMaxAttempts(u64),
 }

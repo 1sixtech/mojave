@@ -137,6 +137,7 @@ impl MojaveClient {
                     _ => false,
                 }
             }
+            MojaveClientError::TimeOut => true,
             _ => false,
         }
     }
@@ -151,6 +152,10 @@ impl MojaveClient {
     where
         T: DeserializeOwned,
     {
+        if max_attempts < 1 {
+            return Err(MojaveClientError::InvalidMaxAttempts(max_attempts));
+        }
+
         let mut attempts = 0;
         let mut delay = INITIAL_RETRY_DELAY;
         let mut last_error = None;
