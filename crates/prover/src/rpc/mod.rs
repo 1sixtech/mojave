@@ -17,11 +17,11 @@ use ethrex_rpc::{
     utils::{RpcRequest, RpcRequestId},
 };
 
-use mojave_chain_utils::rpc::rpc_response;
 use mojave_client::{
     MojaveClient,
     types::{ProofResponse, ProofResult},
 };
+use mojave_utils::rpc::rpc_response;
 
 pub struct ProverRpcContext {
     pub aligned_mode: bool,

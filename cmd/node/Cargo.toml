@@ -1,0 +1,18 @@
+[package]
+name = "mojave-node"
+version = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+license = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+documentation = { workspace = true }
+
+[dependencies]
+mojave-node-lib = { workspace = true }
+mojave-utils = { workspace = true }
+
+clap = { workspace = true }
+eyre = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
