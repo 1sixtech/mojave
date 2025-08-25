@@ -7,16 +7,13 @@ use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
 use mojave_client::{
     MojaveClient,
-    types::{JobId, ProofResponse, ProofResult, ProverData},
+    types::{ProofResponse, ProofResult, ProverData},
 };
 use reqwest::Url;
 use tokio::sync::mpsc::Receiver;
 use zkvm_interface::io::ProgramInput;
 
 mod errors;
-
-const MAX_ATTEMPTS: u64 = 5;
-const REQUEST_TIMEOUT: u64 = 300;
 
 pub struct ProofCoordinator {
     /// Come from the block builder
@@ -32,13 +29,13 @@ pub struct ProofCoordinator {
 impl ProofCoordinator {
     pub fn new(
         proof_data_receiver: Receiver<u64>,
-        prover_tcp_address: &str,
+        prover_address: &str,
         sequencer_address: String,
         private_key: &str,
     ) -> Result<Self, ProofCoordinatorError> {
         Ok(Self {
             proof_data_receiver,
-            prover_url: Url::parse(prover_tcp_address)
+            prover_url: Url::parse(prover_address)
                 .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?,
             sequencer_address,
             client: MojaveClient::new(private_key)
@@ -61,32 +58,22 @@ impl ProofCoordinator {
         };
 
         // send proof input to the prover
-        let job_id = self
+        let _job_id = self
             .client
             .send_proof_input(&input, &self.sequencer_address, &self.prover_url)
             .await
             .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?;
 
-        // request proof from the prover
-        let (batch_number, batch_proof) = self.request_proof_from_prover(input, job_id).await?;
-
-        context.store_proof(batch_proof, batch_number).await?;
-
         Ok(())
     }
 
-    async fn request_proof_from_prover(
+    pub async fn store_proof(
         &self,
-        prover_data: ProverData,
-        job_id: JobId,
-    ) -> Result<(u64, ProofResponse), ProofCoordinatorError> {
-        let batch_number = prover_data.batch_number;
-        let proof = self
-            .client
-            .get_proof(job_id, &self.prover_url, MAX_ATTEMPTS, REQUEST_TIMEOUT)
-            .await
-            .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?;
-        Ok((batch_number, proof))
+        context: &ProofCoordinatorContext,
+        proof_response: ProofResponse,
+        batch_number: u64,
+    ) -> Result<(), ProofCoordinatorError> {
+        context.store_proof(proof_response, batch_number).await
     }
 }
 
@@ -106,10 +93,10 @@ impl ProofCoordinatorContext {
         let batch_proof = match proof_response.result {
             ProofResult::Proof(proof) => proof,
             ProofResult::Error(err) => {
-                return Err(ProofCoordinatorError::Custom(format!(
-                    "Proof failed: {}",
-                    err
-                )));
+                return Err(ProofCoordinatorError::ProofFailed(
+                    batch_number,
+                    err.to_string(),
+                ));
             }
         };
 
