@@ -2,26 +2,26 @@
 mod tests {
     use ctor::ctor;
     use ethrex_common::{
-        types::{Block, BlockBody, BlockHeader, EIP1559Transaction, TxKind, TxType},
         Address, Bloom, Bytes, H256, U256,
+        types::{Block, BlockBody, BlockHeader, EIP1559Transaction, TxKind, TxType},
     };
     use ethrex_l2_rpc::signer::{LocalSigner, Signable, Signer};
     use ethrex_rlp::encode::RLPEncode;
     use ethrex_rpc::{
-        types::block_identifier::{BlockIdentifier, BlockTag},
         EthClient,
+        types::block_identifier::{BlockIdentifier, BlockTag},
     };
     use mojave_client::MojaveClient;
-    use mojave_tests::{start_test_api_full_node, start_test_api_sequencer};
+    use mojave_tests::{start_test_api_node, start_test_api_sequencer};
     use reqwest::Url;
     use secp256k1::SecretKey;
-    use serde_json::{json, Value};
+    use serde_json::{Value, json};
     use std::{
         net::SocketAddr,
         str::FromStr,
         time::{SystemTime, UNIX_EPOCH},
     };
-    use tokio::time::{sleep, Duration};
+    use tokio::time::{Duration, sleep};
     #[ctor]
     fn test_setup() {
         unsafe {
@@ -81,22 +81,22 @@ mod tests {
 
         // spawn full node server
         let server_handle = tokio::spawn(async move {
-            use axum::{http::StatusCode, routing::post, Json, Router};
+            use axum::{Json, Router, http::StatusCode, routing::post};
             use tower_http::cors::CorsLayer;
 
             async fn handle_rpc(body: String) -> Result<Json<Value>, StatusCode> {
                 let request: Value =
                     serde_json::from_str(&body).map_err(|_| StatusCode::BAD_REQUEST)?;
 
-                if let Some(method) = request.get("method").and_then(|m| m.as_str()) {
-                    if method == "mojave_sendBroadcastBlock" {
-                        let response = json!({
-                            "id": request.get("id").unwrap_or(&json!(1)),
-                            "jsonrpc": "2.0",
-                            "result": null
-                        });
-                        return Ok(Json(response));
-                    }
+                if let Some(method) = request.get("method").and_then(|m| m.as_str())
+                    && method == "mojave_sendBroadcastBlock"
+                {
+                    let response = json!({
+                        "id": request.get("id").unwrap_or(&json!(1)),
+                        "jsonrpc": "2.0",
+                        "result": null
+                    });
+                    return Ok(Json(response));
                 }
                 Err(StatusCode::METHOD_NOT_ALLOWED)
             }
@@ -139,22 +139,22 @@ mod tests {
 
         // spawn sequencer server
         let server_handle = tokio::spawn(async move {
-            use axum::{http::StatusCode, routing::post, Json, Router};
+            use axum::{Json, Router, http::StatusCode, routing::post};
             use tower_http::cors::CorsLayer;
 
             async fn handle_rpc(body: String) -> Result<Json<Value>, StatusCode> {
                 let request: Value =
                     serde_json::from_str(&body).map_err(|_| StatusCode::BAD_REQUEST)?;
 
-                if let Some(method) = request.get("method").and_then(|m| m.as_str()) {
-                    if method == "eth_sendRawTransaction" {
-                        let response = json!({
-                            "id": request.get("id").unwrap_or(&json!(1)),
-                            "jsonrpc": "2.0",
-                            "result": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
-                        });
-                        return Ok(Json(response));
-                    }
+                if let Some(method) = request.get("method").and_then(|m| m.as_str())
+                    && method == "eth_sendRawTransaction"
+                {
+                    let response = json!({
+                        "id": request.get("id").unwrap_or(&json!(1)),
+                        "jsonrpc": "2.0",
+                        "result": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+                    });
+                    return Ok(Json(response));
                 }
                 Err(StatusCode::METHOD_NOT_ALLOWED)
             }
@@ -206,7 +206,7 @@ mod tests {
     #[tokio::test]
     async fn test_forward_transaction() {
         let (_, sequencer_rx) = start_test_api_sequencer(None, None).await;
-        let (full_node_client, full_node_rx) = start_test_api_full_node(None, None, None).await;
+        let (full_node_client, full_node_rx) = start_test_api_node(None, None, None).await;
         sequencer_rx.await.unwrap();
         full_node_rx.await.unwrap();
 
@@ -263,7 +263,7 @@ mod tests {
         let (sequencer_client, sequencer_rx) =
             start_test_api_sequencer(Some(sequencer_http_addr), Some(sequencer_auth_addr)).await;
 
-        let (_, full_node_rx) = start_test_api_full_node(
+        let (_, full_node_rx) = start_test_api_node(
             Some(sequencer_http_addr),
             Some(full_node_http_addr),
             Some(full_node_auth_addr),

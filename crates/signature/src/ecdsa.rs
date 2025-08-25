@@ -1,6 +1,6 @@
 use crate::{Signature, SignatureError, SignatureScheme};
 use secp256k1::{
-    ecdsa::Signature as EcdsaSignature, Message, PublicKey, Secp256k1, SecretKey as PrivateKey,
+    Message, PublicKey, Secp256k1, SecretKey as PrivateKey, ecdsa::Signature as EcdsaSignature,
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -180,7 +180,9 @@ mod test {
             address.to_lowercase(),
             "f39Fd6e51aad88F6F4ce6aB8827279cffFb92266".to_lowercase()
         );
-        println!("address expected  : \"f39Fd6e51aad88F6F4ce6aB8827279cffFb92266\"\naddress calculated: {address:?}");
+        println!(
+            "address expected  : \"f39Fd6e51aad88F6F4ce6aB8827279cffFb92266\"\naddress calculated: {address:?}"
+        );
     }
 
     #[test]
@@ -193,7 +195,9 @@ mod test {
             address.to_lowercase(),
             "f39Fd6e51aad88F6F4ce6aB8827279cffFb92266".to_lowercase()
         );
-        println!("address expected  : \"f39Fd6e51aad88F6F4ce6aB8827279cffFb92266\"\naddress calculated: {address:?}");
+        println!(
+            "address expected  : \"f39Fd6e51aad88F6F4ce6aB8827279cffFb92266\"\naddress calculated: {address:?}"
+        );
     }
 
     #[test]
