@@ -48,7 +48,7 @@ impl SendBroadcastBlockRequest {
         // Push the signed block to the pending queue for processing
         context
             .pending_signed_blocks
-            .push_signed(OrderedBlock(signed_block.clone()))
+            .push_signed(OrderedBlock(signed_block))
             .await;
 
         tracing::info!("Received the block number: {}", signed_block_number);

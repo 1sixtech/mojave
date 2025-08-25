@@ -92,7 +92,7 @@ pub async fn start_api(
         rollup_store,
         eth_client,
         block_queue,
-        pending_signed_blocks: PendingHeap(AsyncUniqueHeap::new()),
+        pending_signed_blocks: PendingHeap::new(),
     };
 
     // Periodically clean up the active filters for the filters endpoints.
@@ -222,10 +222,17 @@ fn spawn_block_ingestion_task(
     context: RpcApiContext,
     shutdown_token: CancellationToken,
 ) -> JoinHandle<()> {
-    let mut current_block_number = 1;
-
     tokio::task::spawn(async move {
-        tracing::info!("Starting block ingestion loop");
+        let mut current_block_number =
+            match context.l1_context.storage.get_latest_block_number().await {
+                Ok(num) => num.saturating_add(1),
+                Err(_) => {
+                    tracing::error!("Failed to get latest block number from storage");
+                    1
+                }
+            };
+
+        tracing::info!("Starting block ingestion loop @ {current_block_number}");
         loop {
             tokio::select! {
                 result = ingest_block(context.clone(), current_block_number) => {
@@ -453,7 +460,7 @@ mod tests {
             rollup_store,
             eth_client,
             block_queue: block_queue.clone(),
-            pending_signed_blocks: PendingHeap(AsyncUniqueHeap::new()),
+            pending_signed_blocks: PendingHeap::new(),
         };
 
         let cancel_token = CancellationToken::new();

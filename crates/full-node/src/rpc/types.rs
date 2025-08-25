@@ -54,17 +54,31 @@ impl UniqueHeapItem<u64> for OrderedBlock {
 }
 
 #[derive(Clone, Debug)]
-pub struct PendingHeap(pub AsyncUniqueHeap<OrderedBlock, u64>);
+pub struct PendingHeap {
+    inner: AsyncUniqueHeap<OrderedBlock, u64>,
+}
 
 impl PendingHeap {
+    pub fn new() -> Self {
+        Self {
+            inner: AsyncUniqueHeap::new(),
+        }
+    }
+
+    #[inline]
     pub async fn push_signed(&self, block: OrderedBlock) -> bool {
-        self.0.push(block).await
+        // Insert validation / tracing / backpressure / metrics here
+        self.inner.push(block).await
     }
+
+    #[inline]
     pub async fn pop(&self) -> Option<OrderedBlock> {
-        self.0.pop().await
+        self.inner.pop().await
     }
+
+    #[inline]
     pub async fn peek(&self) -> Option<OrderedBlock> {
-        self.0.peek().await
+        self.inner.peek().await
     }
 }
 
