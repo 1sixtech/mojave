@@ -7,32 +7,31 @@ use ethrex_rpc::{
 use crate::rpc::{RpcApiContext, types::OrderedBlock};
 
 pub(crate) async fn ingest_block(context: RpcApiContext, block_number: u64) -> Result<(), RpcErr> {
-    let peek = context.pending_signed_blocks.peek().await;
+    let Some(peeked) = context.pending_signed_blocks.peek().await else {
+        return Err(RpcErr::Internal("No pending signed blocks, no ingestion needed".into()));
+    };
 
-    // peek must be not none now
-    if peek.is_none() {
-        return Err(RpcErr::Internal(
-            "No pending signed blocks, no ingestion needed".to_string(),
-        ));
-    }
-
-    if block_number != peek.unwrap().0.header.number {
-        // Back fill missing block
-        let rpc_block = context
-            .eth_client
-            .get_block_by_number(BlockIdentifier::Number(block_number))
+    if block_number == peeked.0.header.number {
+        // Push the signed block from the pending queue to the block queue.
+        let signed_block = context
+            .pending_signed_blocks
+            .pop()
             .await
-            .map_err(|e| RpcErr::Internal(e.to_string()))?;
-
-        let block = rpc_block_to_block(rpc_block);
-
-        context.block_queue.push(OrderedBlock(block)).await;
-    } else {
-        // Push the signed block from pending queue to block queue
-        let signed_block = context.pending_signed_blocks.pop().await.unwrap();
+            .ok_or_else(|| RpcErr::Internal("Pending queue became empty while ingesting".into()))?;
 
         context.block_queue.push(signed_block).await;
+        return Ok(());
     }
+
+    // Back fill missing block
+    let rpc_block = context
+        .eth_client
+        .get_block_by_number(BlockIdentifier::Number(block_number))
+        .await
+        .map_err(|e| RpcErr::Internal(e.to_string()))?;
+
+    let block = rpc_block_to_block(rpc_block);
+    context.block_queue.push(OrderedBlock(block)).await;
 
     Ok(())
 }
