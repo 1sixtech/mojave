@@ -66,23 +66,20 @@ pub async fn store_node_config_file(config: NodeConfigFile, file_path: PathBuf) 
     };
 }
 
-pub fn jwtsecret_file(file: &mut File) -> Bytes {
+pub fn jwtsecret_file(file: &mut File) -> Result<Bytes, Box<dyn std::error::Error>> {
     let mut contents = String::new();
-    file.read_to_string(&mut contents)
-        .expect("Failed to read jwt secret file");
-    if contents[0..2] == *"0x" {
+    file.read_to_string(&mut contents)?;
+    if contents.starts_with("0x") {
         contents = contents[2..contents.len()].to_string();
     }
     contents = contents.trim_end_matches('\n').to_string();
-    hex::decode(contents)
-        .expect("Secret should be hex encoded")
-        .into()
+    Ok(hex::decode(contents)?.into())
 }
 
-pub fn read_jwtsecret_file(jwt_secret_path: &str) -> Bytes {
+pub fn read_jwtsecret_file(jwt_secret_path: &str) -> Result<Bytes, Box<dyn std::error::Error>> {
     match File::open(jwt_secret_path) {
-        Ok(mut file) => jwtsecret_file(&mut file),
-        Err(_) => write_jwtsecret_file(jwt_secret_path),
+        Ok(mut file) => Ok(jwtsecret_file(&mut file)?),
+        Err(_) => Ok(write_jwtsecret_file(jwt_secret_path)),
     }
 }
 

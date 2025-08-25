@@ -19,7 +19,7 @@ use tokio::sync::Mutex;
 use tokio_util::sync::CancellationToken;
 
 impl MojaveNode {
-    pub async fn init(options: &NodeOptions) -> Result<Self, Error> {
+    pub async fn init(options: &NodeOptions) -> Result<Self, Box<dyn std::error::Error>> {
         let data_dir = resolve_data_dir(&options.datadir);
         tracing::info!("Data directory resolved to: {:?}", data_dir);
 
@@ -41,7 +41,7 @@ impl MojaveNode {
 
         let cancel_token = tokio_util::sync::CancellationToken::new();
 
-        let signer = get_signer(&data_dir);
+        let signer = get_signer(&data_dir)?;
 
         let local_p2p_node = get_local_p2p_node(
             &options.discovery_addr,
@@ -84,15 +84,16 @@ impl MojaveNode {
         })
     }
 
-    pub async fn run(self, options: &NodeOptions) -> Result<(), Error> {
+    pub async fn run(self, options: &NodeOptions) -> Result<(), Box<dyn std::error::Error>> {
         let rpc_shutdown = CancellationToken::new();
         let eth_client = EthClient::new("http://127.0.0.1")?;
+        let jwt_secret = read_jwtsecret_file(&options.authrpc_jwtsecret)?;
         start_api(
             get_http_socket_addr(&options.http_addr, &options.http_port),
             get_authrpc_socket_addr(&options.authrpc_addr, &options.authrpc_port),
             self.store,
             self.blockchain,
-            read_jwtsecret_file(&options.authrpc_jwtsecret),
+            jwt_secret,
             self.local_p2p_node,
             self.local_node_record.lock().await.clone(),
             self.syncer,

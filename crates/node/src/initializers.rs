@@ -9,6 +9,7 @@ use rand::rngs::OsRng;
 use secp256k1::SecretKey;
 use std::{
     fs,
+    os::unix::fs::PermissionsExt,
     path::{Path, PathBuf},
     sync::Arc,
     time::{SystemTime, UNIX_EPOCH},
@@ -55,23 +56,23 @@ pub fn init_blockchain(
     Blockchain::new(evm_engine, store, blockchain_type).into()
 }
 
-pub fn get_signer(data_dir: &str) -> SecretKey {
+pub fn get_signer(data_dir: &str) -> Result<SecretKey, Box<dyn std::error::Error>> {
     // Get the signer from the default directory, create one if the key file is not present.
     let key_path = Path::new(data_dir).join("node.key");
     match fs::read(key_path.clone()) {
-        Ok(content) => SecretKey::from_slice(&content).expect("Signing key could not be created."),
+        Ok(content) => Ok(SecretKey::from_slice(&content)?),
         Err(_) => {
             info!(
                 "Key file not found, creating a new key and saving to {:?}",
                 key_path
             );
             if let Some(parent) = key_path.parent() {
-                fs::create_dir_all(parent).expect("Key file path could not be created.")
+                fs::create_dir_all(parent)?;
             }
             let signer = SecretKey::new(&mut OsRng);
-            fs::write(key_path, signer.secret_bytes())
-                .expect("Newly created signer could not be saved to disk.");
-            signer
+            fs::write(&key_path, signer.secret_bytes())?;
+            key_path.metadata()?.permissions().set_mode(0o600);
+            Ok(signer)
         }
     }
 }
