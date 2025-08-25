@@ -164,7 +164,7 @@ impl MojaveClient {
             {
                 Ok(Ok(response)) => return Ok(response),
                 Ok(Err(e)) => {
-                    tracing::error!("Prover request failed (attempt {}): {}", attempts, e);
+                    tracing::error!("Request failed (attempt {}): {}", attempts, e);
                     last_error = Some(e);
                     if Self::is_retryable(last_error.as_ref().unwrap()) {
                         tracing::info!("Retrying request (attempt {})", attempts);
@@ -173,7 +173,7 @@ impl MojaveClient {
                     }
                 }
                 Err(_) => {
-                    tracing::error!("Prover request timed out (attempt {})", attempts);
+                    tracing::error!("Request timed out (attempt {})", attempts);
                     last_error = Some(MojaveClientError::TimeOut);
                 }
             }
