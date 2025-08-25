@@ -1,16 +1,17 @@
 use std::sync::Arc;
 
+use crate::errors::ProofCoordinatorError;
 use ethrex_blockchain::Blockchain;
 use ethrex_common::types::{BlobsBundle, Block};
-use ethrex_l2_common::prover::BatchProof;
 use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
+use mojave_client::{
+    MojaveClient,
+    types::{ProofResponse, ProofResult, ProverData},
+};
+use reqwest::Url;
 use tokio::sync::mpsc::Receiver;
 use zkvm_interface::io::ProgramInput;
-
-use crate::errors::ProofCoordinatorError;
-
-use mojave_client::types::ProverData;
 
 mod errors;
 
@@ -18,15 +19,28 @@ pub struct ProofCoordinator {
     /// Come from the block builder
     proof_data_receiver: Receiver<u64>,
     /// Send to the prover
-    _prover_tcp_addr: String,
+    prover_url: Url,
+    /// Sequencer address
+    sequencer_address: String,
+    /// Mojave client
+    client: MojaveClient,
 }
 
 impl ProofCoordinator {
-    pub fn new(proof_data_receiver: Receiver<u64>, prover_tcp_addr: String) -> Self {
-        Self {
+    pub fn new(
+        proof_data_receiver: Receiver<u64>,
+        prover_address: &str,
+        sequencer_address: String,
+        private_key: &str,
+    ) -> Result<Self, ProofCoordinatorError> {
+        Ok(Self {
             proof_data_receiver,
-            _prover_tcp_addr: prover_tcp_addr,
-        }
+            prover_url: Url::parse(prover_address)
+                .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?,
+            sequencer_address,
+            client: MojaveClient::new(private_key)
+                .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?,
+        })
     }
 
     pub async fn process_new_block(
@@ -43,18 +57,23 @@ impl ProofCoordinator {
             Err(e) => return Err(e),
         };
 
-        let (batch_number, batch_proof) = self.request_proof_from_prover(input).await?;
-
-        context.store_proof(batch_proof, batch_number).await?;
+        // send proof input to the prover
+        let _job_id = self
+            .client
+            .send_proof_input(&input, &self.sequencer_address, &self.prover_url)
+            .await
+            .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?;
 
         Ok(())
     }
 
-    async fn request_proof_from_prover(
+    pub async fn store_proof(
         &self,
-        _prover_data: ProverData,
-    ) -> Result<(u64, BatchProof), ProofCoordinatorError> {
-        todo!("Use Client to request proof")
+        context: &ProofCoordinatorContext,
+        proof_response: ProofResponse,
+        batch_number: u64,
+    ) -> Result<(), ProofCoordinatorError> {
+        context.store_proof(proof_response, batch_number).await
     }
 }
 
@@ -68,9 +87,19 @@ pub struct ProofCoordinatorContext {
 impl ProofCoordinatorContext {
     async fn store_proof(
         &self,
-        batch_proof: BatchProof,
+        proof_response: ProofResponse,
         batch_number: u64,
     ) -> Result<(), ProofCoordinatorError> {
+        let batch_proof = match proof_response.result {
+            ProofResult::Proof(proof) => proof,
+            ProofResult::Error(err) => {
+                return Err(ProofCoordinatorError::ProofFailed(
+                    batch_number,
+                    err.to_string(),
+                ));
+            }
+        };
+
         let prover_type = batch_proof.prover_type();
         if self
             .rollup_store
