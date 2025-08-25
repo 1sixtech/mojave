@@ -4,8 +4,7 @@ pub mod transaction;
 pub mod types;
 
 use crate::rpc::{
-    block::SendBroadcastBlockRequest, block_ingestion::BlockIngestion,
-    transaction::SendRawTransactionRequest, types::OrderedBlock,
+    block::SendBroadcastBlockRequest, block_ingestion::ingest_block, transaction::SendRawTransactionRequest, types::OrderedBlock
 };
 use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
 use ethrex_blockchain::Blockchain;
@@ -220,15 +219,17 @@ fn spawn_block_ingestion_task(
     context: RpcApiContext,
     shutdown_token: CancellationToken,
 ) -> JoinHandle<()> {
-    let mut block_ingestion = BlockIngestion::start(context, 100, 1);
+    let mut current_block_number = 1;
+
     tokio::task::spawn(async move {
         tracing::info!("Starting block ingestion loop");
         loop {
             tokio::select! {
-                result = block_ingestion.ingest_block() => {
+                result = ingest_block(context.clone(), current_block_number) => {
                     match result {
                         Ok(()) => {
-                            block_ingestion.advance_block_number(1);
+                            current_block_number += 1;
+                            tracing::info!("Ingested block number: {}", current_block_number - 1);
                         },
                         Err(error) => {
                             tracing::error!("Failed to ingest a block: {}", error);
