@@ -9,6 +9,7 @@ use ethrex_rpc::EthClient;
 use ethrex_storage::{EngineType, Store};
 use ethrex_storage_rollup::{EngineTypeRollup, StoreRollup};
 use k256::ecdsa::SigningKey;
+use mojave_block_producer::rpc::start_api as start_api_block_producer;
 use mojave_client::MojaveClient;
 use mojave_node_lib::rpc::start_api as start_api_node;
 use mojave_utils::unique_heap::AsyncUniqueHeap;
@@ -110,11 +111,7 @@ pub async fn start_test_api_sequencer(
     let rollup_store = example_rollup_store().await;
     let private_key = std::env::var("PRIVATE_KEY").unwrap();
     let client = MojaveClient::new(&private_key).unwrap();
-    let url = String::from("http://127.0.0.1:8502");
-    let eth_client = EthClient::new(&url).unwrap();
-    let block_queue = AsyncUniqueHeap::new();
-    let shutdown_token = CancellationToken::new();
-    let rpc_api = start_api_node(
+    let rpc_api = start_api_block_producer(
         http_addr,
         authrpc_addr,
         storage,
@@ -126,9 +123,6 @@ pub async fn start_test_api_sequencer(
         PeerHandler::dummy(),
         "ethrex/test".to_string(),
         rollup_store,
-        eth_client.clone(),
-        block_queue,
-        shutdown_token,
     );
 
     let (sequencer_tx, sequencer_rx) = tokio::sync::oneshot::channel();
