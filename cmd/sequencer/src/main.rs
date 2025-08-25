@@ -74,7 +74,3 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
     Ok(())
 }
-
-pub fn get_client_version() -> String {
-    format!("{}/v{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"),)
-}
