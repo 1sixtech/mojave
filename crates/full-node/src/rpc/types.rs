@@ -82,6 +82,12 @@ impl PendingHeap {
     }
 }
 
+impl Default for PendingHeap {
+    fn default() -> Self {
+        Self::new()
+    }    
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
