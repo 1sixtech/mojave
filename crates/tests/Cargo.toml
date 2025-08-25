@@ -1,36 +1,36 @@
 [package]
 name = "mojave-tests"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-tokio = { workspace = true, features = ["full"] }
-axum = { workspace = true }
-tower-http = { workspace = true, features = ["cors"] }
-serde_json = { workspace = true }
-thiserror = { workspace = true }
-tokio-util = { workspace = true }
-
-# ethrex
-ethrex-common = { workspace = true }
-ethrex-rpc = { workspace = true }
-ethrex-storage = { workspace = true }
-ethrex-blockchain = { workspace = true }
-ethrex-storage-rollup = { workspace = true }
-ethrex-p2p = { workspace = true }
-ethrex-rlp = { workspace = true }
-ethrex-l2 = { workspace = true }
-ethrex-l2-rpc = { workspace = true }
-
-# mojave
-mojave-client = { workspace = true }
-mojave-full-node = { workspace = true }
-mojave-sequencer = { workspace = true }
-mojave-chain-utils = { workspace = true }
-
-k256 = { workspace = true, features = ["ecdh"] }
-rand = { workspace = true }
-secp256k1 = { workspace = true }
+version = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+license = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+documentation = { workspace = true }
 
 [dev-dependencies]
 ctor = "0.4.2"
+
+[dependencies]
+mojave-client = { workspace = true }
+mojave-node-lib = { workspace = true }
+mojave-utils = { workspace = true }
+
+ethrex-blockchain = { workspace = true }
+ethrex-common = { workspace = true }
+ethrex-l2-rpc = { workspace = true }
+ethrex-p2p = { workspace = true }
+ethrex-rlp = { workspace = true }
+ethrex-rpc = { workspace = true }
+ethrex-storage = { workspace = true }
+ethrex-storage-rollup = { workspace = true }
+
+axum = { workspace = true }
+k256 = { workspace = true }
+rand = { workspace = true }
+reqwest = { workspace = true }
+secp256k1 = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+tower-http = { workspace = true }

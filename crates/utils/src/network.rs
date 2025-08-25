@@ -6,6 +6,7 @@ use std::{
 use ethrex_common::types::{Genesis, GenesisError};
 use ethrex_p2p::types::Node;
 use lazy_static::lazy_static;
+use serde::{Deserialize, Serialize};
 
 pub const TESTNET_GENESIS_PATH: &str = "cmd/mojave/networks/testnet/genesis.json";
 const TESTNET_BOOTNODES_PATH: &str = "cmd/mojave/networks/testnet/bootnodes.json";
@@ -24,7 +25,7 @@ lazy_static! {
     .expect("Failed to parse testnet bootnodes file");
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub enum Network {
     #[default]
     Mainnet,
