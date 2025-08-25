@@ -7,3 +7,20 @@ license = { workspace = true }
 homepage = { workspace = true }
 repository = { workspace = true }
 documentation = { workspace = true }
+
+[dependencies]
+anyhow = { workspace = true }
+
+bitcoin = "0.32.7"
+
+tokio = { workspace = true, features = ["full"] }
+tokio-util = { workspace = true }
+
+serde = { workspace = true, features = ["derive"] }
+
+zeromq = { version = "0.4.1", features = ["tokio-runtime", "all-transport"] }
+
+bytes = { workspace = true }
+
+thiserror = { workspace = true }
+tracing = { workspace = true }
