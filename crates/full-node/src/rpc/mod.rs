@@ -4,8 +4,10 @@ pub mod transaction;
 pub mod types;
 
 use crate::rpc::{
-    block::SendBroadcastBlockRequest, block_ingestion::ingest_block,
-    transaction::SendRawTransactionRequest, types::{OrderedBlock, PendingHeap},
+    block::SendBroadcastBlockRequest,
+    block_ingestion::ingest_block,
+    transaction::SendRawTransactionRequest,
+    types::{OrderedBlock, PendingHeap},
 };
 use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
 use ethrex_blockchain::Blockchain;
