@@ -1,10 +1,21 @@
-use bitcoin::Block;
+use bitcoin::{Block, consensus::deserialize};
 use tokio_util::sync::CancellationToken;
 
-use crate::{error::Error, types::BlockWatcherBuilder, watch::Topic};
+use crate::{
+    error::Error,
+    types::BlockWatcherBuilder,
+    watch::{Decodable, Topics},
+};
 
-impl Topic for Block {
-    const TOPIC: &'static str = "rawblock";
+impl Topics for Block {
+    const TOPICS: &'static [&'static str] = &["rawblock"];
+}
+
+impl Decodable for Block {
+    #[inline]
+    fn decode(_topic: &str, payload: &[u8]) -> core::result::Result<Self, Error<Self>> {
+        deserialize(payload).map_err(Error::DeserializationError)
+    }
 }
 
 pub type Result<T> = core::result::Result<T, Error<Block>>;
@@ -22,7 +33,7 @@ mod tests {
 
     #[test]
     fn test_block_topic() {
-        assert_eq!(Block::TOPIC, "rawblock");
+        assert_eq!(Block::TOPICS, &["rawblock"]);
     }
 
     #[test]
