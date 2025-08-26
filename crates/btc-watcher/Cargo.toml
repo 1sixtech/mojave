@@ -10,17 +10,11 @@ documentation = { workspace = true }
 
 [dependencies]
 anyhow = { workspace = true }
-
-bitcoin = "0.32.7"
-
-tokio = { workspace = true, features = ["full"] }
-tokio-util = { workspace = true }
-
-serde = { workspace = true, features = ["derive"] }
-
-zeromq = { version = "0.4.1", features = ["tokio-runtime", "all-transport"] }
-
+bitcoin = { workspace = true, features = ["std"] }
 bytes = { workspace = true }
-
+serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
+tokio = { workspace = true, features = ["sync", "rt", "macros"] }
+tokio-util = { workspace = true }
 tracing = { workspace = true }
+zeromq = { workspace = true, features = ["tokio-runtime", "all-transport"] }
