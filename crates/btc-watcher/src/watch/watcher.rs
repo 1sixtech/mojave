@@ -64,14 +64,19 @@ where
         }
     }
 
+    /// ZMQ message format: frame 0 is topic, frame 1 is payload.
+    /// We expect at least 2 frames: [topic, payload].
+    const ZMQ_MESSAGE_MIN_FRAMES: usize = 2;
+    const ZMQ_PAYLOAD_FRAME_INDEX: usize = 1;
+
     #[inline]
     async fn process_message(&self, msg: ZmqMessage) -> Result<(), T> {
-        if msg.len() < 2 {
+        if msg.len() < ZMQ_MESSAGE_MIN_FRAMES {
             tracing::debug!("ZMQ message without payload; skipping");
             return Ok(());
         }
 
-        let Some(payload) = &msg.get(1) else {
+        let Some(payload) = &msg.get(ZMQ_PAYLOAD_FRAME_INDEX) else {
             tracing::warn!("Unable to get payload");
             return Ok(());
         };
