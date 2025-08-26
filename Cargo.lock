@@ -4819,6 +4819,7 @@ dependencies = [
  "ethrex-storage",
  "ethrex-storage-rollup",
  "k256",
+ "mojave-block-producer",
  "mojave-client",
  "mojave-node-lib",
  "mojave-utils",
