@@ -12,4 +12,10 @@ pub enum MojaveClientError {
     SignatureError(#[from] mojave_signature::SignatureError),
     #[error("No RPC URLs configured")]
     NoRPCUrlsConfigured,
+    #[error("Connection timed out")]
+    TimeOut,
+    #[error("Retry failed after {0} attempts")]
+    RetryFailed(u64),
+    #[error("Invalid max attempts: {0}")]
+    InvalidMaxAttempts(u64),
 }

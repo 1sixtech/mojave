@@ -15,7 +15,12 @@ use mojave_signature::{Signature, Signer, SigningKey};
 use reqwest::Url;
 use serde::de::DeserializeOwned;
 use serde_json::json;
-use std::{pin::Pin, str::FromStr, sync::Arc};
+use std::{pin::Pin, str::FromStr, sync::Arc, time::Duration};
+use tokio::time::timeout;
+
+const INITIAL_RETRY_DELAY: Duration = Duration::from_millis(100);
+const BACKOFF_FACTOR: u32 = 2;
+const MAX_DELAY: Duration = Duration::from_secs(30);
 
 #[derive(Clone, Debug)]
 pub struct MojaveClient {
@@ -121,6 +126,74 @@ impl MojaveClient {
         }
     }
 
+    fn is_retryable(error: &MojaveClientError) -> bool {
+        match error {
+            MojaveClientError::RpcError(e) => {
+                let error_msg = e.to_string();
+                match error_msg.as_str() {
+                    msg if msg.starts_with("Internal Error") => true,
+                    msg if msg.starts_with("Unknown payload") => true,
+                    _ => false,
+                }
+            }
+            MojaveClientError::TimeOut => true,
+            _ => false,
+        }
+    }
+
+    pub async fn send_request_to_url_with_retry<T>(
+        &self,
+        request: &RpcRequest,
+        url: &Url,
+        max_attempts: u64,
+        request_timeout: u64,
+    ) -> Result<T, MojaveClientError>
+    where
+        T: DeserializeOwned,
+    {
+        if max_attempts < 1 {
+            return Err(MojaveClientError::InvalidMaxAttempts(max_attempts));
+        }
+
+        let mut attempts = 0;
+        let mut delay = INITIAL_RETRY_DELAY;
+        let mut last_error = None;
+        while attempts < max_attempts {
+            attempts += 1;
+            match timeout(
+                Duration::from_secs(request_timeout),
+                self.send_request_to_url(request, url),
+            )
+            .await
+            {
+                Ok(Ok(response)) => return Ok(response),
+                Ok(Err(e)) => {
+                    tracing::error!("Request failed (attempt {}): {}", attempts, e);
+                    last_error = Some(e);
+                    if Self::is_retryable(last_error.as_ref().unwrap()) {
+                        tracing::info!("Retrying request (attempt {})", attempts);
+                    } else {
+                        return Err(last_error.unwrap());
+                    }
+                }
+                Err(_) => {
+                    tracing::error!("Request timed out (attempt {})", attempts);
+                    last_error = Some(MojaveClientError::TimeOut);
+                }
+            }
+
+            // avoid sleeping on the last attempt
+            if attempts < max_attempts {
+                tokio::time::sleep(delay).await;
+                delay = delay.saturating_mul(BACKOFF_FACTOR);
+                if delay > MAX_DELAY {
+                    delay = MAX_DELAY;
+                }
+            }
+        }
+        Err(last_error.unwrap_or(MojaveClientError::RetryFailed(max_attempts)))
+    }
+
     pub async fn send_broadcast_block(
         &self,
         block: &Block,
@@ -172,8 +245,10 @@ impl MojaveClient {
 
     pub async fn get_proof(
         &self,
-        job_id: &str,
+        job_id: JobId,
         prover_url: &Url,
+        max_attempts: u64,
+        request_timeout: u64,
     ) -> Result<ProofResponse, MojaveClientError> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
@@ -181,7 +256,8 @@ impl MojaveClient {
             method: "mojave_getProof".to_string(),
             params: Some(vec![json!(job_id)]),
         };
-        self.send_request_to_url(&request, prover_url).await
+        self.send_request_to_url_with_retry(&request, prover_url, max_attempts, request_timeout)
+            .await
     }
 
     pub async fn send_proof_response(

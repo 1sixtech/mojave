@@ -35,4 +35,6 @@ pub enum ProofCoordinatorError {
     ComandError(std::io::Error),
     #[error("Missing blob for batch {0}")]
     MissingBlob(u64),
+    #[error("Proof failed for batch {0}: {1}")]
+    ProofFailed(u64, String),
 }
