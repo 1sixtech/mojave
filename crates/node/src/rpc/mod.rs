@@ -5,6 +5,7 @@ pub mod types;
 use crate::rpc::{
     block::SendBroadcastBlockRequest, transaction::SendRawTransactionRequest, types::OrderedBlock,
 };
+
 use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
 use ethrex_blockchain::Blockchain;
 use ethrex_common::Bytes;
@@ -20,7 +21,10 @@ use ethrex_rpc::{
 };
 use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
-use mojave_utils::unique_heap::AsyncUniqueHeap;
+use mojave_utils::{
+    rpc::error::{Error, Result},
+    unique_heap::AsyncUniqueHeap,
+};
 use serde_json::Value;
 use std::{
     collections::HashMap,
@@ -67,7 +71,7 @@ pub async fn start_api(
     eth_client: EthClient,
     block_queue: AsyncUniqueHeap<OrderedBlock, u64>,
     shutdown_token: CancellationToken,
-) -> Result<(), RpcErr> {
+) -> Result<()> {
     let active_filters = Arc::new(Mutex::new(HashMap::new()));
     let context = RpcApiContext {
         l1_context: L1Context {
@@ -105,7 +109,7 @@ pub async fn start_api(
         .with_state(context.clone());
     let http_listener = TcpListener::bind(http_addr)
         .await
-        .map_err(|error| RpcErr::Internal(error.to_string()))?;
+        .map_err(|error| Error::Internal(error.to_string()))?;
     let http_server = axum::serve(http_listener, http_router)
         .with_graceful_shutdown(ethrex_rpc::shutdown_signal())
         .into_future();
@@ -208,7 +212,7 @@ fn spawn_block_processing_task(
 async fn handle_http_request(
     State(service_context): State<RpcApiContext>,
     body: String,
-) -> Result<Json<Value>, StatusCode> {
+) -> std::result::Result<Json<Value>, StatusCode> {
     let res = match serde_json::from_str::<RpcRequestWrapper>(&body) {
         Ok(RpcRequestWrapper::Single(request)) => {
             let res = map_http_requests(&request, service_context).await;
@@ -224,14 +228,14 @@ async fn handle_http_request(
         }
         Err(_) => rpc_response(
             RpcRequestId::String("".to_string()),
-            Err(RpcErr::BadParams("Invalid request body".to_string())),
+            Err(Error::BadParams("Invalid request body".to_string())),
         )
         .map_err(|_| StatusCode::BAD_REQUEST)?,
     };
     Ok(Json(res))
 }
 
-async fn map_http_requests(req: &RpcRequest, context: RpcApiContext) -> Result<Value, RpcErr> {
+async fn map_http_requests(req: &RpcRequest, context: RpcApiContext) -> Result<Value> {
     match RpcNamespace::resolve_namespace(req) {
         Ok(RpcNamespace::Eth) => map_eth_requests(req, context).await,
         Ok(RpcNamespace::Mojave) => map_mojave_requests(req, context).await,
@@ -239,20 +243,21 @@ async fn map_http_requests(req: &RpcRequest, context: RpcApiContext) -> Result<V
     }
 }
 
-pub async fn map_eth_requests(req: &RpcRequest, context: RpcApiContext) -> Result<Value, RpcErr> {
+pub async fn map_eth_requests(req: &RpcRequest, context: RpcApiContext) -> Result<Value> {
     match req.method.as_str() {
-        "eth_sendRawTransaction" => SendRawTransactionRequest::call(req, context).await,
-        _others => ethrex_rpc::map_eth_requests(req, context.l1_context).await,
+        "eth_sendRawTransaction" => SendRawTransactionRequest::call(req, context)
+            .await
+            .map_err(|err| Error::Internal(err.to_string())),
+        _others => ethrex_rpc::map_eth_requests(req, context.l1_context)
+            .await
+            .map_err(|err| Error::Internal(err.to_string())),
     }
 }
 
-pub async fn map_mojave_requests(
-    req: &RpcRequest,
-    context: RpcApiContext,
-) -> Result<Value, RpcErr> {
+pub async fn map_mojave_requests(req: &RpcRequest, context: RpcApiContext) -> Result<Value> {
     match req.method.as_str() {
         "mojave_sendBroadcastBlock" => SendBroadcastBlockRequest::call(req, context).await,
-        others => Err(RpcErr::MethodNotFound(others.to_owned())),
+        others => Err(Error::MethodNotFound(others.to_owned())),
     }
 }
 
@@ -262,15 +267,15 @@ pub enum RpcNamespace {
 }
 
 impl RpcNamespace {
-    pub fn resolve_namespace(request: &RpcRequest) -> Result<Self, RpcErr> {
+    pub fn resolve_namespace(request: &RpcRequest) -> Result<Self> {
         let mut parts = request.method.split('_');
         let Some(namespace) = parts.next() else {
-            return Err(RpcErr::MethodNotFound(request.method.clone()));
+            return Err(Error::MethodNotFound(request.method.clone()));
         };
         match namespace {
             "eth" => Ok(Self::Eth),
-            "mojave" => Ok(Self::Mojave),
-            _others => Err(RpcErr::MethodNotFound(request.method.to_owned())),
+            "moj" => Ok(Self::Mojave),
+            _others => Err(Error::MethodNotFound(request.method.to_owned())),
         }
     }
 }

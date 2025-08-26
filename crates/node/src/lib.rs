@@ -3,4 +3,4 @@ pub mod initializers;
 pub mod node;
 pub mod rpc;
 pub mod types;
-pub mod utils;
+mod utils;

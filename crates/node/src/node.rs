@@ -30,7 +30,7 @@ impl MojaveNode {
 
         let genesis = options.network.get_genesis()?;
 
-        let store = init_store(&data_dir, genesis.clone()).await;
+        let store = init_store(&data_dir, genesis.clone()).await?;
         tracing::info!("Successfully initialized the database.");
 
         let rollup_store = StoreRollup::new(&data_dir, EngineTypeRollup::InMemory)?;
@@ -54,7 +54,7 @@ impl MojaveNode {
             &data_dir,
             &local_p2p_node,
             &signer,
-        )));
+        )?));
 
         let peer_table = peer_table(local_p2p_node.node_id());
         let peer_handler = PeerHandler::new(peer_table.clone());

@@ -5,5 +5,5 @@ pub enum Error {
     #[error(transparent)]
     Rpc(#[from] RpcErr),
     #[error(transparent)]
-    MojaveClient(#[from] mojave_client::MojaveClientError),
+    MojaveClient(#[from] mojave_client::error::Error),
 }

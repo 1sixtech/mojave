@@ -1,4 +1,7 @@
-use crate::{BlockProducerContext, BlockProducerError};
+use crate::{
+    BlockProducerContext,
+    error::{Error, Result},
+};
 use ethrex_common::types::Block;
 use tokio::sync::{
     mpsc::{self, error::TrySendError},
@@ -27,13 +30,13 @@ impl BlockProducer {
         Self { sender }
     }
 
-    pub async fn build_block(&self) -> Result<Block, BlockProducerError> {
+    pub async fn build_block(&self) -> Result<Block> {
         let (sender, receiver) = oneshot::channel();
         self.sender
             .try_send(Message::BuildBlock(sender))
             .map_err(|error| match error {
-                TrySendError::Full(_) => BlockProducerError::Full,
-                TrySendError::Closed(_) => BlockProducerError::Stopped,
+                TrySendError::Full(_) => Error::Full,
+                TrySendError::Closed(_) => Error::Stopped,
             })?;
         receiver.await?
     }
@@ -49,5 +52,5 @@ async fn handle_message(context: &BlockProducerContext, message: Message) {
 
 #[allow(clippy::large_enum_variant)]
 enum Message {
-    BuildBlock(oneshot::Sender<Result<Block, BlockProducerError>>),
+    BuildBlock(oneshot::Sender<Result<Block>>),
 }

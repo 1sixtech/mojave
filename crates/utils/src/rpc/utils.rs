@@ -1,13 +1,10 @@
-use ethrex_rpc::{
-    RpcErr, RpcErrorMetadata,
-    utils::{RpcErrorResponse, RpcRequestId, RpcSuccessResponse},
+use crate::rpc::{
+    error::Result,
+    types::{RpcErrorResponse, RpcRequestId, RpcSuccessResponse},
 };
 use serde_json::Value;
 
-pub fn rpc_response<E>(id: RpcRequestId, res: Result<Value, E>) -> Result<Value, RpcErr>
-where
-    E: Into<RpcErrorMetadata> + std::fmt::Debug,
-{
+pub fn rpc_response(id: RpcRequestId, res: Result<Value>) -> Result<Value> {
     Ok(match res {
         Ok(result) => serde_json::to_value(RpcSuccessResponse {
             id,

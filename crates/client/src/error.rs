@@ -1,21 +1,23 @@
+pub type Result<T> = std::result::Result<T, Error>;
+
 #[derive(Debug, thiserror::Error)]
-pub enum MojaveClientError {
-    #[error("Reqwest error: {0}")]
-    Reqwest(#[from] reqwest::Error),
-    #[error("Serde JSON error: {0}")]
-    SerdeJson(#[from] serde_json::Error),
-    #[error("RPC error: {0}")]
-    RpcError(String),
+pub enum Error {
     #[error("Error: {0}")]
     Custom(String),
-    #[error("Signature error: {0}")]
-    SignatureError(#[from] mojave_signature::SignatureError),
-    #[error("No RPC URLs configured")]
-    NoRPCUrlsConfigured,
-    #[error("Connection timed out")]
-    TimeOut,
-    #[error("Retry failed after {0} attempts")]
-    RetryFailed(u64),
     #[error("Invalid max attempts: {0}")]
     InvalidMaxAttempts(u64),
+    #[error("No RPC URLs configured")]
+    NoRPCUrlsConfigured,
+    #[error("Reqwest error: {0}")]
+    Reqwest(#[from] reqwest::Error),
+    #[error("Retry failed after {0} attempts")]
+    RetryFailed(u64),
+    #[error("RPC error: {0}")]
+    Rpc(String),
+    #[error("Serde JSON error: {0}")]
+    SerdeJson(#[from] serde_json::Error),
+    #[error("Signature error: {0}")]
+    SignatureError(#[from] mojave_signature::SignatureError),
+    #[error("Connection timed out")]
+    TimeOut,
 }
