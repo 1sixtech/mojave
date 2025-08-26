@@ -2,7 +2,7 @@ use bitcoin::consensus::deserialize;
 use tokio_util::sync::CancellationToken;
 use zeromq::{Socket, SocketRecv, SubSocket, ZmqMessage};
 
-use crate::{types::Result, watch::WatcherHandle};
+use crate::{error::Result, watch::WatcherHandle};
 
 /// Trait describing the default subscription topic for a watcher type.
 pub trait Topic {

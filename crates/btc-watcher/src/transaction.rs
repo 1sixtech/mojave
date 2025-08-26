@@ -16,6 +16,7 @@ pub fn builder(socket_url: &str, shutdown: CancellationToken) -> TransactionWatc
 mod tests {
     use super::*;
     use bitcoin::{Amount, OutPoint, TxIn, TxOut, consensus::encode::serialize_hex};
+    use mojave_tests::assert_type;
 
     fn create_test_transaction() -> Transaction {
         Transaction {
@@ -45,7 +46,7 @@ mod tests {
         let builder = builder("tcp://localhost:28332", shutdown.clone());
 
         // Test that the builder is the correct type
-        let _: TransactionWatcherBuilder = builder;
+        assert_type::<TransactionWatcherBuilder>(builder);
     }
 
     #[tokio::test]

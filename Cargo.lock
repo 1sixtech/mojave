@@ -4772,6 +4772,7 @@ dependencies = [
  "anyhow",
  "bitcoin",
  "bytes",
+ "mojave-tests",
  "serde",
  "thiserror 2.0.16",
  "tokio",

@@ -1,12 +1,9 @@
 use bitcoin::{Block, Transaction};
 
 use crate::{
-    error::Error,
     sequence::Sequence,
     watch::{Watcher, WatcherBuilder, WatcherHandle},
 };
-
-pub type Result<T, E> = core::result::Result<T, Error<E>>;
 
 pub type SequenceWatcher = Watcher<Sequence>;
 pub type SequenceWatcherBuilder = WatcherBuilder<Sequence>;

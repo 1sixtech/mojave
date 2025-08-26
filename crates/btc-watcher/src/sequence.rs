@@ -135,10 +135,11 @@ pub fn builder(socket_url: &str, shutdown: CancellationToken) -> SequenceWatcher
 
 #[cfg(test)]
 mod tests {
-    use crate::{error::Error, types::Result};
+    use crate::error::Error;
 
     use super::*;
     use bitcoin::consensus::Encodable;
+    use mojave_tests::assert_type;
     use std::io::Cursor;
 
     #[test]
@@ -381,7 +382,7 @@ mod tests {
         let builder = builder("tcp://localhost:28332", shutdown.clone());
 
         // Test that the builder is the correct type
-        let _: SequenceWatcherBuilder = builder;
+        assert_type::<SequenceWatcherBuilder>(builder);
     }
 
     #[test]
@@ -393,9 +394,9 @@ mod tests {
         let builder3 = builder("ipc:///tmp/bitcoin.sock", shutdown.clone());
 
         // All should be valid builders
-        let _: SequenceWatcherBuilder = builder1;
-        let _: SequenceWatcherBuilder = builder2;
-        let _: SequenceWatcherBuilder = builder3;
+        assert_type::<SequenceWatcherBuilder>(builder1);
+        assert_type::<SequenceWatcherBuilder>(builder2);
+        assert_type::<SequenceWatcherBuilder>(builder3);
     }
 
     #[test]

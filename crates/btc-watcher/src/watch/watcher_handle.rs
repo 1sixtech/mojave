@@ -1,7 +1,7 @@
 use tokio_util::sync::CancellationToken;
 
 use crate::{
-    types::Result,
+    error::Result,
     watch::{Topic, WatcherBuilder},
 };
 

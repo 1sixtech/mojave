@@ -2,7 +2,7 @@ use tokio_util::sync::CancellationToken;
 use zeromq::{Socket, SubSocket};
 
 use crate::{
-    types::Result,
+    error::Result,
     watch::{Topic, Watcher, WatcherHandle},
 };
 
