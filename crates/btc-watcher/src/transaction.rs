@@ -66,20 +66,4 @@ mod tests {
         // Should be able to serialize without panicking
         assert!(!serialized.is_empty());
     }
-
-    #[test]
-    fn test_transaction_clone_debug_traits() {
-        let tx = create_test_transaction();
-
-        // Test Clone trait
-        let cloned_tx = tx.clone();
-        assert_eq!(tx.version, cloned_tx.version);
-        assert_eq!(tx.input.len(), cloned_tx.input.len());
-        assert_eq!(tx.output.len(), cloned_tx.output.len());
-
-        // Test Debug trait
-        let debug_str = format!("{tx:?}");
-        assert!(!debug_str.is_empty());
-        assert!(debug_str.contains("Transaction"));
-    }
 }

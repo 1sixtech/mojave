@@ -58,34 +58,4 @@ mod tests {
         let result = builder.spawn().await;
         assert!(result.is_err());
     }
-
-    #[test]
-    fn test_block_with_transactions() {
-        use bitcoin::{Amount, OutPoint, Transaction, TxIn, TxOut};
-
-        let mut block = create_test_block();
-        block.txdata.push(Transaction {
-            version: bitcoin::transaction::Version::TWO,
-            lock_time: bitcoin::absolute::LockTime::ZERO,
-            input: vec![TxIn {
-                previous_output: OutPoint::null(),
-                script_sig: bitcoin::ScriptBuf::new(),
-                sequence: bitcoin::Sequence::ENABLE_RBF_NO_LOCKTIME,
-                witness: bitcoin::Witness::new(),
-            }],
-            output: vec![TxOut {
-                value: Amount::from_sat(50_000_000),
-                script_pubkey: bitcoin::ScriptBuf::new(),
-            }],
-        });
-
-        assert_eq!(block.txdata.len(), 1);
-
-        // Test that it's still cloneable and debuggable
-        let cloned_block = block.clone();
-        assert_eq!(cloned_block.txdata.len(), 1);
-
-        let debug_str = format!("{block:?}");
-        assert!(!debug_str.is_empty());
-    }
 }

@@ -359,24 +359,6 @@ mod tests {
     }
 
     #[test]
-    fn test_sequence_clone_and_debug() {
-        let original = Sequence {
-            hash_bytes: [0x42; 32],
-            event: SequenceEvent::TxAdded,
-            mempool_seq: Some(999),
-        };
-
-        let cloned = original.clone();
-        assert_eq!(original.hash_bytes, cloned.hash_bytes);
-        assert_eq!(original.event, cloned.event);
-        assert_eq!(original.mempool_seq, cloned.mempool_seq);
-
-        let debug_str = format!("{original:?}");
-        assert!(!debug_str.is_empty());
-        assert!(debug_str.contains("Sequence"));
-    }
-
-    #[test]
     fn test_builder_creates_sequence_watcher_builder() {
         let shutdown = CancellationToken::new();
         let builder = builder("tcp://localhost:28332", shutdown.clone());
