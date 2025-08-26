@@ -22,37 +22,10 @@ const INITIAL_RETRY_DELAY: Duration = Duration::from_millis(100);
 const BACKOFF_FACTOR: u32 = 2;
 const MAX_DELAY: Duration = Duration::from_secs(30);
 
-
-#[derive(Clone, Debug)]
-pub struct MojaveClient {
-    inner: Arc<MojaveClientInner>,
-}
-
-#[derive(Debug)]
-struct MojaveClientInner {
-    client: reqwest::Client,
-    signing_key: Option<SigningKey>,
-    config: ClientConfig,
-}
-
-#[derive(Debug)]
-struct ClientConfig {
-    full_node_urls: Option<Vec<Url>>,
-    prover_url: Option<Url>,
-    sequencer_url: Option<Url>,
-    timeout: Option<Duration>,
-    request_strategy: RequestStrategy,
-}
-
 #[derive(Default)]
 pub struct MojaveClientBuilder {
     client: reqwest::Client,
     signing_key: Option<SigningKey>,
-    full_node_urls: Option<Vec<Url>>,
-    prover_url: Option<Url>,
-    sequencer_url: Option<Url>,
-    timeout: Option<Duration>,
-    request_strategy: RequestStrategy,
 }
 
 impl MojaveClientBuilder {
@@ -63,18 +36,56 @@ impl MojaveClientBuilder {
         self
     }
 
+    pub fn build(self) -> Result<MojaveClient, MojaveClientError> {
+        Ok(MojaveClient {
+            inner: Arc::new(MojaveClientInner {
+                client: self.client,
+                signing_key: Some(self.signing_key.unwrap()),
+            }),
+        })
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct MojaveClient {
+    inner: Arc<MojaveClientInner>,
+}
+
+#[derive(Debug)]
+struct MojaveClientInner {
+    client: reqwest::Client,
+    signing_key: Option<SigningKey>,
+}
+
+#[derive(Debug)]
+pub struct RequestBuilder {
+    client: MojaveClient,
+    full_node_urls: Option<Vec<Url>>,
+    prover_url: Option<Url>,
+    sequencer_url: Option<Url>,
+    timeout: Option<u64>,
+    max_attempts: Option<u64>,
+    request_strategy: RequestStrategy,
+}
+
+impl RequestBuilder {
     pub fn full_node_urls(mut self, full_node_urls: &[Url]) -> Self {
         self.full_node_urls = Some(full_node_urls.to_vec());
         self
     }
 
-    pub fn prover_url(mut self, prover_url: Url) -> Self {
-        self.prover_url = Some(prover_url);
+    pub fn prover_url(mut self, prover_url: &Url) -> Self {
+        self.prover_url = Some(prover_url.clone());
         self
     }
 
-    pub fn sequencer_url(mut self, sequencer_url: Url) -> Self {
-        self.sequencer_url = Some(sequencer_url);
+    pub fn sequencer_url(mut self, sequencer_url: &Url) -> Self {
+        self.sequencer_url = Some(sequencer_url.clone());
+        self
+    }
+
+    pub fn max_attempts(mut self, max_attempts: u64) -> Self {
+        self.max_attempts = Some(max_attempts);
         self
     }
 
@@ -82,32 +93,118 @@ impl MojaveClientBuilder {
         self.request_strategy = request_strategy;
         self
     }
-    
-    pub fn timeout(mut self, timeout: Duration) -> Self {
-        self.timeout = Some(timeout);
-        self
+
+    pub async fn send_broadcast_block(&self, block: &Block) -> Result<(), MojaveClientError> {
+        let hash = block.hash();
+        let signing_key = self.client.inner.signing_key.as_ref().unwrap();
+        let signature: Signature = signing_key.sign(&hash)?;
+        let verifying_key = signing_key.verifying_key();
+
+        let params = SignedBlock {
+            block: block.clone(),
+            signature,
+            verifying_key,
+        };
+
+        let request = RpcRequest {
+            id: RpcRequestId::Number(1),
+            jsonrpc: "2.0".to_string(),
+            method: "mojave_sendBroadcastBlock".to_string(),
+            params: Some(vec![json!(params)]),
+        };
+        self.client
+            .send_request_race(request, &self.full_node_urls.as_ref().unwrap())
+            .await
     }
 
-    pub fn build(self) -> Result<MojaveClient, MojaveClientError> {
-        Ok(MojaveClient {
-            inner: Arc::new(MojaveClientInner {
-                client: self.client,
-                signing_key: Some(self.signing_key.unwrap()),
-                config: ClientConfig {
-                    full_node_urls: Some(self.full_node_urls.unwrap()),
-                    prover_url: Some(self.prover_url.unwrap()),
-                    sequencer_url: Some(self.sequencer_url.unwrap()),
-                    timeout: Some(self.timeout.unwrap()),
-                    request_strategy: self.request_strategy,
-                },
-            }),
-        })
+    pub async fn send_proof_input(
+        &self,
+        proof_input: &ProverData,
+    ) -> Result<JobId, MojaveClientError> {
+        let request = RpcRequest {
+            id: RpcRequestId::Number(1),
+            jsonrpc: "2.0".to_string(),
+            method: "mojave_sendProofInput".to_string(),
+            params: Some(vec![
+                json!(proof_input),
+                json!(self.sequencer_url.as_ref().unwrap()),
+            ]),
+        };
+        self.client
+            .send_request_to_url(&request, &self.prover_url.as_ref().unwrap())
+            .await
+    }
+
+    pub async fn get_job_id(&self) -> Result<Vec<JobId>, MojaveClientError> {
+        let request = RpcRequest {
+            id: RpcRequestId::Number(1),
+            jsonrpc: "2.0".to_string(),
+            method: "mojave_getJobId".to_string(),
+            params: None,
+        };
+        self.client
+            .send_request_to_url(&request, &self.prover_url.as_ref().unwrap())
+            .await
+    }
+
+    pub async fn get_proof(&self, job_id: JobId) -> Result<ProofResponse, MojaveClientError> {
+        let request = RpcRequest {
+            id: RpcRequestId::Number(1),
+            jsonrpc: "2.0".to_string(),
+            method: "mojave_getProof".to_string(),
+            params: Some(vec![json!(job_id)]),
+        };
+        self.client
+            .send_request_to_url_with_retry(
+                &request,
+                &self.prover_url.as_ref().unwrap(),
+                self.max_attempts.unwrap(),
+                self.timeout.unwrap(),
+            )
+            .await
+    }
+
+    pub async fn send_proof_response(
+        &self,
+        proof_response: &ProofResponse,
+    ) -> Result<(), MojaveClientError> {
+        let signing_key = self.client.inner.signing_key.as_ref().unwrap();
+        let signature: Signature = signing_key.sign(proof_response)?;
+        let verifying_key = signing_key.verifying_key();
+
+        let params = SignedProofResponse {
+            proof_response: proof_response.clone(),
+            signature,
+            verifying_key,
+        };
+
+        let request = RpcRequest {
+            id: RpcRequestId::Number(1),
+            jsonrpc: "2.0".to_string(),
+            method: "mojave_sendProofResponse".to_string(),
+            params: Some(vec![json!(params)]),
+        };
+        self.client
+            .send_request_to_url(&request, &self.sequencer_url.as_ref().unwrap())
+            .await
     }
 }
 
 impl MojaveClient {
     pub fn builder() -> MojaveClientBuilder {
         MojaveClientBuilder::default()
+    }
+
+    pub fn request_builder(&self) -> RequestBuilder {
+        RequestBuilder {
+            client: self.clone(), // TODO: check where clone is correct
+            full_node_urls: None,
+            prover_url: None,
+            sequencer_url: None,
+            timeout: None,
+            max_attempts: None,
+            request_strategy: RequestStrategy::Race,
+        }
     }
 
     /// Sends multiple RPC requests to a list of urls and returns
@@ -258,90 +355,5 @@ impl MojaveClient {
             }
         }
         Err(last_error.unwrap_or(MojaveClientError::RetryFailed(max_attempts)))
-    }
-
-    pub async fn send_broadcast_block(
-        &self,
-        block: &Block,
-    ) -> Result<(), MojaveClientError> {
-        let hash = block.hash();
-        let signature: Signature = self.inner.signing_key.as_ref().unwrap().sign(&hash)?;
-        let verifying_key = self.inner.signing_key.as_ref().unwrap().verifying_key();
-
-        let params = SignedBlock {
-            block: block.clone(),
-            signature,
-            verifying_key,
-        };
-
-        let request = RpcRequest {
-            id: RpcRequestId::Number(1),
-            jsonrpc: "2.0".to_string(),
-            method: "mojave_sendBroadcastBlock".to_string(),
-            params: Some(vec![json!(params)]),
-        };
-        self.send_request_race(request, &self.inner.config.full_node_urls.as_ref().unwrap()).await
-    }
-
-    pub async fn send_proof_input(
-        &self,
-        proof_input: &ProverData,
-    ) -> Result<JobId, MojaveClientError> {
-        let request = RpcRequest {
-            id: RpcRequestId::Number(1),
-            jsonrpc: "2.0".to_string(),
-            method: "mojave_sendProofInput".to_string(),
-            params: Some(vec![json!(proof_input), json!(self.inner.config.sequencer_url.as_ref().unwrap())]),
-        };
-        self.send_request_to_url(&request, &self.inner.config.prover_url.as_ref().unwrap()).await
-    }
-
-    pub async fn get_job_id(&self) -> Result<Vec<JobId>, MojaveClientError> {
-        let request = RpcRequest {
-            id: RpcRequestId::Number(1),
-            jsonrpc: "2.0".to_string(),
-            method: "mojave_getJobId".to_string(),
-            params: None,
-        };
-        self.send_request_to_url(&request, &self.inner.config.prover_url.as_ref().unwrap()).await
-    }
-
-    pub async fn get_proof(
-        &self,
-        job_id: JobId,
-        max_attempts: u64,
-        request_timeout: u64,
-    ) -> Result<ProofResponse, MojaveClientError> {
-        let request = RpcRequest {
-            id: RpcRequestId::Number(1),
-            jsonrpc: "2.0".to_string(),
-            method: "mojave_getProof".to_string(),
-            params: Some(vec![json!(job_id)]),
-        };
-        self.send_request_to_url_with_retry(&request, &self.inner.config.prover_url.as_ref().unwrap(), max_attempts, request_timeout)
-            .await
-    }
-
-    pub async fn send_proof_response(
-        &self,
-        proof_response: &ProofResponse,
-        sequencer_url: &Url,
-    ) -> Result<(), MojaveClientError> {
-        let signature: Signature = self.inner.signing_key.as_ref().unwrap().sign(proof_response)?;
-        let verifying_key = self.inner.signing_key.as_ref().unwrap().verifying_key();
-
-        let params = SignedProofResponse {
-            proof_response: proof_response.clone(),
-            signature,
-            verifying_key,
-        };
-
-        let request = RpcRequest {
-            id: RpcRequestId::Number(1),
-            jsonrpc: "2.0".to_string(),
-            method: "mojave_sendProofResponse".to_string(),
-            params: Some(vec![json!(params)]),
-        };
-        self.send_request_to_url(&request, sequencer_url).await
     }
 }

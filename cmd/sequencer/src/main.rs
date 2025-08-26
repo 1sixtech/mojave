@@ -46,7 +46,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
             let mojave_client = MojaveClient::builder()
                 .private_key(&sequencer_options.private_key)
-                .full_node_urls(&full_node_urls)
                 .build()
                 .unwrap(); // TODO: Handle error
 
@@ -54,6 +53,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 loop {
                     match block_producer.build_block().await {
                         Ok(block) => mojave_client
+                            .request_builder()
+                            .full_node_urls(&full_node_urls)
                             .send_broadcast_block(&block)
                             .await
                             .unwrap_or_else(|error| tracing::error!("{}", error)),

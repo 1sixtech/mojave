@@ -16,7 +16,6 @@ use mojave_utils::unique_heap::AsyncUniqueHeap;
 use std::{net::SocketAddr, str::FromStr, sync::Arc};
 use tokio::sync::oneshot;
 use tokio_util::sync::CancellationToken;
-use reqwest::Url;
 
 pub const TEST_GENESIS: &str = include_str!("../../../tests/mock-genesis.json");
 pub const TEST_SEQUENCER_ADDR: &str = "127.0.0.1:8502";
@@ -113,7 +112,6 @@ pub async fn start_test_api_sequencer(
     let private_key = std::env::var("PRIVATE_KEY").unwrap();
     let client = MojaveClient::builder()
         .private_key(&private_key)
-        .sequencer_url(Url::parse(TEST_SEQUENCER_ADDR).unwrap())
         .build()
         .unwrap();
     let rpc_api = start_api_block_producer(

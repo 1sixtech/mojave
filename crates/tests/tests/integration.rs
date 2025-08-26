@@ -116,10 +116,11 @@ mod tests {
         let private_key = std::env::var("PRIVATE_KEY").unwrap();
         let client = MojaveClient::builder()
             .private_key(&private_key)
-            .sequencer_url(Url::parse(&server_url).unwrap())
             .build()
             .unwrap();
         let result = client
+            .request_builder()
+            .full_node_urls(&[Url::parse(&server_url).unwrap()])
             .send_broadcast_block(&test_block)
             .await;
 
@@ -200,10 +201,11 @@ mod tests {
         let private_key = std::env::var("PRIVATE_KEY").unwrap();
         let client = MojaveClient::builder()
             .private_key(&private_key)
-            .sequencer_url(Url::parse(&server_url).unwrap())
             .build()
             .unwrap();
         let result = client
+            .request_builder()
+            .full_node_urls(&[Url::parse(&server_url).unwrap()])
             .send_broadcast_block(&test_block)
             .await;
 
@@ -346,6 +348,8 @@ mod tests {
         };
 
         sequencer_client
+            .request_builder()
+            .full_node_urls(&[Url::parse(&format!("http://{sequencer_http_addr}")).unwrap()])
             .send_broadcast_block(&block)
             .await
             .unwrap();
