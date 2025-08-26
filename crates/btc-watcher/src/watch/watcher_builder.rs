@@ -1,7 +1,10 @@
 use tokio_util::sync::CancellationToken;
 use zeromq::{Socket, SubSocket};
 
-use crate::watch::{Result, Topic, Watcher, WatcherHandle};
+use crate::{
+    types::Result,
+    watch::{Topic, Watcher, WatcherHandle},
+};
 
 /// Builder used for configuring and spawning watchers.
 pub struct WatcherBuilder<T> {

@@ -8,10 +8,7 @@ use bitcoin::{
 };
 use tokio_util::sync::CancellationToken;
 
-use crate::{
-    error::WatcherError,
-    watch::{Topic, Watcher, WatcherBuilder, WatcherHandle},
-};
+use crate::{types::SequenceWatcherBuilder, watch::Topic};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SequenceEvent {
@@ -131,12 +128,6 @@ impl Topic for Sequence {
     const TOPIC: &'static str = "sequence";
 }
 
-pub type SequenceWatcher = Watcher<Sequence>;
-pub type SequenceWatcherBuilder = WatcherBuilder<Sequence>;
-pub type SequenceWatcherHandle = WatcherHandle<Sequence>;
-
-pub type Result<T> = core::result::Result<T, WatcherError<Sequence>>;
-
 /// Helper to create a builder with default configuration.
 pub fn builder(socket_url: &str, shutdown: CancellationToken) -> SequenceWatcherBuilder {
     SequenceWatcherBuilder::new(socket_url, shutdown)
@@ -144,6 +135,8 @@ pub fn builder(socket_url: &str, shutdown: CancellationToken) -> SequenceWatcher
 
 #[cfg(test)]
 mod tests {
+    use crate::{error::Error, types::Result};
+
     use super::*;
     use bitcoin::consensus::Encodable;
     use std::io::Cursor;
@@ -412,12 +405,11 @@ mod tests {
             SequenceWatcherBuilder::new("tcp://localhost:28332", shutdown);
 
         // Test Result type alias
-        let ok_result: Result<i32> = Ok(42);
+        let ok_result: Result<i32, Error<Sequence>> = Ok(42);
         assert!(ok_result.is_ok());
 
-        let err_result: Result<i32> = Err(WatcherError::ZmqError(zeromq::ZmqError::Other(
-            "test error",
-        )));
+        let err_result: Result<i32, Error<Sequence>> =
+            Err(Error::ZmqError(zeromq::ZmqError::Other("test error")));
         assert!(err_result.is_err());
     }
 

@@ -1,20 +1,13 @@
 use bitcoin::Block;
 use tokio_util::sync::CancellationToken;
 
-use crate::{
-    error::WatcherError,
-    watch::{Topic, Watcher, WatcherBuilder, WatcherHandle},
-};
+use crate::{error::Error, types::BlockWatcherBuilder, watch::Topic};
 
 impl Topic for Block {
     const TOPIC: &'static str = "rawblock";
 }
 
-pub type BlockWatcher = Watcher<Block>;
-pub type BlockWatcherBuilder = WatcherBuilder<Block>;
-pub type BlockWatcherHandle = WatcherHandle<Block>;
-
-pub type Result<T> = core::result::Result<T, WatcherError<Block>>;
+pub type Result<T> = core::result::Result<T, Error<Block>>;
 
 /// Helper to create a builder with default configuration.
 pub fn builder(socket_url: &str, shutdown: CancellationToken) -> BlockWatcherBuilder {

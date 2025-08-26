@@ -1,5 +1,5 @@
 #[derive(Debug, thiserror::Error)]
-pub enum WatcherError<T>
+pub enum Error<T>
 where
     T: core::fmt::Debug,
 {

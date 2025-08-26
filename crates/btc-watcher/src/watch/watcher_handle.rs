@@ -1,6 +1,9 @@
 use tokio_util::sync::CancellationToken;
 
-use crate::watch::{Result, Topic, WatcherBuilder};
+use crate::{
+    types::Result,
+    watch::{Topic, WatcherBuilder},
+};
 
 /// Handle to an active watcher.
 pub struct WatcherHandle<T>
