@@ -114,9 +114,13 @@ mod tests {
 
         // create mojave client and test block broadcast
         let private_key = std::env::var("PRIVATE_KEY").unwrap();
-        let client = MojaveClient::new(&private_key).unwrap();
+        let client = MojaveClient::builder()
+            .private_key(&private_key)
+            .sequencer_url(Url::parse(&server_url).unwrap())
+            .build()
+            .unwrap();
         let result = client
-            .send_broadcast_block(&test_block, &[Url::parse(&server_url).unwrap()])
+            .send_broadcast_block(&test_block)
             .await;
 
         server_handle.abort();
@@ -194,9 +198,13 @@ mod tests {
 
         // create mojave client and test block broadcast
         let private_key = std::env::var("PRIVATE_KEY").unwrap();
-        let client = MojaveClient::new(&private_key).unwrap();
+        let client = MojaveClient::builder()
+            .private_key(&private_key)
+            .sequencer_url(Url::parse(&server_url).unwrap())
+            .build()
+            .unwrap();
         let result = client
-            .send_broadcast_block(&test_block, &[Url::parse(&server_url).unwrap()])
+            .send_broadcast_block(&test_block)
             .await;
 
         // assert the response
@@ -337,10 +345,8 @@ mod tests {
             },
         };
 
-        let full_node_urls = vec![Url::parse(&format!("http://{full_node_http_addr}")).unwrap()];
-
         sequencer_client
-            .send_broadcast_block(&block, &full_node_urls)
+            .send_broadcast_block(&block)
             .await
             .unwrap();
     }

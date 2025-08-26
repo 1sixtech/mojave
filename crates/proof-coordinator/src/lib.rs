@@ -18,10 +18,6 @@ mod errors;
 pub struct ProofCoordinator {
     /// Come from the block builder
     proof_data_receiver: Receiver<u64>,
-    /// Send to the prover
-    prover_url: Url,
-    /// Sequencer address
-    sequencer_address: String,
     /// Mojave client
     client: MojaveClient,
 }
@@ -30,16 +26,17 @@ impl ProofCoordinator {
     pub fn new(
         proof_data_receiver: Receiver<u64>,
         prover_address: &str,
-        sequencer_address: String,
+        sequencer_address: &str,
         private_key: &str,
     ) -> Result<Self, ProofCoordinatorError> {
         Ok(Self {
             proof_data_receiver,
-            prover_url: Url::parse(prover_address)
-                .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?,
-            sequencer_address,
-            client: MojaveClient::new(private_key)
-                .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?,
+            client: MojaveClient::builder()
+                .private_key(private_key)
+                .prover_url(Url::parse(prover_address).unwrap())
+                .sequencer_url(Url::parse(sequencer_address).unwrap())
+                .build()
+                .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?, // TODO: Handle error
         })
     }
 
@@ -60,7 +57,7 @@ impl ProofCoordinator {
         // send proof input to the prover
         let _job_id = self
             .client
-            .send_proof_input(&input, &self.sequencer_address, &self.prover_url)
+            .send_proof_input(&input)
             .await
             .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?;
 

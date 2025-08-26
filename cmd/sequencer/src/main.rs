@@ -28,7 +28,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     std::process::exit(1);
                 });
 
-            let mojave_client = MojaveClient::new(sequencer_options.private_key.as_str())?;
             let context = BlockProducerContext::new(
                 node.store.clone(),
                 node.blockchain.clone(),
@@ -45,11 +44,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 })
                 .collect();
 
+            let mojave_client = MojaveClient::builder()
+                .private_key(&sequencer_options.private_key)
+                .full_node_urls(&full_node_urls)
+                .build()
+                .unwrap(); // TODO: Handle error
+
             tokio::spawn(async move {
                 loop {
                     match block_producer.build_block().await {
                         Ok(block) => mojave_client
-                            .send_broadcast_block(&block, &full_node_urls)
+                            .send_broadcast_block(&block)
                             .await
                             .unwrap_or_else(|error| tracing::error!("{}", error)),
                         Err(error) => {
