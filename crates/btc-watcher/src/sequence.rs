@@ -49,31 +49,24 @@ pub struct Sequence {
 
 impl fmt::Display for Sequence {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let hash = if self.is_block() {
+            self.block_hash().to_string()
+        } else {
+            self.txid().to_string()
+        };
+
         match self.event {
             SequenceEvent::TxAdded | SequenceEvent::TxRemoved => {
                 write!(
                     f,
                     "{} hash={} mempool_seq={}",
                     self.event,
-                    if self.is_block() {
-                        self.block_hash().to_string()
-                    } else {
-                        self.txid().to_string()
-                    },
+                    hash,
                     self.mempool_seq.unwrap_or(0),
                 )
             }
             _ => {
-                write!(
-                    f,
-                    "{} hash={}",
-                    self.event,
-                    if self.is_block() {
-                        self.block_hash().to_string()
-                    } else {
-                        self.txid().to_string()
-                    },
-                )
+                write!(f, "{} hash={}", self.event, hash)
             }
         }
     }
