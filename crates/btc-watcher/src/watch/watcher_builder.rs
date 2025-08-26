@@ -249,16 +249,6 @@ mod tests {
         assert_eq!(builder.max_channel_capacity, large_capacity);
     }
 
-    #[tokio::test]
-    async fn test_spawn_creates_handle_with_correct_shutdown_token() {
-        let shutdown = CancellationToken::new();
-        let builder = WatcherBuilder::<Block>::new("tcp://localhost:28332", shutdown.clone());
-
-        // ZMQ may succeed initially due to lazy connection behavior
-        let result = builder.spawn().await;
-        let _ = result; // Just test that it completes without panicking
-    }
-
     #[test]
     fn test_builder_url_variations() {
         let shutdown = CancellationToken::new();

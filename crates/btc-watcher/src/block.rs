@@ -17,24 +17,8 @@ pub fn builder(socket_url: &str, shutdown: CancellationToken) -> BlockWatcherBui
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bitcoin::{
-        Block, BlockHash, CompactTarget, TxMerkleNode, block::Header as BlockHeader, hashes::Hash,
-    };
+    use bitcoin::Block;
     use mojave_tests::assert_type;
-
-    fn create_test_block() -> Block {
-        Block {
-            header: BlockHeader {
-                version: bitcoin::block::Version::ONE,
-                prev_blockhash: BlockHash::all_zeros(),
-                merkle_root: TxMerkleNode::all_zeros(),
-                time: 1234567890,
-                bits: CompactTarget::from_consensus(0x1d00ffff),
-                nonce: 2083236893,
-            },
-            txdata: vec![],
-        }
-    }
 
     #[test]
     fn test_block_topic() {
