@@ -1,5 +1,5 @@
 use ethrex_common::types::Block;
-use mojave_utils::unique_heap::UniqueHeapItem;
+use mojave_utils::unique_heap::{AsyncUniqueHeap, UniqueHeapItem};
 
 /// A wrapper around a Block that provides ordering based on block number.
 ///
@@ -50,6 +50,41 @@ impl Ord for OrderedBlock {
 impl UniqueHeapItem<u64> for OrderedBlock {
     fn key(&self) -> u64 {
         self.0.header.number
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct PendingHeap {
+    inner: AsyncUniqueHeap<OrderedBlock, u64>,
+}
+
+impl PendingHeap {
+    pub fn new() -> Self {
+        Self {
+            inner: AsyncUniqueHeap::new(),
+        }
+    }
+
+    #[inline]
+    pub async fn push_signed(&self, block: OrderedBlock) -> bool {
+        // Insert validation / tracing / backpressure / metrics here
+        self.inner.push(block).await
+    }
+
+    #[inline]
+    pub async fn pop(&self) -> Option<OrderedBlock> {
+        self.inner.pop().await
+    }
+
+    #[inline]
+    pub async fn peek(&self) -> Option<OrderedBlock> {
+        self.inner.peek().await
+    }
+}
+
+impl Default for PendingHeap {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
