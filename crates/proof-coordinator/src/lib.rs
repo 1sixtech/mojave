@@ -35,7 +35,7 @@ impl ProofCoordinator {
             client: MojaveClient::builder()
                 .private_key(private_key)
                 .build()
-                .map_err(|e| ProofCoordinatorError::ClientError(e))?,
+                .map_err(ProofCoordinatorError::ClientError)?,
             prover_url: Url::parse(prover_address).unwrap(),
             sequencer_address: sequencer_address.to_string(),
         })
