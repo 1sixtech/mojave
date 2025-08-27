@@ -7,3 +7,17 @@ license = { workspace = true }
 homepage = { workspace = true }
 repository = { workspace = true }
 documentation = { workspace = true }
+
+[dependencies]
+anyhow = { workspace = true }
+bitcoin = { workspace = true, features = ["std"] }
+bytes = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["sync", "rt", "macros"] }
+tokio-util = { workspace = true }
+tracing = { workspace = true }
+zeromq = { workspace = true, features = ["tokio-runtime", "all-transport"] }
+
+[dev-dependencies]
+mojave-tests = { workspace = true }
