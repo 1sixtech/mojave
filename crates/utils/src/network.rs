@@ -26,18 +26,13 @@ lazy_static! {
     .expect("Failed to parse testnet bootnodes file");
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub enum Network {
+    #[default]
     DefaultNet,
     Mainnet,
     Testnet,
     GenesisPath(PathBuf),
-}
-
-impl Default for Network {
-    fn default() -> Self {
-        Network::DefaultNet
-    }
 }
 
 impl From<&str> for Network {
