@@ -34,13 +34,10 @@ impl MojaveClientBuilder {
     }
 
     pub fn build(self) -> Result<MojaveClient, MojaveClientError> {
-        let signing_key = self
-            .signing_key
-            .ok_or(MojaveClientError::MissingSigningKey)?;
         Ok(MojaveClient {
             inner: Arc::new(MojaveClientInner {
                 client: reqwest::Client::new(),
-                signing_key: Some(signing_key),
+                signing_key: self.signing_key,
             }),
         })
     }
