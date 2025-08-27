@@ -349,7 +349,7 @@ mod tests {
 
         sequencer_client
             .request_builder()
-            .full_node_urls(&[Url::parse(&format!("http://{sequencer_http_addr}")).unwrap()])
+            .full_node_urls(&[Url::parse(&format!("http://{full_node_http_addr}")).unwrap()])
             .send_broadcast_block(&block)
             .await
             .unwrap();
