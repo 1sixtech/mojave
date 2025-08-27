@@ -26,5 +26,5 @@ Cargo.toml.bak
 
 .rules
 
-mojave-full-node
+mojave-node
 mojave-sequencer

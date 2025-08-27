@@ -10,7 +10,7 @@ build-mojave:
 	cargo build --release
 
 clean:
-	rm -rf mojave-full-node mojave-sequencer
+	rm -rf mojave-node mojave-sequencer
 
 # Run both node and sequencer in parallel, with sequencer waiting for node
 full: clean
@@ -18,15 +18,12 @@ full: clean
 
 node:
     export $(cat .env | xargs) && \
-    cargo run --release --bin mojave-full-node init \
-        --network ./test_data/genesis.json \
-        --sequencer.address http://0.0.0.0:1739 \
-        --datadir {{current-dir}}/mojave-full-node
+    cargo run --release --bin mojave-node init \
+        --datadir {{current-dir}}/mojave-node
 
 sequencer:
     export $(cat .env | xargs) && \
     cargo run --release --bin mojave-sequencer init \
-        --network ./test_data/genesis.json \
         --http.port 1739 \
         --full_node.addresses http://0.0.0.0:8545 \
         --datadir {{current-dir}}/mojave-sequencer \
