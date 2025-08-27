@@ -8,7 +8,7 @@ use ethrex_p2p::types::Node;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 
-pub const TESTNET_GENESIS_PATH: &str = "cmd/mojave/networks/testnet/genesis.json";
+pub const TESTNET_GENESIS_PATH: &str = "data/testnet-genesis.json";
 const TESTNET_BOOTNODES_PATH: &str = "cmd/mojave/networks/testnet/bootnodes.json";
 
 pub const MAINNET_GENESIS_PATH: &str = "cmd/mojave/networks/mainnet/genesis.json";
@@ -27,8 +27,8 @@ lazy_static! {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub enum Network {
-    #[default]
     Mainnet,
+    #[default]
     Testnet,
     GenesisPath(PathBuf),
 }

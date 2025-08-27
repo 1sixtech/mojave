@@ -9,8 +9,8 @@ SEQ_PORT="1739"
 NODE_HTTP="http://${NODE_HOST}:${NODE_PORT}"
 SEQ_HTTP="http://${SEQ_HOST}:${SEQ_PORT}"
 
-GENESIS="./test_data/genesis.json"
-NODE_DATA_DIR="$(pwd)/mojave-full-node"
+GENESIS="./data/testnet-genesis.json"
+NODE_DATA_DIR="$(pwd)/mojave-node"
 SEQ_DATA_DIR="$(pwd)/mojave-sequencer"
 SEQ_PRIVKEY="${SEQ_PRIVKEY:-0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}"
 
@@ -216,9 +216,8 @@ echo -e "${GREEN}[NODE]${NC} Starting full node…"
 (
   set -a
   set +a
-  exec cargo run --release --bin mojave-full-node -- init \
+  exec cargo run --release --bin mojave-node -- init \
     --network "$GENESIS" \
-    --sequencer.address "${SEQ_HTTP}" \
     --datadir "$NODE_DATA_DIR"
 ) >"$NODE_PIPE" 2>&1 &
 NODE_PID=$!
