@@ -81,14 +81,16 @@ where
             return Ok(());
         }
 
-        let topic = msg
-            .get(ZMQ_TOPIC_FRAME_INDEX)
-            .and_then(|s| std::str::from_utf8(s).ok())
-            .ok_or_else(|| {
-                Error::DeserializationError(bitcoin::consensus::encode::Error::ParseFailed(
-                    "unable to parse topic",
-                ))
-            })?;
+        let topic_bytes = msg.get(ZMQ_TOPIC_FRAME_INDEX).ok_or_else(|| {
+            Error::DeserializationError(bitcoin::consensus::encode::Error::ParseFailed(
+                "missing topic frame",
+            ))
+        })?;
+        let topic = std::str::from_utf8(topic_bytes).map_err(|_| {
+            Error::DeserializationError(bitcoin::consensus::encode::Error::ParseFailed(
+                "topic frame is not valid UTF-8",
+            ))
+        })?;
         let Some(payload) = &msg.get(ZMQ_PAYLOAD_FRAME_INDEX) else {
             tracing::warn!("Unable to get payload");
             return Ok(());
