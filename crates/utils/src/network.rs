@@ -26,17 +26,24 @@ lazy_static! {
     .expect("Failed to parse testnet bootnodes file");
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Network {
+    DefaultNet,
     Mainnet,
-    #[default]
     Testnet,
     GenesisPath(PathBuf),
+}
+
+impl Default for Network {
+    fn default() -> Self {
+        Network::DefaultNet
+    }
 }
 
 impl From<&str> for Network {
     fn from(value: &str) -> Self {
         match value {
+            "default" => Network::DefaultNet,
             "mainnet" => Network::Mainnet,
             "testnet" => Network::Testnet,
             s => Network::GenesisPath(PathBuf::from(s)),
@@ -53,12 +60,20 @@ impl From<PathBuf> for Network {
 impl Network {
     pub fn get_genesis_path(&self) -> &Path {
         match self {
+            Network::DefaultNet => {
+                // should never happen, but just in case
+                panic!("DefaultNet does not have a genesis path");
+            }
             Network::Mainnet => Path::new(MAINNET_GENESIS_PATH),
             Network::Testnet => Path::new(TESTNET_GENESIS_PATH),
             Network::GenesisPath(s) => s,
         }
     }
     pub fn get_genesis(&self) -> Result<Genesis, GenesisError> {
+        // If DefaultNet, construct a default genesis
+        if let Network::DefaultNet = self {
+            return Ok(Genesis::default());
+        }
         Genesis::try_from(self.get_genesis_path())
     }
 }
@@ -66,6 +81,7 @@ impl Network {
 impl fmt::Display for Network {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
+            Network::DefaultNet => write!(f, "default"),
             Network::Mainnet => write!(f, "mainnet"),
             Network::Testnet => write!(f, "testnet"),
             Network::GenesisPath(path) => write!(f, "{path:?}"),
