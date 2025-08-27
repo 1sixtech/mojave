@@ -28,6 +28,6 @@ pub enum MojaveClientError {
     MissingMaxAttempts,
     #[error("Missing timeout")]
     MissingTimeout,
-    #[error("Missing signing key")]
-    MissingSigningKey,
+    #[error("Missing private key")]
+    MissingPrivateKey,
 }
