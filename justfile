@@ -19,13 +19,11 @@ full: clean
 node:
     export $(cat .env | xargs) && \
     cargo run --release --bin mojave-node init \
-        --network ./data/testnet-genesis.json \
         --datadir {{current-dir}}/mojave-node
 
 sequencer:
     export $(cat .env | xargs) && \
     cargo run --release --bin mojave-sequencer init \
-        --network ./data/testnet-genesis.json \
         --http.port 1739 \
         --full_node.addresses http://0.0.0.0:8545 \
         --datadir {{current-dir}}/mojave-sequencer \

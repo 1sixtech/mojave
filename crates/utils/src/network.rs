@@ -9,6 +9,7 @@ use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 
 pub const TESTNET_GENESIS_PATH: &str = "data/testnet-genesis.json";
+// Just a placeholder for now, will be replaced with real file later
 const TESTNET_BOOTNODES_PATH: &str = "cmd/mojave/networks/testnet/bootnodes.json";
 
 pub const MAINNET_GENESIS_PATH: &str = "cmd/mojave/networks/mainnet/genesis.json";
@@ -65,8 +66,8 @@ impl Network {
 impl fmt::Display for Network {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Network::Mainnet => write!(f, "Mainnet"),
-            Network::Testnet => write!(f, "Testnet"),
+            Network::Mainnet => write!(f, "mainnet"),
+            Network::Testnet => write!(f, "testnet"),
             Network::GenesisPath(path) => write!(f, "{path:?}"),
         }
     }
