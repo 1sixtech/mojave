@@ -1,4 +1,4 @@
-use clap::{ArgAction, Parser, Subcommand};
+use clap::{ArgAction, Args, Parser, Subcommand};
 use mojave_node_lib::types::{Node, SyncMode};
 use mojave_utils::network::Network;
 use tracing::Level;
@@ -46,17 +46,8 @@ pub struct Options {
     )]
     pub sponsorable_addresses_file_path: Option<String>,
 
-    #[arg(
-        long = "datadir",
-        value_name = "DATABASE_DIRECTORY",
-        help = "If the datadir is the word `memory`, ethrex will use the InMemory Engine",
-        default_value = "mojave",
-        help = "Receives the name of the directory where the Database is located.",
-        long_help = "If the datadir is the word `memory`, ethrex will use the `InMemory Engine`.",
-        help_heading = "Node options",
-        env = "ETHREX_DATADIR"
-    )]
-    pub datadir: String,
+    #[command(flatten)]
+    pub datadir: DatadirArg,
 
     #[arg(
         long = "force",
@@ -192,7 +183,7 @@ impl From<&Options> for mojave_node_lib::types::NodeOptions {
             discovery_port: options.discovery_port.clone(),
             network: options.network.clone(),
             bootnodes: options.bootnodes.clone(),
-            datadir: options.datadir.clone(),
+            datadir: options.datadir.datadir.clone(),
             syncmode: options.syncmode.unwrap_or(SyncMode::Full),
             sponsorable_addresses_file_path: options.sponsorable_addresses_file_path.clone(),
             metrics_addr: options.metrics_addr.clone(),
@@ -201,6 +192,20 @@ impl From<&Options> for mojave_node_lib::types::NodeOptions {
             force: options.force,
         }
     }
+}
+
+#[derive(Args, Debug, Clone)]
+pub struct DatadirArg {
+    #[arg(
+        long = "datadir",
+        value_name = "DATABASE_DIRECTORY",
+        default_value = "mojave",
+        help = "Receives the name of the directory where the Database is located.",
+        long_help = "If the datadir is the word `memory`, ethrex will use the `InMemory Engine`.",
+        help_heading = "Node options",
+        env = "ETHREX_DATADIR"
+    )]
+    pub datadir: String,
 }
 
 #[allow(clippy::upper_case_acronyms)]
@@ -231,11 +236,17 @@ impl Cli {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Subcommand)]
 pub enum Command {
     #[command(name = "init", about = "Run the node")]
     Start {
         #[command(flatten)]
         options: Options,
+    },
+    #[command(name = "get-pub-key", about = "Display the public key of the node")]
+    GetPubKey {
+        #[command(flatten)]
+        datadir: DatadirArg,
     },
 }
