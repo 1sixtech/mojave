@@ -28,9 +28,10 @@ pub struct MojaveClientBuilder {
 }
 
 impl MojaveClientBuilder {
-    pub fn private_key(mut self, private_key: &str) -> Self {
-        self.signing_key = SigningKey::from_str(private_key).ok();
-        self
+    pub fn private_key(mut self, private_key: &str) -> Result<Self, MojaveClientError> {
+        let signing_key = SigningKey::from_str(private_key)?;
+        self.signing_key = Some(signing_key);
+        Ok(self)
     }
 
     pub fn build(self) -> Result<MojaveClient, MojaveClientError> {

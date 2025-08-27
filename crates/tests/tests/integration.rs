@@ -116,6 +116,7 @@ mod tests {
         let private_key = std::env::var("PRIVATE_KEY").unwrap();
         let client = MojaveClient::builder()
             .private_key(&private_key)
+            .unwrap()
             .build()
             .unwrap();
         let result = client
@@ -201,6 +202,7 @@ mod tests {
         let private_key = std::env::var("PRIVATE_KEY").unwrap();
         let client = MojaveClient::builder()
             .private_key(&private_key)
+            .unwrap()
             .build()
             .unwrap();
         let result = client

@@ -46,9 +46,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
             let mojave_client = MojaveClient::builder()
                 .private_key(&sequencer_options.private_key)
+                .unwrap_or_else(|error| {
+                    tracing::error!("Failed to parse private key: {}", error);
+                    std::process::exit(1);
+                })
                 .build()
                 .unwrap_or_else(|error| {
-                    panic!("Failed to build the client: {}", error);
+                    tracing::error!("Failed to build the client: {}", error);
+                    std::process::exit(1);
                 });
 
             tokio::spawn(async move {

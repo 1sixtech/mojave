@@ -112,6 +112,7 @@ pub async fn start_test_api_sequencer(
     let private_key = std::env::var("PRIVATE_KEY").unwrap();
     let client = MojaveClient::builder()
         .private_key(&private_key)
+        .unwrap()
         .build()
         .unwrap();
     let rpc_api = start_api_block_producer(

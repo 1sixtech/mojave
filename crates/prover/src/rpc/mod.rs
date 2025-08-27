@@ -62,6 +62,7 @@ pub async fn start_api(
 
     let client = MojaveClient::builder()
         .private_key(private_key)
+        .map_err(|err| RpcErr::Internal(err.to_string()))?
         .build()
         .map_err(|err| RpcErr::Internal(err.to_string()))?;
     tracing::info!("MojaveClient initialized");

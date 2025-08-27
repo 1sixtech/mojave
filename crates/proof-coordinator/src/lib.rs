@@ -28,15 +28,14 @@ impl ProofCoordinator {
         proof_data_receiver: Receiver<u64>,
         prover_address: &str,
         sequencer_address: String,
-        private_key: &str,
     ) -> Result<Self, ProofCoordinatorError> {
         Ok(Self {
             proof_data_receiver,
             client: MojaveClient::builder()
-                .private_key(private_key)
                 .build()
                 .map_err(ProofCoordinatorError::ClientError)?,
-            prover_url: Url::parse(prover_address).unwrap(),
+            prover_url: Url::parse(prover_address)
+                .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?,
             sequencer_address: sequencer_address.to_string(),
         })
     }
