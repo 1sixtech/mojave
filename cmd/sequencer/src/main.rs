@@ -47,7 +47,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
             let mojave_client = MojaveClient::builder()
                 .private_key(&sequencer_options.private_key)
                 .build()
-                .unwrap(); // TODO: Handle error
+                .unwrap_or_else(|error| {
+                    panic!("Failed to build the client: {}", error);
+                });
 
             tokio::spawn(async move {
                 loop {

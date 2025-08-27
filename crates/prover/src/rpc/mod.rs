@@ -63,9 +63,7 @@ pub async fn start_api(
     let client = MojaveClient::builder()
         .private_key(private_key)
         .build()
-        .map_err(|err| {
-            RpcErr::Internal(format!("Error to start client to send proof back: {err}"))
-        })?;
+        .map_err(|err| RpcErr::Internal(err.to_string()))?;
     tracing::info!("MojaveClient initialized");
 
     // Start the proof worker in the background.

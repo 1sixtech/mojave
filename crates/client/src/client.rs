@@ -1,6 +1,6 @@
 use crate::{
     MojaveClientError,
-    types::{JobId, ProofResponse, ProverData, RequestStrategy, SignedBlock, SignedProofResponse},
+    types::{JobId, ProofResponse, ProverData, SignedBlock, SignedProofResponse},
 };
 use ethrex_common::types::Block;
 use ethrex_rpc::{
@@ -24,37 +24,26 @@ const MAX_DELAY: Duration = Duration::from_secs(30);
 
 #[derive(Default)]
 pub struct MojaveClientBuilder {
-    client: reqwest::Client,
     signing_key: Option<SigningKey>,
 }
 
 impl MojaveClientBuilder {
     pub fn private_key(mut self, private_key: &str) -> Self {
-        // TODO: Handle error
-        let signing_key = SigningKey::from_str(private_key).unwrap();
-        self.signing_key = Some(signing_key);
+        self.signing_key = SigningKey::from_str(private_key).ok();
         self
     }
 
     pub fn build(self) -> Result<MojaveClient, MojaveClientError> {
+        let signing_key = self
+            .signing_key
+            .ok_or(MojaveClientError::MissingSigningKey)?;
         Ok(MojaveClient {
             inner: Arc::new(MojaveClientInner {
-                client: self.client,
-                signing_key: Some(self.signing_key.unwrap()),
+                client: reqwest::Client::new(),
+                signing_key: Some(signing_key),
             }),
         })
     }
-}
-
-#[derive(Clone, Debug)]
-pub struct MojaveClient {
-    inner: Arc<MojaveClientInner>,
-}
-
-#[derive(Debug)]
-struct MojaveClientInner {
-    client: reqwest::Client,
-    signing_key: Option<SigningKey>,
 }
 
 #[derive(Debug)]
@@ -65,7 +54,6 @@ pub struct RequestBuilder {
     sequencer_url: Option<Url>,
     timeout: Option<u64>,
     max_attempts: Option<u64>,
-    request_strategy: RequestStrategy,
 }
 
 impl RequestBuilder {
@@ -84,19 +72,24 @@ impl RequestBuilder {
         self
     }
 
+    pub fn timeout(mut self, timeout: u64) -> Self {
+        self.timeout = Some(timeout);
+        self
+    }
+
     pub fn max_attempts(mut self, max_attempts: u64) -> Self {
         self.max_attempts = Some(max_attempts);
         self
     }
 
-    pub fn request_strategy(mut self, request_strategy: RequestStrategy) -> Self {
-        self.request_strategy = request_strategy;
-        self
-    }
-
     pub async fn send_broadcast_block(&self, block: &Block) -> Result<(), MojaveClientError> {
         let hash = block.hash();
-        let signing_key = self.client.inner.signing_key.as_ref().unwrap();
+        let signing_key = self
+            .client
+            .inner
+            .signing_key
+            .as_ref()
+            .ok_or(MojaveClientError::MissingSigningKey)?;
         let signature: Signature = signing_key.sign(&hash)?;
         let verifying_key = signing_key.verifying_key();
 
@@ -113,25 +106,33 @@ impl RequestBuilder {
             params: Some(vec![json!(params)]),
         };
         self.client
-            .send_request_race(request, &self.full_node_urls.as_ref().unwrap())
+            .send_request_race(
+                request,
+                self.full_node_urls
+                    .as_ref()
+                    .ok_or(MojaveClientError::MissingFullNodeUrls)?,
+            )
             .await
     }
 
     pub async fn send_proof_input(
         &self,
         proof_input: &ProverData,
+        sequencer_address: &str,
     ) -> Result<JobId, MojaveClientError> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
             jsonrpc: "2.0".to_string(),
             method: "mojave_sendProofInput".to_string(),
-            params: Some(vec![
-                json!(proof_input),
-                json!(self.sequencer_url.as_ref().unwrap()),
-            ]),
+            params: Some(vec![json!(proof_input), json!(sequencer_address)]),
         };
         self.client
-            .send_request_to_url(&request, &self.prover_url.as_ref().unwrap())
+            .send_request_to_url(
+                &request,
+                self.prover_url
+                    .as_ref()
+                    .ok_or(MojaveClientError::MissingProverUrl)?,
+            )
             .await
     }
 
@@ -143,7 +144,12 @@ impl RequestBuilder {
             params: None,
         };
         self.client
-            .send_request_to_url(&request, &self.prover_url.as_ref().unwrap())
+            .send_request_to_url(
+                &request,
+                self.prover_url
+                    .as_ref()
+                    .ok_or(MojaveClientError::MissingProverUrl)?,
+            )
             .await
     }
 
@@ -157,9 +163,12 @@ impl RequestBuilder {
         self.client
             .send_request_to_url_with_retry(
                 &request,
-                &self.prover_url.as_ref().unwrap(),
-                self.max_attempts.unwrap(),
-                self.timeout.unwrap(),
+                self.prover_url
+                    .as_ref()
+                    .ok_or(MojaveClientError::MissingProverUrl)?,
+                self.max_attempts
+                    .ok_or(MojaveClientError::MissingMaxAttempts)?,
+                self.timeout.ok_or(MojaveClientError::MissingTimeout)?,
             )
             .await
     }
@@ -168,7 +177,12 @@ impl RequestBuilder {
         &self,
         proof_response: &ProofResponse,
     ) -> Result<(), MojaveClientError> {
-        let signing_key = self.client.inner.signing_key.as_ref().unwrap();
+        let signing_key = self
+            .client
+            .inner
+            .signing_key
+            .as_ref()
+            .ok_or(MojaveClientError::MissingSigningKey)?;
         let signature: Signature = signing_key.sign(proof_response)?;
         let verifying_key = signing_key.verifying_key();
 
@@ -185,9 +199,25 @@ impl RequestBuilder {
             params: Some(vec![json!(params)]),
         };
         self.client
-            .send_request_to_url(&request, &self.sequencer_url.as_ref().unwrap())
+            .send_request_to_url(
+                &request,
+                self.sequencer_url
+                    .as_ref()
+                    .ok_or(MojaveClientError::MissingSequencerUrl)?,
+            )
             .await
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct MojaveClient {
+    inner: Arc<MojaveClientInner>,
+}
+
+#[derive(Debug)]
+struct MojaveClientInner {
+    client: reqwest::Client,
+    signing_key: Option<SigningKey>,
 }
 
 impl MojaveClient {
@@ -197,13 +227,12 @@ impl MojaveClient {
 
     pub fn request_builder(&self) -> RequestBuilder {
         RequestBuilder {
-            client: self.clone(), // TODO: check where clone is correct
+            client: self.clone(),
             full_node_urls: None,
             prover_url: None,
             sequencer_url: None,
             timeout: None,
             max_attempts: None,
-            request_strategy: RequestStrategy::Race,
         }
     }
 

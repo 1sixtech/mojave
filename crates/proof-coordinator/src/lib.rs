@@ -20,14 +20,14 @@ pub struct ProofCoordinator {
     proof_data_receiver: Receiver<u64>,
     client: MojaveClient,
     prover_url: Url,
-    sequencer_url: Url,
+    sequencer_address: String,
 }
 
 impl ProofCoordinator {
     pub fn new(
         proof_data_receiver: Receiver<u64>,
         prover_address: &str,
-        sequencer_address: &str,
+        sequencer_address: String,
         private_key: &str,
     ) -> Result<Self, ProofCoordinatorError> {
         Ok(Self {
@@ -35,9 +35,9 @@ impl ProofCoordinator {
             client: MojaveClient::builder()
                 .private_key(private_key)
                 .build()
-                .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?, // TODO: Handle error
+                .map_err(|e| ProofCoordinatorError::ClientError(e))?,
             prover_url: Url::parse(prover_address).unwrap(),
-            sequencer_url: Url::parse(sequencer_address).unwrap(),
+            sequencer_address: sequencer_address.to_string(),
         })
     }
 
@@ -60,8 +60,7 @@ impl ProofCoordinator {
             .client
             .request_builder()
             .prover_url(&self.prover_url)
-            .sequencer_url(&self.sequencer_url)
-            .send_proof_input(&input)
+            .send_proof_input(&input, &self.sequencer_address)
             .await
             .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?;
 

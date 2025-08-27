@@ -40,15 +40,3 @@ pub enum ProofResult {
     Proof(BatchProof),
     Error(String),
 }
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum RequestStrategy {
-    Sequential,
-    Race,
-}
-
-impl Default for RequestStrategy {
-    fn default() -> Self {
-        Self::Sequential
-    }
-}
