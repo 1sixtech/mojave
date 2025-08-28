@@ -1,4 +1,5 @@
 use clap::{ArgAction, ArgGroup, Parser, Subcommand};
+use mojave_block_producer::types::BlockProducerOptions;
 use mojave_node_lib::types::{Node, SyncMode};
 use mojave_utils::network::Network;
 use tracing::Level;
@@ -283,5 +284,16 @@ impl std::fmt::Debug for SequencerOptions {
             .field("full_node_addresses", &self.full_node_addresses)
             .field("block_time", &self.block_time)
             .finish()
+    }
+}
+
+impl From<&SequencerOptions> for BlockProducerOptions {
+    fn from(value: &SequencerOptions) -> Self {
+        Self {
+            full_node_addresses: value.full_node_addresses.clone(),
+            prover_address: value.prover_address.clone(),
+            block_time: value.block_time,
+            private_key: value.private_key.clone(),
+        }
     }
 }
