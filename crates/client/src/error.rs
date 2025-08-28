@@ -16,8 +16,8 @@ pub enum MojaveClientError {
     TimeOut,
     #[error("Retry failed after {0} attempts")]
     RetryFailed(u64),
-    #[error("Invalid max attempts: {0}")]
-    InvalidMaxAttempts(u64),
+    #[error("Invalid max retries: {0}")]
+    InvalidMaxRetries(u64),
     #[error("Missing full node URLs")]
     MissingFullNodeUrls,
     #[error("Missing prover URL")]

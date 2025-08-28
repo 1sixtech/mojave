@@ -17,6 +17,10 @@ use serde::de::DeserializeOwned;
 use serde_json::json;
 use std::{pin::Pin, str::FromStr, sync::Arc, time::Duration};
 
+const INITIAL_RETRY_DELAY: Duration = Duration::from_millis(100);
+const BACKOFF_FACTOR: u32 = 2;
+const MAX_DELAY: Duration = Duration::from_secs(30);
+
 #[derive(Default)]
 pub struct MojaveClientBuilder {
     sequencer_url: Option<Vec<String>>,
@@ -144,7 +148,7 @@ impl MojaveClient {
         Request {
             client: self,
             urls: None,
-            max_retry: 0,
+            max_retry: 1,
             strategy: Strategy::Sequential,
         }
     }
@@ -224,7 +228,14 @@ impl MojaveClient {
             .send()
             .await?
             .json::<RpcResponse>()
-            .await?;
+            .await
+            .map_err(|error| {
+                if error.is_timeout() {
+                    MojaveClientError::TimeOut
+                } else {
+                    MojaveClientError::Custom(error.to_string())
+                }
+            })?;
 
         match response {
             RpcResponse::Success(ok_response) => {
@@ -233,6 +244,21 @@ impl MojaveClient {
             RpcResponse::Error(error_response) => {
                 Err(MojaveClientError::RpcError(error_response.error.message))
             }
+        }
+    }
+
+    fn is_retryable(error: &MojaveClientError) -> bool {
+        match error {
+            MojaveClientError::RpcError(e) => {
+                let error_msg = e.to_string();
+                match error_msg.as_str() {
+                    msg if msg.starts_with("Internal Error") => true,
+                    msg if msg.starts_with("Unknown payload") => true,
+                    _ => false,
+                }
+            }
+            MojaveClientError::TimeOut => true,
+            _ => false,
         }
     }
 
@@ -245,17 +271,38 @@ impl MojaveClient {
     where
         T: DeserializeOwned,
     {
-        let mut error_response = MojaveClientError::Custom("All retry failed".to_owned());
+        if max_retry < 1 {
+            return Err(MojaveClientError::InvalidMaxRetries(max_retry as u64));
+        }
 
-        for _ in 0..max_retry {
-            // TODO: Sleep in between request, but this can be implemented with caution
-            // because it can be a huge bottleneck especially when it comes to sequential requests.
-            match self.send_request_to_url::<T>(request, url).await {
+        let mut retry = 0;
+        let mut delay = INITIAL_RETRY_DELAY;
+        let mut last_error = None;
+        while retry < max_retry {
+            retry += 1;
+            match self.send_request_to_url(request, url).await {
                 Ok(response) => return Ok(response),
-                Err(error) => error_response = error,
+                Err(e) => {
+                    tracing::error!("Request failed (attempt {}): {}", retry, e);
+                    last_error = Some(e);
+                    if Self::is_retryable(last_error.as_ref().unwrap()) {
+                        tracing::info!("Retrying request (attempt {})", retry);
+                    } else {
+                        return Err(last_error.unwrap());
+                    }
+                }
+            }
+
+            // avoid sleeping on the last attempt
+            if retry < max_retry {
+                tokio::time::sleep(delay).await;
+                delay = delay.saturating_mul(BACKOFF_FACTOR);
+                if delay > MAX_DELAY {
+                    delay = MAX_DELAY;
+                }
             }
         }
-        Err(error_response)
+        Err(last_error.unwrap_or(MojaveClientError::RetryFailed(max_retry as u64)))
     }
 }
 
