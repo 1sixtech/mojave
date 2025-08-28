@@ -11,7 +11,7 @@ mod tests {
         EthClient,
         types::block_identifier::{BlockIdentifier, BlockTag},
     };
-    use mojave_client::MojaveClient;
+    use mojave_client::{MojaveClient, types::Strategy};
     use mojave_tests::{start_test_api_node, start_test_api_sequencer};
     use reqwest::Url;
     use secp256k1::SecretKey;
@@ -112,20 +112,24 @@ mod tests {
         // Wait for server to start
         sleep(Duration::from_millis(100)).await;
 
+        println!("[DEBUG] server_url: {:?}", server_url);
+
         // create mojave client and test block broadcast
         let private_key = std::env::var("PRIVATE_KEY").unwrap();
         let client = MojaveClient::builder()
-            .private_key(&private_key)
-            .unwrap()
+            .private_key(private_key)
             .build()
             .unwrap();
         let result = client
-            .request_builder()
-            .full_node_urls(&[Url::parse(&server_url).unwrap()])
+            .request()
+            .urls(&[Url::parse(&server_url).unwrap()])
+            .strategy(Strategy::Race)
             .send_broadcast_block(&test_block)
             .await;
 
         server_handle.abort();
+
+        println!("[DEBUG] result: {:?}", result);
 
         // assert the response
         assert!(result.is_ok(), "Communication should complete");
@@ -183,6 +187,7 @@ mod tests {
         server_handle.abort();
 
         // assert the response
+        println!("[DEBUG] result: {:?}", result);
         assert!(result.is_ok(), "Communication should complete");
     }
 
@@ -201,13 +206,12 @@ mod tests {
         // create mojave client and test block broadcast
         let private_key = std::env::var("PRIVATE_KEY").unwrap();
         let client = MojaveClient::builder()
-            .private_key(&private_key)
-            .unwrap()
+            .private_key(private_key)
             .build()
             .unwrap();
         let result = client
-            .request_builder()
-            .full_node_urls(&[Url::parse(&server_url).unwrap()])
+            .request()
+            .urls(&[Url::parse(&server_url).unwrap()])
             .send_broadcast_block(&test_block)
             .await;
 
@@ -350,8 +354,9 @@ mod tests {
         };
 
         sequencer_client
-            .request_builder()
-            .full_node_urls(&[Url::parse(&format!("http://{full_node_http_addr}")).unwrap()])
+            .request()
+            .urls(&[Url::parse(&format!("http://{full_node_http_addr}")).unwrap()])
+            .strategy(Strategy::Race)
             .send_broadcast_block(&block)
             .await
             .unwrap();

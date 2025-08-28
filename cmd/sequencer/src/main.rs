@@ -4,7 +4,6 @@ use crate::cli::Command;
 use mojave_block_producer::{BlockProducer, BlockProducerContext};
 use mojave_client::MojaveClient;
 use mojave_node_lib::types::MojaveNode;
-use reqwest::Url;
 use std::{error::Error, time::Duration};
 
 #[tokio::main]
@@ -35,21 +34,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 node.genesis.coinbase,
             );
             let block_producer = BlockProducer::start(context, 100);
-            let full_node_urls: Vec<Url> = sequencer_options
-                .full_node_addresses
-                .iter()
-                .map(|address| {
-                    Url::parse(address)
-                        .unwrap_or_else(|error| panic!("Failed to parse URL: {error}"))
-                })
-                .collect();
 
             let mojave_client = MojaveClient::builder()
-                .private_key(&sequencer_options.private_key)
-                .unwrap_or_else(|error| {
-                    tracing::error!("Failed to parse private key: {}", error);
-                    std::process::exit(1);
-                })
+                .private_key(sequencer_options.private_key)
+                .full_node_url(&sequencer_options.full_node_addresses)
+                .prover_url(&[sequencer_options.prover_address])
                 .build()
                 .unwrap_or_else(|error| {
                     tracing::error!("Failed to build the client: {}", error);
@@ -60,8 +49,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 loop {
                     match block_producer.build_block().await {
                         Ok(block) => mojave_client
-                            .request_builder()
-                            .full_node_urls(&full_node_urls)
+                            .request()
                             .send_broadcast_block(&block)
                             .await
                             .unwrap_or_else(|error| tracing::error!("{}", error)),

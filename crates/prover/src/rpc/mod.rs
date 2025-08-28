@@ -61,8 +61,7 @@ pub async fn start_api(
     info!("Starting HTTP server at {http_addr}");
 
     let client = MojaveClient::builder()
-        .private_key(private_key)
-        .map_err(|err| RpcErr::Internal(err.to_string()))?
+        .private_key(private_key.to_string())
         .build()
         .map_err(|err| RpcErr::Internal(err.to_string()))?;
     tracing::info!("MojaveClient initialized");
@@ -130,8 +129,8 @@ fn spawn_proof_worker(
                         .upsert_proof(&job_id, proof_response.clone())
                         .await;
                     match client
-                        .request_builder()
-                        .sequencer_url(&job.sequencer_url)
+                        .request()
+                        .urls(std::slice::from_ref(&job.sequencer_url))
                         .send_proof_response(&proof_response)
                         .await
                     {

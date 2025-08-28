@@ -15,14 +15,14 @@ use mojave_signature::{Signature, Signer, SigningKey};
 use reqwest::{ClientBuilder, Url};
 use serde::de::DeserializeOwned;
 use serde_json::json;
-use std::{pin::Pin, sync::Arc, time::Duration};
+use std::{pin::Pin, str::FromStr, sync::Arc, time::Duration};
 
 #[derive(Default)]
 pub struct MojaveClientBuilder {
     sequencer_url: Option<Vec<String>>,
     full_node_url: Option<Vec<String>>,
     prover_url: Option<Vec<String>>,
-    private_key: Option<SigningKey>,
+    private_key: Option<String>,
     timeout: Option<Duration>,
 }
 
@@ -42,7 +42,7 @@ impl MojaveClientBuilder {
         self
     }
 
-    pub fn private_key(mut self, private_key: SigningKey) -> Self {
+    pub fn private_key(mut self, private_key: String) -> Self {
         self.private_key = Some(private_key);
         self
     }
@@ -59,30 +59,18 @@ impl MojaveClientBuilder {
     }
 
     pub fn build(mut self) -> Result<MojaveClient, MojaveClientError> {
-        let sequencer_url = self
-            .sequencer_url
-            .take()
-            .ok_or(MojaveClientError::MissingSequencerUrl)?;
+        let sequencer_url = self.sequencer_url.take();
 
-        let full_node_url = self
-            .full_node_url
-            .take()
-            .ok_or(MojaveClientError::MissingFullNodeUrls)?;
+        let full_node_url = self.full_node_url.take();
 
-        let prover_url = self
-            .prover_url
-            .take()
-            .ok_or(MojaveClientError::MissingProverUrl)?;
+        let prover_url = self.prover_url.take();
 
-        let private_key = self
-            .private_key
-            .take()
-            .ok_or(MojaveClientError::MissingPrivateKey)?;
+        let private_key = self.private_key.take();
 
         MojaveClient::new(
-            &sequencer_url,
-            &full_node_url,
-            &prover_url,
+            sequencer_url,
+            full_node_url,
+            prover_url,
             private_key,
             self.timeout.unwrap_or(Duration::from_secs(0)),
         )
@@ -96,10 +84,10 @@ pub struct MojaveClient {
 
 struct MojaveClientInner {
     client: reqwest::Client,
-    sequencer_url: Vec<Url>,
-    full_node_url: Vec<Url>,
-    prover_url: Vec<Url>,
-    private_key: SigningKey,
+    sequencer_url: Option<Vec<Url>>,
+    full_node_url: Option<Vec<Url>>,
+    prover_url: Option<Vec<Url>>,
+    signing_key: Option<SigningKey>,
 }
 
 impl MojaveClient {
@@ -107,33 +95,46 @@ impl MojaveClient {
         MojaveClientBuilder::default()
     }
 
+    fn parse_urls(urls: Option<Vec<String>>) -> Result<Option<Vec<Url>>, MojaveClientError> {
+        match urls {
+            Some(urls) => {
+                let urls = urls
+                    .iter()
+                    .map(|url| Url::parse(url))
+                    .collect::<Result<Vec<Url>, _>>()
+                    .map_err(|error| MojaveClientError::Custom(error.to_string()))?;
+                Ok(Some(urls))
+            }
+            None => Ok(None),
+        }
+    }
+
     pub fn new(
-        sequencer_url: &[String],
-        full_node_url: &[String],
-        prover_url: &[String],
-        private_key: SigningKey,
+        sequencer_url: Option<Vec<String>>,
+        full_node_url: Option<Vec<String>>,
+        prover_url: Option<Vec<String>>,
+        private_key: Option<String>,
         timeout: Duration,
     ) -> Result<Self, MojaveClientError> {
-        // There will be default urls in the future, but for now, we require them.
+        let http_client = if timeout.is_zero() {
+            ClientBuilder::default().build()?
+        } else {
+            ClientBuilder::default().timeout(timeout).build()?
+        };
+
         let client = MojaveClient {
             inner: Arc::new(MojaveClientInner {
-                client: ClientBuilder::default().timeout(timeout).build()?,
-                sequencer_url: sequencer_url
-                    .iter()
-                    .map(|url| Url::parse(url))
-                    .collect::<Result<Vec<Url>, _>>()
-                    .map_err(|error| MojaveClientError::Custom(error.to_string()))?,
-                full_node_url: full_node_url
-                    .iter()
-                    .map(|url| Url::parse(url))
-                    .collect::<Result<Vec<Url>, _>>()
-                    .map_err(|error| MojaveClientError::Custom(error.to_string()))?,
-                prover_url: prover_url
-                    .iter()
-                    .map(|url| Url::parse(url))
-                    .collect::<Result<Vec<Url>, _>>()
-                    .map_err(|error| MojaveClientError::Custom(error.to_string()))?,
-                private_key,
+                client: http_client,
+                sequencer_url: Self::parse_urls(sequencer_url)?,
+                full_node_url: Self::parse_urls(full_node_url)?,
+                prover_url: Self::parse_urls(prover_url)?,
+                signing_key: match private_key {
+                    Some(private_key) => Some(
+                        SigningKey::from_str(&private_key)
+                            .map_err(|error| MojaveClientError::Custom(error.to_string()))?,
+                    ),
+                    None => None,
+                },
             }),
         };
         Ok(client)
@@ -141,7 +142,7 @@ impl MojaveClient {
 
     pub fn request(&self) -> Request<'_> {
         Request {
-            client: &self,
+            client: self,
             urls: None,
             max_retry: 0,
             strategy: Strategy::Sequential,
@@ -197,7 +198,7 @@ impl MojaveClient {
     {
         let requests: Vec<Pin<Box<Fuse<_>>>> = urls
             .iter()
-            .map(|url| Box::pin(self.send_request_to_url(&request, url).fuse()))
+            .map(|url| Box::pin(self.send_request_to_url(request, url).fuse()))
             .collect();
 
         let (response, _) = select_ok(requests)
@@ -283,7 +284,12 @@ impl<'a> Request<'a> {
 
     pub async fn send_broadcast_block(&self, block: &Block) -> Result<(), MojaveClientError> {
         let hash = block.hash();
-        let signing_key = &self.client.inner.private_key;
+        let signing_key = self
+            .client
+            .inner
+            .signing_key
+            .as_ref()
+            .ok_or(MojaveClientError::MissingPrivateKey)?;
         let signature: Signature = signing_key.sign(&hash)?;
         let verifying_key = signing_key.verifying_key();
 
@@ -302,8 +308,15 @@ impl<'a> Request<'a> {
 
         let urls = match self.urls {
             Some(urls) => urls,
-            None => &self.client.inner.full_node_url,
+            None => self
+                .client
+                .inner
+                .full_node_url
+                .as_ref()
+                .ok_or(MojaveClientError::MissingFullNodeUrls)?,
         };
+
+        println!("[DEBUG] urls: {:?}", urls);
 
         self.client
             .send_request(&request, urls, self.max_retry, self.strategy)
@@ -324,7 +337,12 @@ impl<'a> Request<'a> {
 
         let urls = match self.urls {
             Some(urls) => urls,
-            None => &self.client.inner.prover_url,
+            None => self
+                .client
+                .inner
+                .prover_url
+                .as_ref()
+                .ok_or(MojaveClientError::MissingProverUrl)?,
         };
 
         self.client
@@ -342,7 +360,12 @@ impl<'a> Request<'a> {
 
         let urls = match self.urls {
             Some(urls) => urls,
-            None => &self.client.inner.prover_url,
+            None => self
+                .client
+                .inner
+                .prover_url
+                .as_ref()
+                .ok_or(MojaveClientError::MissingProverUrl)?,
         };
 
         self.client
@@ -360,7 +383,12 @@ impl<'a> Request<'a> {
 
         let urls = match self.urls {
             Some(urls) => urls,
-            None => &self.client.inner.prover_url,
+            None => self
+                .client
+                .inner
+                .prover_url
+                .as_ref()
+                .ok_or(MojaveClientError::MissingProverUrl)?,
         };
 
         self.client
@@ -372,7 +400,12 @@ impl<'a> Request<'a> {
         &self,
         proof_response: &ProofResponse,
     ) -> Result<(), MojaveClientError> {
-        let signing_key = &self.client.inner.private_key;
+        let signing_key = self
+            .client
+            .inner
+            .signing_key
+            .as_ref()
+            .ok_or(MojaveClientError::MissingPrivateKey)?;
         let signature: Signature = signing_key.sign(proof_response)?;
         let verifying_key = signing_key.verifying_key();
 
@@ -391,7 +424,12 @@ impl<'a> Request<'a> {
 
         let urls = match self.urls {
             Some(urls) => urls,
-            None => &self.client.inner.sequencer_url,
+            None => self
+                .client
+                .inner
+                .sequencer_url
+                .as_ref()
+                .ok_or(MojaveClientError::MissingSequencerUrl)?,
         };
 
         self.client
