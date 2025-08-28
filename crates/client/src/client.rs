@@ -12,7 +12,7 @@ use futures::{
     future::{Fuse, select_ok},
 };
 use mojave_signature::{Signature, Signer, SigningKey};
-use reqwest::{ClientBuilder, Url};
+use reqwest::Url;
 use serde::de::DeserializeOwned;
 use serde_json::json;
 use std::{pin::Pin, str::FromStr, sync::Arc, time::Duration};
