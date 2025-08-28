@@ -7,7 +7,7 @@ use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
 use mojave_client::{
     MojaveClient,
-    types::{ProofResponse, ProofResult, ProverData},
+    types::{ProofResponse, ProofResult, ProverData, Strategy},
 };
 use tokio::sync::mpsc::Receiver;
 use zkvm_interface::io::ProgramInput;
@@ -56,6 +56,7 @@ impl ProofCoordinator {
         let _job_id = self
             .client
             .request()
+            .strategy(Strategy::Sequential)
             .send_proof_input(&input, &self.sequencer_address)
             .await
             .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?;

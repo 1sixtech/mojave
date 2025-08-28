@@ -2,7 +2,7 @@ pub mod cli;
 
 use crate::cli::Command;
 use mojave_block_producer::{BlockProducer, BlockProducerContext};
-use mojave_client::MojaveClient;
+use mojave_client::{MojaveClient, types::Strategy};
 use mojave_node_lib::types::MojaveNode;
 use std::{error::Error, time::Duration};
 
@@ -50,6 +50,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     match block_producer.build_block().await {
                         Ok(block) => mojave_client
                             .request()
+                            .strategy(Strategy::Race)
                             .send_broadcast_block(&block)
                             .await
                             .unwrap_or_else(|error| tracing::error!("{}", error)),

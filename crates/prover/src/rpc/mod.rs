@@ -19,7 +19,7 @@ use ethrex_rpc::{
 
 use mojave_client::{
     MojaveClient,
-    types::{ProofResponse, ProofResult},
+    types::{ProofResponse, ProofResult, Strategy},
 };
 use mojave_utils::rpc::rpc_response;
 
@@ -131,6 +131,7 @@ fn spawn_proof_worker(
                     match client
                         .request()
                         .urls(std::slice::from_ref(&job.sequencer_url))
+                        .strategy(Strategy::Sequential)
                         .send_proof_response(&proof_response)
                         .await
                     {
