@@ -30,28 +30,28 @@ impl SendBroadcastBlockRequest {
     }
 
     pub async fn call(request: &RpcRequest, context: RpcApiContext) -> Result<Value, RpcErr> {
-        let data = Self::get_block_data(&request.params)?;
+        // let data = Self::get_block_data(&request.params)?;
 
-        // Check if the signature and sender are valid. If verification fails, return an error
-        // immediately without processing the block.
-        data.signed_block
-            .verifying_key
-            .verify(
-                &data.signed_block.block.header.hash(),
-                &data.signed_block.signature,
-            )
-            .map_err(|error| RpcErr::Internal(error.to_string()))?;
+        // // Check if the signature and sender are valid. If verification fails, return an error
+        // // immediately without processing the block.
+        // data.signed_block
+        //     .verifying_key
+        //     .verify(
+        //         &data.signed_block.block.header.hash(),
+        //         &data.signed_block.signature,
+        //     )
+        //     .map_err(|error| RpcErr::Internal(error.to_string()))?;
 
-        let signed_block = data.signed_block.block;
-        let signed_block_number = signed_block.header.number;
+        // let signed_block = data.signed_block.block;
+        // let signed_block_number = signed_block.header.number;
 
-        // Push the signed block to the pending queue for processing
-        context
-            .pending_signed_blocks
-            .push_signed(OrderedBlock(signed_block))
-            .await;
+        // // Push the signed block to the pending queue for processing
+        // context
+        //     .pending_signed_blocks
+        //     .push_signed(OrderedBlock(signed_block))
+        //     .await;
 
-        tracing::info!("Received the block number: {}", signed_block_number);
+        // tracing::info!("Received the block number: {}", signed_block_number);
         Ok(Value::Null)
     }
 }

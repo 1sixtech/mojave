@@ -4,6 +4,7 @@ set -Eeuo pipefail
 NODE_HOST="127.0.0.1"
 SEQ_HOST="127.0.0.1"
 NODE_PORT="8545"
+NODE_P2P_PORT="30304"
 SEQ_PORT="1739"
 
 NODE_HTTP="http://${NODE_HOST}:${NODE_PORT}"
@@ -34,6 +35,7 @@ NODE_PID=""
 SEQUENCER_PID=""
 LOG_NODE_PID=""
 LOG_SEQ_PID=""
+SEQ_ENODE=""
 
 cleanup() {
     echo -e "\n${RED}[CLEANUP]${NC} Shutting down services..."
@@ -174,10 +176,46 @@ wait_service() {
     return 1
 }
 
+extract_sequencer_enode() {
+    # Monitor sequencer log for enode URL and extract it
+    local timeout=60
+    local elapsed=0
+
+    echo -e "${YELLOW}[SEQUENCER]${NC} Waiting for enode URL..."
+
+    while ((elapsed < timeout)); do
+        if [[ -f "$SEQ_LOG" ]]; then
+            # Look for the enode URL in the log file
+            local enode_line
+            enode_line=$(grep -o 'enode://[a-fA-F0-9]*@[0-9.]*:[0-9]*' "$SEQ_LOG" 2>/dev/null | head -n1 || true)
+
+            if [[ -n "$enode_line" ]]; then
+                SEQ_ENODE="$enode_line"
+                echo -e "${BLUE}[SEQUENCER]${NC} Captured enode: ${SEQ_ENODE}"
+                return 0
+            fi
+        fi
+
+        sleep "$CHECK_INTERVAL"
+        elapsed=$((elapsed + CHECK_INTERVAL))
+    done
+
+    echo -e "${YELLOW}[WARN]${NC} Could not extract sequencer enode URL within timeout, node will start without bootnodes"
+    return 1
+}
+
 start_loggers() {
     (while read -r line; do echo -e "${GREEN}[NODE]${NC} $line"; done <"$NODE_PIPE") | tee -a "$NODE_LOG" &
     LOG_NODE_PID=$!
-    (while read -r line; do echo -e "${BLUE}[SEQUENCER]${NC} $line"; done <"$SEQUENCER_PIPE") | tee -a "$SEQ_LOG" &
+
+    (while read -r line; do
+        echo -e "${BLUE}[SEQUENCER]${NC} $line"
+        # Check if this line contains an enode and we haven't captured one yet
+        if [[ -z "$SEQ_ENODE" && "$line" =~ enode://[a-fA-F0-9]*@[0-9.]*:[0-9]* ]]; then
+            SEQ_ENODE=$(echo "$line" | grep -o 'enode://[a-fA-F0-9]*@[0-9.]*:[0-9]*' | head -n1)
+            echo -e "${BLUE}[SEQUENCER]${NC} ✅ Captured enode: ${SEQ_ENODE}"
+        fi
+    done <"$SEQUENCER_PIPE") | tee -a "$SEQ_LOG" &
     LOG_SEQ_PID=$!
 }
 
@@ -200,45 +238,25 @@ if [[ ! -f "$GENESIS" ]]; then
     exit 1
 fi
 
-if port_in_use "$NODE_HOST" "$NODE_PORT"; then
-    echo -e "${RED}[ERROR]${NC} Port in use: ${NODE_HOST}:${NODE_PORT}. Stop the process using it and retry."
-    exit 1
-fi
 if port_in_use "$SEQ_HOST" "$SEQ_PORT"; then
     echo -e "${RED}[ERROR]${NC} Port in use: ${SEQ_HOST}:${SEQ_PORT}. Stop the process using it and retry."
+    exit 1
+fi
+if port_in_use "$NODE_HOST" "$NODE_PORT"; then
+    echo -e "${RED}[ERROR]${NC} Port in use: ${NODE_HOST}:${NODE_PORT}. Stop the process using it and retry."
     exit 1
 fi
 
 start_loggers
 build_binaries
 
-echo -e "${GREEN}[NODE]${NC} Starting full node…"
-(
-    set -a
-    set +a
-    exec cargo run --release --bin mojave-node -- init \
-        --network "$GENESIS" \
-        --datadir "$NODE_DATA_DIR" \
-        --discovery.port "$NODE_P2P_PORT" --p2p.port "$NODE_P2P_PORT"
-) >"$NODE_PIPE" 2>&1 &
-NODE_PID=$!
-
-echo -e "${GREEN}[NODE]${NC} Waiting for full node to be ready on ${NODE_HTTP}…"
-if ! wait_service "$NODE_PID" "$NODE_HOST" "$NODE_PORT" "$NODE_HTTP" "/" "$NODE_READY_TIMEOUT" "Full node" "web3_clientVersion"; then
-    echo -e "${YELLOW}[NODE LOG TAIL]${NC}"
-    tail -n 120 "$NODE_LOG" || true
-    exit 1
-fi
-echo -e "${GREEN}[NODE]${NC} Full node is ready at ${NODE_HTTP}"
-
 echo -e "${BLUE}[SEQUENCER]${NC} Starting sequencer…"
 (
     set -a
     set +a
-    exec cargo run --release --bin mojave-sequencer -- init \
+    exec cargo run --bin mojave-sequencer -- init \
         --network "$GENESIS" \
         --http.port "$SEQ_PORT" \
-        --full_node.addresses "${NODE_HTTP}" \
         --datadir "$SEQ_DATA_DIR" \
         --private_key "$SEQ_PRIVKEY"
 ) >"$SEQUENCER_PIPE" 2>&1 &
@@ -252,9 +270,53 @@ if ! wait_service "$SEQUENCER_PID" "$SEQ_HOST" "$SEQ_PORT" "$SEQ_HTTP" "/health"
 fi
 echo -e "${BLUE}[SEQUENCER]${NC} Sequencer is ready at ${SEQ_HTTP}"
 
+# Wait a bit more for the enode to appear in logs if we haven't captured it yet
+if [[ -z "$SEQ_ENODE" ]]; then
+    echo -e "${YELLOW}[SEQUENCER]${NC} Waiting for enode URL to appear in logs..."
+    extract_sequencer_enode
+fi
+
+echo -e "${GREEN}[NODE]${NC} Starting full node…"
+
+# Build node command with optional bootnodes
+node_cmd=(
+    cargo run --bin mojave-node -- init
+    --network "$GENESIS"
+    --datadir "$NODE_DATA_DIR"
+    --discovery.port "$NODE_P2P_PORT"
+    --p2p.port "$NODE_P2P_PORT"
+    --bootnodes "$SEQ_ENODE"
+    # --full_node.addresses "${SEQ_HTTP}"
+)
+
+if [[ -n "$SEQ_ENODE" ]]; then
+    node_cmd+=(--bootnodes "$SEQ_ENODE")
+    echo -e "${GREEN}[NODE]${NC} Using bootnode: ${SEQ_ENODE}"
+else
+    echo -e "${YELLOW}[NODE]${NC} Starting without bootnodes"
+fi
+
+(
+    set -a
+    set +a
+    exec "${node_cmd[@]}"
+) >"$NODE_PIPE" 2>&1 &
+NODE_PID=$!
+
+echo -e "${GREEN}[NODE]${NC} Waiting for full node to be ready on ${NODE_HTTP}…"
+if ! wait_service "$NODE_PID" "$NODE_HOST" "$NODE_PORT" "$NODE_HTTP" "/" "$NODE_READY_TIMEOUT" "Full node" "web3_clientVersion"; then
+    echo -e "${YELLOW}[NODE LOG TAIL]${NC}"
+    tail -n 120 "$NODE_LOG" || true
+    exit 1
+fi
+echo -e "${GREEN}[NODE]${NC} Full node is ready at ${NODE_HTTP}"
+
 echo -e "\n${GREEN}✅ Both services are running!${NC}"
-echo -e "   Full node: ${NODE_HTTP}"
 echo -e "   Sequencer: ${SEQ_HTTP}"
+echo -e "   Full node: ${NODE_HTTP}"
+if [[ -n "$SEQ_ENODE" ]]; then
+    echo -e "   Sequencer enode: ${SEQ_ENODE}"
+fi
 echo -e "   Press ${RED}Ctrl+C${NC} to stop both services…"
 
 # Propagate failure if any process exits
@@ -262,8 +324,8 @@ if ! wait -n "$NODE_PID" "$SEQUENCER_PID"; then
     true
 fi
 echo -e "${RED}[ERROR]${NC} One of the services exited. Showing recent logs…"
-echo -e "${YELLOW}[NODE LOG TAIL]${NC}"
-tail -n 120 "$NODE_LOG" || true
 echo -e "${YELLOW}[SEQUENCER LOG TAIL]${NC}"
 tail -n 120 "$SEQ_LOG" || true
+echo -e "${YELLOW}[NODE LOG TAIL]${NC}"
+tail -n 120 "$NODE_LOG" || true
 exit 1

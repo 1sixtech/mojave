@@ -22,6 +22,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     tracing::error!("Failed to initialize the node: {}", error);
                     std::process::exit(1);
                 });
+            tracing::info!(bootnodes=?node_options.bootnodes, "Starting node");
             tokio::select! {
                 res = node.run(&node_options) => {
                     if let Err(err) = res {

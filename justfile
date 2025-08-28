@@ -20,7 +20,8 @@ node:
     export $(cat .env | xargs) && \
     cargo run --release --bin mojave-node init \
         --datadir {{current-dir}}/mojave-node \
-        --network {{current-dir}}/data/testnet-genesis.json
+        --network {{current-dir}}/data/testnet-genesis.json \
+        --discovery.port 30304 --p2p.port 30304
 
 sequencer:
     export $(cat .env | xargs) && \

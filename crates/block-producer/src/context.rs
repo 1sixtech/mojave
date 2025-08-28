@@ -74,7 +74,7 @@ impl BlockProducerContext {
         // The proposer leverages the execution payload framework used for the engine API,
         // but avoids calling the API methods and unnecesary re-execution.
 
-        info!("Producing block");
+        // info!("Producing block");
         debug!("Head block hash: {head_hash:#x}");
 
         // Proposer creates a new payload
@@ -94,10 +94,6 @@ impl BlockProducerContext {
 
         // Blockchain builds the payload from mempool txs and executes them
         let payload_build_result = self.build_payload(payload).await?;
-        info!(
-            "Built payload for new block {}",
-            payload_build_result.payload.header.number
-        );
 
         // Blockchain stores block
         let block = payload_build_result.payload;
@@ -120,7 +116,6 @@ impl BlockProducerContext {
         self.blockchain
             .store_block(&block, account_updates_list, execution_result)
             .await?;
-        info!("Stored new block {:x}", block.hash());
         // WARN: We're not storing the payload into the Store because there's no use to it by the L2 for now.
 
         self.rollup_store
@@ -234,7 +229,7 @@ impl BlockProducerContext {
         self.blockchain.finalize_payload(&mut context).await?;
 
         let interval = Instant::now().duration_since(since).as_millis();
-        info!("[METRIC] BUILDING PAYLOAD TOOK: {interval} ms");
+        // info!("[METRIC] BUILDING PAYLOAD TOOK: {interval} ms");
         #[allow(clippy::as_conversions)]
         if let Some(gas_used) = gas_limit.checked_sub(context.remaining_gas) {
             let as_gigas = (gas_used as f64).div(10_f64.powf(9_f64));
@@ -276,7 +271,7 @@ impl BlockProducerContext {
         context: &mut PayloadBuildContext,
     ) -> Result<(), BlockProducerError> {
         // version (u8) + header fields (struct) + messages_len (u16) + deposits_len (u16) + accounts_diffs_len (u16)
-        let mut acc_size_without_accounts = 1 + *BLOCK_HEADER_LEN + 2 + 2 + 2;
+        let mut acc_size_without_accounts = 1 + BLOCK_HEADER_LEN + 2 + 2 + 2;
         let mut size_accounts_diffs = 0;
         let mut account_diffs = HashMap::new();
 
@@ -296,7 +291,7 @@ impl BlockProducerContext {
 
             // Check if we have enough space for the StateDiff to run more transactions
             if acc_size_without_accounts + size_accounts_diffs + SIMPLE_TX_STATE_DIFF_SIZE
-                > SAFE_BYTES_PER_BLOB
+                > SAFE_BYTES_PER_BLOB as u64
             {
                 debug!("No more StateDiff space to run transactions");
                 break;
@@ -309,17 +304,14 @@ impl BlockProducerContext {
 
             // Check if we have enough gas to run the transaction
             if context.remaining_gas < head_tx.tx.gas_limit() {
-                debug!(
-                    "Skipping transaction: {}, no gas left",
-                    head_tx.tx.compute_hash()
-                );
+                debug!("Skipping transaction: {}, no gas left", head_tx.tx.hash());
                 // We don't have enough gas left for the transaction, so we skip all txs from this account
                 txs.pop();
                 continue;
             }
 
             // TODO: maybe fetch hash too when filtering mempool so we don't have to compute it here (we can do this in the same refactor as adding timestamp)
-            let tx_hash = head_tx.tx.compute_hash();
+            let tx_hash = head_tx.tx.hash();
 
             // Check whether the tx is replay-protected
             if head_tx.tx.protected() && !chain_config.is_eip155_activated(context.block_number()) {
@@ -366,12 +358,14 @@ impl BlockProducerContext {
                 &merged_diffs,
                 &head_tx,
                 &receipt,
-                *PRIVILEGED_TX_LOG_LEN,
-                *L1MESSAGE_LOG_LEN,
+                PRIVILEGED_TX_LOG_LEN,
+                L1MESSAGE_LOG_LEN,
             )?;
 
-            if acc_size_without_accounts + tx_size_without_accounts + new_accounts_diff_size
-                > SAFE_BYTES_PER_BLOB
+            if acc_size_without_accounts
+                + tx_size_without_accounts as u64
+                + new_accounts_diff_size as u64
+                > SAFE_BYTES_PER_BLOB as u64
             {
                 debug!(
                     "No more StateDiff space to run this transactions. Skipping transaction: {:?}",
@@ -388,11 +382,11 @@ impl BlockProducerContext {
             txs.shift()?;
             // Pull transaction from the mempool
             self.blockchain
-                .remove_transaction_from_pool(&head_tx.tx.compute_hash())?;
+                .remove_transaction_from_pool(&head_tx.tx.hash())?;
 
             // We only add the messages and deposits length because the accounts diffs may change
-            acc_size_without_accounts += tx_size_without_accounts;
-            size_accounts_diffs = new_accounts_diff_size;
+            acc_size_without_accounts += tx_size_without_accounts as u64;
+            size_accounts_diffs = new_accounts_diff_size as u64;
             // Include the new accounts diffs
             account_diffs = merged_diffs;
             // Add transaction to block
@@ -421,7 +415,7 @@ impl BlockProducerContext {
     ) -> Result<TransactionQueue, BlockProducerError> {
         let (plain_txs, mut blob_txs) = self.blockchain.fetch_mempool_transactions(context)?;
         while let Some(blob_tx) = blob_txs.peek() {
-            let tx_hash = blob_tx.compute_hash();
+            let tx_hash = blob_tx.hash();
             self.blockchain.remove_transaction_from_pool(&tx_hash)?;
             blob_txs.pop();
         }
@@ -557,8 +551,8 @@ impl BlockProducerContext {
         merged_diffs: &HashMap<Address, AccountStateDiff>,
         head_tx: &HeadTransaction,
         receipt: &Receipt,
-        deposits_log_len: usize,
-        messages_log_len: usize,
+        deposits_log_len: u64,
+        messages_log_len: u64,
     ) -> Result<(usize, usize), BlockProducerError> {
         let mut tx_state_diff_size = 0;
         let mut new_accounts_diff_size = 0;
@@ -581,10 +575,10 @@ impl BlockProducerContext {
         if self.is_deposit_l2(head_tx) {
             tx_state_diff_size += deposits_log_len;
         }
-        tx_state_diff_size +=
-            get_block_l1_messages(std::slice::from_ref(receipt)).len() * messages_log_len;
+        tx_state_diff_size = tx_state_diff_size
+            + get_block_l1_messages(std::slice::from_ref(receipt)).len() as u64 * messages_log_len;
 
-        Ok((tx_state_diff_size, new_accounts_diff_size))
+        Ok((tx_state_diff_size as usize, new_accounts_diff_size))
     }
 
     fn is_deposit_l2(&self, tx: &Transaction) -> bool {

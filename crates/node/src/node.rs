@@ -1,7 +1,7 @@
 use crate::{
     error::Error,
     initializers::{get_local_node_record, get_signer, init_blockchain, init_store},
-    rpc::start_api,
+    rpc::{start_api, start_network},
     types::{MojaveNode, NodeOptions},
     utils::{
         NodeConfigFile, get_authrpc_socket_addr, get_http_socket_addr, get_local_p2p_node,
@@ -16,7 +16,7 @@ use ethrex_vm::EvmEngine;
 use mojave_utils::unique_heap::AsyncUniqueHeap;
 use std::{path::PathBuf, sync::Arc, time::Duration};
 use tokio::sync::Mutex;
-use tokio_util::sync::CancellationToken;
+use tokio_util::{sync::CancellationToken, task::TaskTracker};
 
 impl MojaveNode {
     pub async fn init(options: &NodeOptions) -> Result<Self, Box<dyn std::error::Error>> {
@@ -59,6 +59,27 @@ impl MojaveNode {
         let peer_table = peer_table(local_p2p_node.node_id());
         let peer_handler = PeerHandler::new(peer_table.clone());
 
+        let signer = get_signer(&options.datadir)?;
+
+        let tracker = TaskTracker::new();
+
+        start_network(
+            options.bootnodes.clone(),
+            &options.network,
+            &options.datadir,
+            local_p2p_node.clone(),
+            local_node_record.clone(),
+            signer,
+            peer_table.clone(),
+            store.clone(),
+            tracker,
+            blockchain.clone(),
+            None,
+        )
+        .await;
+
+        // let peer_table = peer_table.lock().await;
+
         // Create SyncManager
         let syncer = SyncManager::new(
             peer_handler.clone(),
@@ -88,6 +109,7 @@ impl MojaveNode {
         let rpc_shutdown = CancellationToken::new();
         let eth_client = EthClient::new("http://127.0.0.1")?;
         let jwt_secret = read_jwtsecret_file(&options.authrpc_jwtsecret)?;
+
         start_api(
             get_http_socket_addr(&options.http_addr, &options.http_port),
             get_authrpc_socket_addr(&options.authrpc_addr, &options.authrpc_port),
