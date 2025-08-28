@@ -112,8 +112,6 @@ mod tests {
         // Wait for server to start
         sleep(Duration::from_millis(100)).await;
 
-        println!("[DEBUG] server_url: {:?}", server_url);
-
         // create mojave client and test block broadcast
         let private_key = std::env::var("PRIVATE_KEY").unwrap();
         let client = MojaveClient::builder()
@@ -128,8 +126,6 @@ mod tests {
             .await;
 
         server_handle.abort();
-
-        println!("[DEBUG] result: {:?}", result);
 
         // assert the response
         assert!(result.is_ok(), "Communication should complete");
@@ -187,7 +183,6 @@ mod tests {
         server_handle.abort();
 
         // assert the response
-        println!("[DEBUG] result: {:?}", result);
         assert!(result.is_ok(), "Communication should complete");
     }
 

@@ -71,12 +71,14 @@ impl MojaveClientBuilder {
 
         let private_key = self.private_key.take();
 
+        let timeout = self.timeout.take();
+
         MojaveClient::new(
             sequencer_url,
             full_node_url,
             prover_url,
             private_key,
-            self.timeout.unwrap_or(Duration::from_secs(0)),
+            timeout,
         )
     }
 }
@@ -118,17 +120,17 @@ impl MojaveClient {
         full_node_url: Option<Vec<String>>,
         prover_url: Option<Vec<String>>,
         private_key: Option<String>,
-        timeout: Duration,
+        timeout: Option<Duration>,
     ) -> Result<Self, MojaveClientError> {
-        let http_client = if timeout.is_zero() {
-            ClientBuilder::default().build()?
-        } else {
-            ClientBuilder::default().timeout(timeout).build()?
-        };
+        let mut http_client = reqwest::Client::builder();
+
+        if let Some(timeout) = timeout {
+            http_client = http_client.timeout(timeout);
+        }
 
         let client = MojaveClient {
             inner: Arc::new(MojaveClientInner {
-                client: http_client,
+                client: http_client.build()?,
                 sequencer_url: Self::parse_urls(sequencer_url)?,
                 full_node_url: Self::parse_urls(full_node_url)?,
                 prover_url: Self::parse_urls(prover_url)?,
@@ -163,6 +165,10 @@ impl MojaveClient {
     where
         T: DeserializeOwned,
     {
+        if urls.is_empty() {
+            return Err(MojaveClientError::NoRPCUrlsConfigured);
+        }
+
         match strategy {
             Strategy::Sequential => self.send_request_sequential(request, urls, max_retry).await,
             Strategy::Race => self.send_request_race(request, urls).await,
@@ -226,7 +232,14 @@ impl MojaveClient {
             .header("content-type", "application/json")
             .body(serde_json::to_string(&request)?)
             .send()
-            .await?
+            .await
+            .map_err(|error| {
+                if error.is_timeout() {
+                    MojaveClientError::TimeOut
+                } else {
+                    MojaveClientError::Custom(error.to_string())
+                }
+            })?
             .json::<RpcResponse>()
             .await
             .map_err(|error| {
@@ -362,8 +375,6 @@ impl<'a> Request<'a> {
                 .as_ref()
                 .ok_or(MojaveClientError::MissingFullNodeUrls)?,
         };
-
-        println!("[DEBUG] urls: {:?}", urls);
 
         self.client
             .send_request(&request, urls, self.max_retry, self.strategy)
