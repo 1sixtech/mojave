@@ -2,7 +2,7 @@ use tokio_util::sync::CancellationToken;
 
 use crate::{
     error::Result,
-    watch::{Topic, WatcherBuilder},
+    watch::{Decodable, Topics, WatcherBuilder},
 };
 
 /// Handle to an active watcher.
@@ -17,7 +17,7 @@ where
 
 impl<T> WatcherHandle<T>
 where
-    T: Topic + bitcoin::consensus::Decodable + Send + Clone + 'static + core::fmt::Debug,
+    T: Topics + Decodable + Send + Clone + 'static + core::fmt::Debug,
 {
     pub fn subscribe(&self) -> tokio::sync::broadcast::Receiver<T> {
         self.sender.subscribe()

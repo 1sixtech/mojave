@@ -8,7 +8,11 @@ use bitcoin::{
 };
 use tokio_util::sync::CancellationToken;
 
-use crate::{types::SequenceWatcherBuilder, watch::Topic};
+use crate::{
+    error::Error,
+    types::SequenceWatcherBuilder,
+    watch::{Decodable as WatcherDecodable, Topics},
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SequenceEvent {
@@ -124,8 +128,16 @@ impl Sequence {
     }
 }
 
-impl Topic for Sequence {
-    const TOPIC: &'static str = "sequence";
+impl Topics for Sequence {
+    const TOPICS: &'static [&'static str] = &["sequence"];
+}
+
+impl WatcherDecodable for Sequence {
+    #[inline]
+    fn decode(_topic: &str, payload: &[u8]) -> core::result::Result<Self, Error<Self>> {
+        use bitcoin::consensus::deserialize;
+        deserialize(payload).map_err(Error::DeserializationError)
+    }
 }
 
 /// Helper to create a builder with default configuration.
@@ -156,7 +168,7 @@ mod tests {
 
     #[test]
     fn test_sequence_topic() {
-        assert_eq!(Sequence::TOPIC, "sequence");
+        assert_eq!(Sequence::TOPICS, &["sequence"]);
     }
 
     #[test]

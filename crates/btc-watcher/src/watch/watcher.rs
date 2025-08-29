@@ -1,18 +1,25 @@
-use bitcoin::consensus::deserialize;
 use tokio_util::sync::CancellationToken;
 use zeromq::{Socket, SocketRecv, SubSocket, ZmqMessage};
 
-use crate::{error::Result, watch::WatcherHandle};
+use crate::{
+    error::{Error, Result},
+    watch::WatcherHandle,
+};
 
 /// ZMQ message format: frame 0 is topic, frame 1 is payload.
 /// We expect at least 2 frames: [topic, payload].
 const ZMQ_MESSAGE_MIN_FRAMES: usize = 2;
 const ZMQ_PAYLOAD_FRAME_INDEX: usize = 1;
+const ZMQ_TOPIC_FRAME_INDEX: usize = 0;
 
 /// Trait describing the default subscription topic for a watcher type.
-pub trait Topic {
-    /// ZMQ topic to subscribe to.
-    const TOPIC: &'static str;
+pub trait Topics {
+    /// ZMQ topics to subscribe to.
+    const TOPICS: &'static [&'static str];
+}
+
+pub trait Decodable: Sized + core::fmt::Debug {
+    fn decode(topic: &str, payload: &[u8]) -> Result<Self, Self>;
 }
 
 /// Generic ZMQ watcher.
@@ -24,7 +31,7 @@ pub struct Watcher<T> {
 
 impl<T> Watcher<T>
 where
-    T: Topic + bitcoin::consensus::Decodable + Send + Clone + 'static + core::fmt::Debug,
+    T: Topics + Decodable + Send + Clone + 'static + core::fmt::Debug,
 {
     pub async fn spawn(
         socket_url: &str,
@@ -33,7 +40,9 @@ where
     ) -> Result<WatcherHandle<T>, T> {
         let mut socket = SubSocket::new();
         socket.connect(socket_url).await?;
-        socket.subscribe(T::TOPIC).await?;
+        for topic in T::TOPICS {
+            socket.subscribe(topic).await?;
+        }
 
         let (sender, _) = tokio::sync::broadcast::channel(max_channel_capacity);
 
@@ -76,12 +85,22 @@ where
             return Ok(());
         }
 
+        let topic_bytes = msg.get(ZMQ_TOPIC_FRAME_INDEX).ok_or_else(|| {
+            Error::DeserializationError(bitcoin::consensus::encode::Error::ParseFailed(
+                "missing topic frame",
+            ))
+        })?;
+        let topic = std::str::from_utf8(topic_bytes).map_err(|_| {
+            Error::DeserializationError(bitcoin::consensus::encode::Error::ParseFailed(
+                "topic frame is not valid UTF-8",
+            ))
+        })?;
         let Some(payload) = &msg.get(ZMQ_PAYLOAD_FRAME_INDEX) else {
             tracing::warn!("Unable to get payload");
             return Ok(());
         };
 
-        let item = deserialize::<T>(payload)?;
+        let item = T::decode(topic, payload)?;
         tracing::debug!("Received item");
 
         self.sender.send(item)?;
@@ -101,9 +120,9 @@ mod tests {
 
     #[test]
     fn test_topic_trait_implementations() {
-        assert_eq!(Block::TOPIC, "rawblock");
-        assert_eq!(Transaction::TOPIC, "rawtx");
-        assert_eq!(Sequence::TOPIC, "sequence");
+        assert_eq!(Block::TOPICS, vec!["rawblock"]);
+        assert_eq!(Transaction::TOPICS, vec!["rawtx"]);
+        assert_eq!(Sequence::TOPICS, vec!["sequence"]);
     }
 
     #[tokio::test]

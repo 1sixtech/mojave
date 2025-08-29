@@ -1,10 +1,20 @@
-use bitcoin::Transaction;
+use bitcoin::{Transaction, consensus::deserialize};
 use tokio_util::sync::CancellationToken;
 
-use crate::{types::TransactionWatcherBuilder, watch::Topic};
+use crate::{
+    error::Error,
+    types::TransactionWatcherBuilder,
+    watch::{Decodable, Topics},
+};
 
-impl Topic for Transaction {
-    const TOPIC: &'static str = "rawtx";
+impl Topics for Transaction {
+    const TOPICS: &'static [&'static str] = &["rawtx"];
+}
+
+impl Decodable for Transaction {
+    fn decode(_topic: &str, payload: &[u8]) -> core::result::Result<Self, Error<Self>> {
+        deserialize(payload).map_err(Error::DeserializationError)
+    }
 }
 
 /// Helper to create a builder with default configuration.
@@ -37,7 +47,7 @@ mod tests {
 
     #[test]
     fn test_transaction_topic() {
-        assert_eq!(Transaction::TOPIC, "rawtx");
+        assert_eq!(Transaction::TOPICS, ["rawtx"]);
     }
 
     #[test]
