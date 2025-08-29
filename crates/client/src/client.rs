@@ -12,7 +12,7 @@ use futures::{
     future::{Fuse, select_ok},
 };
 use mojave_signature::{Signature, Signer, SigningKey};
-use reqwest::Url;
+use reqwest::{ClientBuilder, Url};
 use serde::de::DeserializeOwned;
 use serde_json::json;
 use std::{pin::Pin, str::FromStr, sync::Arc, time::Duration};
@@ -20,6 +20,7 @@ use std::{pin::Pin, str::FromStr, sync::Arc, time::Duration};
 const INITIAL_RETRY_DELAY: Duration = Duration::from_millis(100);
 const BACKOFF_FACTOR: u32 = 2;
 const MAX_DELAY: Duration = Duration::from_secs(30);
+const DEFAULT_TIMEOUT: Duration = Duration::from_secs(10);
 
 #[derive(Default)]
 pub struct MojaveClientBuilder {
@@ -122,15 +123,11 @@ impl MojaveClient {
         private_key: Option<String>,
         timeout: Option<Duration>,
     ) -> Result<Self, MojaveClientError> {
-        let mut http_client = reqwest::Client::builder();
-
-        if let Some(timeout) = timeout {
-            http_client = http_client.timeout(timeout);
-        }
+        let http_client = ClientBuilder::new().timeout(timeout.unwrap_or(DEFAULT_TIMEOUT)).build()?;
 
         let client = MojaveClient {
             inner: Arc::new(MojaveClientInner {
-                client: http_client.build()?,
+                client: http_client,
                 sequencer_urls: Self::parse_urls(sequencer_urls)?,
                 full_node_urls: Self::parse_urls(full_node_urls)?,
                 prover_urls: Self::parse_urls(prover_urls)?,
@@ -150,7 +147,7 @@ impl MojaveClient {
         Request {
             client: self,
             urls: None,
-            max_retry: 1,
+            max_retry: Some(1),
             strategy: Strategy::Sequential,
         }
     }
@@ -262,14 +259,6 @@ impl MojaveClient {
 
     fn is_retryable(error: &MojaveClientError) -> bool {
         match error {
-            MojaveClientError::RpcError(e) => {
-                let error_msg = e.to_string();
-                match error_msg.as_str() {
-                    msg if msg.starts_with("Internal Error") => true,
-                    msg if msg.starts_with("Unknown payload") => true,
-                    _ => false,
-                }
-            }
             MojaveClientError::TimeOut => true,
             _ => false,
         }
@@ -284,10 +273,6 @@ impl MojaveClient {
     where
         T: DeserializeOwned,
     {
-        if max_retry < 1 {
-            return Err(MojaveClientError::InvalidMaxRetries(max_retry as u64));
-        }
-
         let mut retry = 0;
         let mut delay = INITIAL_RETRY_DELAY;
         let mut last_error = None;
@@ -322,7 +307,7 @@ impl MojaveClient {
 pub struct Request<'a> {
     client: &'a MojaveClient,
     urls: Option<&'a [Url]>,
-    max_retry: usize,
+    max_retry: Option<usize>,
     strategy: Strategy,
 }
 
@@ -333,7 +318,7 @@ impl<'a> Request<'a> {
     }
 
     pub fn max_retry(mut self, value: usize) -> Self {
-        self.max_retry = value;
+        self.max_retry = Some(value);
         self
     }
 
@@ -377,7 +362,7 @@ impl<'a> Request<'a> {
         };
 
         self.client
-            .send_request(&request, urls, self.max_retry, self.strategy)
+            .send_request(&request, urls, self.max_retry.unwrap_or(1), self.strategy)
             .await
     }
 
@@ -404,7 +389,7 @@ impl<'a> Request<'a> {
         };
 
         self.client
-            .send_request(&request, urls, self.max_retry, self.strategy)
+            .send_request(&request, urls, self.max_retry.unwrap_or(1), self.strategy)
             .await
     }
 
@@ -427,7 +412,7 @@ impl<'a> Request<'a> {
         };
 
         self.client
-            .send_request(&request, urls, self.max_retry, self.strategy)
+            .send_request(&request, urls, self.max_retry.unwrap_or(1), self.strategy)
             .await
     }
 
@@ -450,7 +435,7 @@ impl<'a> Request<'a> {
         };
 
         self.client
-            .send_request(&request, urls, self.max_retry, self.strategy)
+            .send_request(&request, urls, self.max_retry.unwrap_or(1), self.strategy)
             .await
     }
 
@@ -491,7 +476,7 @@ impl<'a> Request<'a> {
         };
 
         self.client
-            .send_request(&request, urls, self.max_retry, self.strategy)
+            .send_request(&request, urls, self.max_retry.unwrap_or(1), self.strategy)
             .await
     }
 }

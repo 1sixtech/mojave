@@ -29,7 +29,7 @@ impl ProofCoordinator {
     ) -> Result<Self, ProofCoordinatorError> {
         let prover_url = vec![prover_address.to_string()];
         let client = MojaveClient::builder()
-            .prover_url(&prover_url)
+            .prover_urls(&prover_url)
             .build()
             .map_err(ProofCoordinatorError::ClientError)?;
 
