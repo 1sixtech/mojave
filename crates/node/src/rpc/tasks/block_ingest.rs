@@ -3,6 +3,8 @@ use ethrex_rpc::{
     RpcErr,
     types::{block::RpcBlock, block_identifier::BlockIdentifier},
 };
+use tokio::task::JoinHandle;
+use tokio_util::sync::CancellationToken;
 
 use crate::rpc::{RpcApiContext, types::OrderedBlock};
 
@@ -60,4 +62,41 @@ fn rpc_block_to_block(rpc_block: RpcBlock) -> Block {
             unreachable!()
         }
     }
+}
+
+pub(crate) fn spawn_block_ingestion_task(
+    context: RpcApiContext,
+    shutdown_token: CancellationToken,
+) -> JoinHandle<()> {
+    tokio::task::spawn(async move {
+        let mut current_block_number =
+            match context.l1_context.storage.get_latest_block_number().await {
+                Ok(num) => num.saturating_add(1),
+                Err(_) => {
+                    tracing::error!("Failed to get latest block number from storage");
+                    1
+                }
+            };
+
+        tracing::info!("Starting block ingestion loop @ {current_block_number}");
+        loop {
+            tokio::select! {
+                result = ingest_block(context.clone(), current_block_number) => {
+                    match result {
+                        Ok(()) => {
+                            current_block_number += 1;
+                            tracing::info!("Ingested block number: {}", current_block_number - 1);
+                        },
+                        Err(error) => {
+                            tracing::error!("Failed to ingest a block: {}", error);
+                        }
+                    };
+                }
+                _ = shutdown_token.cancelled() => {
+                    tracing::info!("Shutting down block ingestion loop");
+                    break;
+                }
+            }
+        }
+    })
 }
