@@ -1,21 +1,19 @@
-<p align="center">
+<div align="center">
+  <h1>Mojave</h1>
   <img src="assets/header.avif" alt="Mojave Banner" width="600"/>
-</p>
+</div>
 
 <div align="center">
+  <a href="https://github.com/1sixtech/mojave/blob/main/LICENSE">
+    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"/>
+  </a>
   <a href="https://github.com/1sixtech/mojave/actions/workflows/rust.yml">
     <img src="https://github.com/1sixtech/mojave/actions/workflows/rust.yml/badge.svg" alt="CI"/>
   </a>
   <a href="https://github.com/1sixtech/mojave/actions/workflows/lint-toml.yml">
     <img src="https://github.com/1sixtech/mojave/actions/workflows/lint-toml.yml/badge.svg" alt="TOML Lint"/>
   </a>
-  <a href="https://github.com/1sixtech/mojave/actions/workflows/commitlint.yml">
-    <img src="https://github.com/1sixtech/mojave/actions/workflows/commitlint.yml/badge.svg" alt="Commit Lint"/>
-  </a>
-  <a href="https://github.com/1sixtech/mojave/blob/main/LICENSE">
-    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"/>
-  </a>
-  <br/>
+  <br/><br/>
   <a href="https://github.com/1sixtech/mojave">
 	<img src="https://img.shields.io/github/stars/1sixtech/mojave?style=social"/>
   </a>

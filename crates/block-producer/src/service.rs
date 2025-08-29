@@ -1,11 +1,91 @@
-use crate::{BlockProducerContext, BlockProducerError};
+use crate::{
+    BlockProducerContext, BlockProducerError, rpc::start_api, types::BlockProducerOptions,
+};
 use ethrex_common::types::Block;
+use mojave_client::MojaveClient;
+use mojave_node_lib::{
+    node::get_client_version,
+    types::{MojaveNode, NodeOptions},
+    utils::{
+        NodeConfigFile, get_authrpc_socket_addr, get_http_socket_addr, read_jwtsecret_file,
+        store_node_config_file,
+    },
+};
+use reqwest::Url;
+use std::{path::PathBuf, time::Duration};
 use tokio::sync::{
     mpsc::{self, error::TrySendError},
     oneshot,
 };
 use tokio_stream::{StreamExt, wrappers::ReceiverStream};
 use tracing::error;
+
+pub async fn run(
+    node: MojaveNode,
+    node_options: &NodeOptions,
+    block_producer_options: &BlockProducerOptions,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mojave_client = MojaveClient::new(block_producer_options.private_key.as_str())?;
+
+    let context = BlockProducerContext::new(
+        node.store.clone(),
+        node.blockchain.clone(),
+        node.rollup_store.clone(),
+        node.genesis.coinbase,
+    );
+    let full_node_urls: Vec<Url> = block_producer_options
+        .full_node_addresses
+        .iter()
+        .map(|address| {
+            Url::parse(address).unwrap_or_else(|error| panic!("Failed to parse URL: {error}"))
+        })
+        .collect();
+    let block_time = block_producer_options.block_time;
+    let block_producer = BlockProducer::start(context, 100);
+    tokio::spawn(async move {
+        loop {
+            match block_producer.build_block().await {
+                Ok(block) => mojave_client
+                    .send_broadcast_block(&block, &full_node_urls)
+                    .await
+                    .unwrap_or_else(|error| tracing::error!("{}", error)),
+                Err(error) => {
+                    tracing::error!("Failed to build a block: {}", error);
+                }
+            }
+            tokio::time::sleep(Duration::from_millis(block_time)).await;
+        }
+    });
+
+    start_api(
+        get_http_socket_addr(&node_options.http_addr, &node_options.http_port),
+        get_authrpc_socket_addr(&node_options.authrpc_addr, &node_options.authrpc_port),
+        node.store,
+        node.blockchain,
+        read_jwtsecret_file(&node_options.authrpc_jwtsecret)?,
+        node.local_p2p_node,
+        node.local_node_record.lock().await.clone(),
+        node.syncer,
+        node.peer_handler,
+        get_client_version(),
+        node.rollup_store,
+    )
+    .await?;
+    tokio::select! {
+        _ = tokio::signal::ctrl_c() => {
+            tracing::info!("Shutting down the full node..");
+            let node_config_path = PathBuf::from(node.data_dir.clone()).join("node_config.json");
+            tracing::info!("Storing config at {:?}...", node_config_path);
+            node.cancel_token.cancel();
+            let node_config = NodeConfigFile::new(node.peer_table.clone(), node.local_node_record.lock().await.clone()).await;
+            store_node_config_file(node_config, node_config_path).await;
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            tracing::info!("Successfully shut down the full node.");
+        }
+    }
+
+    Ok(())
+}
 
 #[derive(Clone)]
 pub struct BlockProducer {

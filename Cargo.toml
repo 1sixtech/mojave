@@ -63,6 +63,7 @@ zkvm_interface = { git = "https://github.com/1sixtech/ethrex", rev = "9a771ea8f3
 anyhow = { version = "1.0" }
 axum = "0.8.1"
 bincode = "1.3"
+bitcoin = { version = "0.32", default-features = false }
 bytes = { version = "1.6.0", features = ["serde"] }
 clap = { version = "4.5", default-features = false }
 ed25519-dalek = { version = "2.1.1", features = ["rand_core", "serde"] }
@@ -88,6 +89,7 @@ tower-http = { version = "0.6.2", default-features = false }
 tracing = "0.1"
 tracing-subscriber = "0.3"
 trait-variant = "0.1"
+zeromq = { version = "0.4", default-features = false }
 
 # [patch.crates-io]
 # secp256k1 = { git = "https://github.com/sp1-patches/rust-secp256k1", tag = "patch-0.29.1-sp1-5.0.0" }
