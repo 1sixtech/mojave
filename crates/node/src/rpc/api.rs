@@ -29,7 +29,7 @@ use tracing::info;
 use crate::rpc::{
     context::RpcApiContext,
     requests::{SendBroadcastBlockRequest, SendRawTransactionRequest},
-    tasks::{spawn_block_ingestion_task, spawn_block_processing_task, spawn_filter_cleanup_task},
+    tasks::spawn_filter_cleanup_task,
     types::{OrderedBlock, PendingHeap},
 };
 
@@ -74,9 +74,6 @@ pub async fn start_api(
 
     // Periodically clean up the active filters for the filters endpoints.
     let filter_handle = spawn_filter_cleanup_task(active_filters.clone(), shutdown_token.clone());
-    let block_handle = spawn_block_processing_task(context.clone(), shutdown_token.clone());
-    let block_ingestion_handle =
-        spawn_block_ingestion_task(context.clone(), shutdown_token.clone());
 
     // All request headers allowed.
     // All methods allowed.
@@ -109,16 +106,6 @@ pub async fn start_api(
                 .await
                 .map_err(|e| RpcErr::Internal(e.to_string()))
         },
-        async {
-            block_handle
-                .await
-                .map_err(|e| RpcErr::Internal(e.to_string()))
-        },
-        async {
-            block_ingestion_handle
-                .await
-                .map_err(|e| RpcErr::Internal(e.to_string()))
-        }
     )
     .inspect_err(|e| info!("Error shutting down servers: {e:?}"));
 
