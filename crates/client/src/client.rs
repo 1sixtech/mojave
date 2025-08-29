@@ -123,7 +123,9 @@ impl MojaveClient {
         private_key: Option<String>,
         timeout: Option<Duration>,
     ) -> Result<Self, MojaveClientError> {
-        let http_client = ClientBuilder::new().timeout(timeout.unwrap_or(DEFAULT_TIMEOUT)).build()?;
+        let http_client = ClientBuilder::new()
+            .timeout(timeout.unwrap_or(DEFAULT_TIMEOUT))
+            .build()?;
 
         let client = MojaveClient {
             inner: Arc::new(MojaveClientInner {
@@ -258,10 +260,7 @@ impl MojaveClient {
     }
 
     fn is_retryable(error: &MojaveClientError) -> bool {
-        match error {
-            MojaveClientError::TimeOut => true,
-            _ => false,
-        }
+        matches!(error, MojaveClientError::TimeOut)
     }
 
     pub async fn send_request_to_url_with_retry<T>(
