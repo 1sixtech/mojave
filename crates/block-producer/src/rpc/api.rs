@@ -1,4 +1,4 @@
-use crate::rpc::{requests::SendBatchProofRequest, RpcApiContext};
+use crate::rpc::{RpcApiContext, requests::SendBatchProofRequest};
 
 use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
 use ethrex_blockchain::Blockchain;

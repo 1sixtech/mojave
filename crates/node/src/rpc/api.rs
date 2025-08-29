@@ -1,11 +1,22 @@
-use std::{collections::HashMap, net::SocketAddr, sync::{Arc, Mutex}};
+use std::{
+    collections::HashMap,
+    net::SocketAddr,
+    sync::{Arc, Mutex},
+};
 
-use axum::{extract::State, http::StatusCode, routing::post, Json, Router};
+use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
 use ethrex_common::Bytes;
 
 use ethrex_blockchain::Blockchain;
-use ethrex_p2p::{peer_handler::PeerHandler, sync_manager::SyncManager, types::{Node, NodeRecord}};
-use ethrex_rpc::{utils::{RpcRequest, RpcRequestId}, EthClient, GasTipEstimator, NodeData, RpcApiContext as L1Context, RpcErr, RpcRequestWrapper};
+use ethrex_p2p::{
+    peer_handler::PeerHandler,
+    sync_manager::SyncManager,
+    types::{Node, NodeRecord},
+};
+use ethrex_rpc::{
+    EthClient, GasTipEstimator, NodeData, RpcApiContext as L1Context, RpcErr, RpcRequestWrapper,
+    utils::{RpcRequest, RpcRequestId},
+};
 use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
 use mojave_utils::{rpc::rpc_response, unique_heap::AsyncUniqueHeap};
@@ -15,7 +26,12 @@ use tokio_util::sync::CancellationToken;
 use tower_http::cors::CorsLayer;
 use tracing::info;
 
-use crate::rpc::{context::RpcApiContext, requests::{SendBroadcastBlockRequest, SendRawTransactionRequest}, tasks::{spawn_block_ingestion_task, spawn_block_processing_task, spawn_filter_cleanup_task}, types::{OrderedBlock, PendingHeap}};
+use crate::rpc::{
+    context::RpcApiContext,
+    requests::{SendBroadcastBlockRequest, SendRawTransactionRequest},
+    tasks::{spawn_block_ingestion_task, spawn_block_processing_task, spawn_filter_cleanup_task},
+    types::{OrderedBlock, PendingHeap},
+};
 
 #[expect(clippy::too_many_arguments)]
 pub async fn start_api(
@@ -150,10 +166,7 @@ async fn map_eth_requests(req: &RpcRequest, context: RpcApiContext) -> Result<Va
     }
 }
 
-async fn map_mojave_requests(
-    req: &RpcRequest,
-    context: RpcApiContext,
-) -> Result<Value, RpcErr> {
+async fn map_mojave_requests(req: &RpcRequest, context: RpcApiContext) -> Result<Value, RpcErr> {
     match req.method.as_str() {
         "mojave_sendBroadcastBlock" => SendBroadcastBlockRequest::call(req, context).await,
         others => Err(RpcErr::MethodNotFound(others.to_owned())),

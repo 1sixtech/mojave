@@ -4,7 +4,6 @@ use ethrex_rpc::ActiveFilters;
 use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 
-
 pub const FILTER_DURATION: Duration = {
     if cfg!(test) {
         Duration::from_secs(1)

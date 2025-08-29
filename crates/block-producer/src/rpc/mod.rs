@@ -1,6 +1,6 @@
-pub mod requests;
-pub mod context;
 mod api;
+pub mod context;
+pub mod requests;
 
 pub use api::start_api;
 pub use context::RpcApiContext;

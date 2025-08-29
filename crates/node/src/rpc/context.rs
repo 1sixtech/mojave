@@ -4,7 +4,6 @@ use mojave_utils::unique_heap::AsyncUniqueHeap;
 
 use crate::rpc::types::{OrderedBlock, PendingHeap};
 
-
 #[derive(Clone, Debug)]
 pub struct RpcApiContext {
     pub l1_context: L1Context,
