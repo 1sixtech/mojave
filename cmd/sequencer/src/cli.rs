@@ -254,14 +254,6 @@ pub enum Command {
 #[clap(group(ArgGroup::new("mojave::SequencerOptions")))]
 pub struct SequencerOptions {
     #[arg(
-        long = "full_node.addresses",
-        help = "Allowed domain(s) and port(s) for the sequencer in the form 'domain:port', can be specified multiple times",
-        help_heading = "Full Node Options",
-        default_value = "http://0.0.0.0:8545",
-        value_delimiter = ','
-    )]
-    pub full_node_addresses: Vec<String>,
-    #[arg(
         long = "prover.address",
         help = "Allowed domain(s) and port(s) for the prover in the form 'domain:port'",
         help_heading = "Prover Options",
@@ -278,10 +270,17 @@ pub struct SequencerOptions {
     pub private_key: String,
 }
 
+impl std::fmt::Debug for SequencerOptions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SequencerOptions")
+            .field("block_time", &self.block_time)
+            .finish()
+    }
+}
+
 impl From<&SequencerOptions> for BlockProducerOptions {
     fn from(value: &SequencerOptions) -> Self {
         Self {
-            full_node_addresses: value.full_node_addresses.clone(),
             prover_address: value.prover_address.clone(),
             block_time: value.block_time,
             private_key: value.private_key.clone(),

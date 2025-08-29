@@ -1,6 +1,7 @@
 use crate::{
     error::Error,
     initializers::{get_local_node_record, get_signer, init_blockchain, init_store},
+    p2p::network::start_network,
     rpc::start_api,
     types::{MojaveNode, NodeConfigFile, NodeOptions},
     utils::{
@@ -9,14 +10,17 @@ use crate::{
     },
 };
 use ethrex_blockchain::BlockchainType;
-use ethrex_p2p::{network::peer_table, peer_handler::PeerHandler, sync_manager::SyncManager};
+use ethrex_p2p::{
+    network::peer_table, peer_handler::PeerHandler, rlpx::l2::l2_connection::P2PBasedContext,
+    sync_manager::SyncManager,
+};
 use ethrex_rpc::EthClient;
 use ethrex_storage_rollup::{EngineTypeRollup, StoreRollup};
 use ethrex_vm::EvmEngine;
 use mojave_utils::unique_heap::AsyncUniqueHeap;
 use std::{path::PathBuf, sync::Arc, time::Duration};
 use tokio::sync::Mutex;
-use tokio_util::sync::CancellationToken;
+use tokio_util::{sync::CancellationToken, task::TaskTracker};
 
 impl MojaveNode {
     pub async fn init(options: &NodeOptions) -> Result<Self, Box<dyn std::error::Error>> {
@@ -58,6 +62,35 @@ impl MojaveNode {
 
         let peer_table = peer_table(local_p2p_node.node_id());
         let peer_handler = PeerHandler::new(peer_table.clone());
+
+        let based_context = Some(P2PBasedContext {
+            store_rollup: rollup_store.clone(),
+            committer_key: Arc::new(signer),
+        });
+        blockchain.set_synced();
+
+        let tracker = TaskTracker::new();
+
+        let local_node_record2 = Arc::new(Mutex::new(get_local_node_record(
+            &data_dir,
+            &local_p2p_node,
+            &signer,
+        )?));
+
+        start_network(
+            options.bootnodes.clone(),
+            &options.network,
+            &options.datadir,
+            local_p2p_node.clone(),
+            local_node_record2.clone(),
+            signer,
+            peer_table.clone(),
+            store.clone(),
+            tracker,
+            blockchain.clone(),
+            based_context,
+        )
+        .await;
 
         // Create SyncManager
         let syncer = SyncManager::new(

@@ -13,6 +13,8 @@ mojave-node-lib = { workspace = true }
 mojave-utils = { workspace = true }
 
 anyhow = { workspace = true }
+ethrex-p2p = { workspace = true }
+
 clap = { workspace = true }
 eyre = { workspace = true }
 tokio = { workspace = true }
