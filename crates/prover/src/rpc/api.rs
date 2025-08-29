@@ -16,7 +16,7 @@ use mojave_utils::rpc::rpc_response;
 
 use crate::rpc::{
     ProverRpcContext,
-    proof::{GetJobIdRequest, GetProofRequest, SendProofInputRequest},
+    requests::{GetJobIdRequest, GetProofRequest, SendProofInputRequest},
     tasks::spawn_proof_worker,
     types::{JobRecord, JobStore},
 };
