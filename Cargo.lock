@@ -4807,6 +4807,7 @@ name = "mojave-node"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "ethrex-p2p",
  "eyre",
  "mojave-node-lib",
  "mojave-utils",
