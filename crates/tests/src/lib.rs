@@ -112,7 +112,10 @@ pub async fn start_test_api_sequencer(
     let local_p2p_node = example_p2p_node();
     let rollup_store = example_rollup_store().await;
     let private_key = std::env::var("PRIVATE_KEY").unwrap();
-    let client = MojaveClient::new(&private_key).unwrap();
+    let client = MojaveClient::builder()
+        .private_key(private_key)
+        .build()
+        .unwrap();
     let rpc_api = start_api_block_producer(
         http_addr,
         authrpc_addr,

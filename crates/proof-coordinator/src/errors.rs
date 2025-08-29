@@ -37,4 +37,6 @@ pub enum ProofCoordinatorError {
     MissingBlob(u64),
     #[error("Proof failed for batch {0}: {1}")]
     ProofFailed(u64, String),
+    #[error("Failed to build the client: {0}")]
+    ClientError(#[from] mojave_client::MojaveClientError),
 }

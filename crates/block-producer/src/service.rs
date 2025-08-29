@@ -2,7 +2,7 @@ use crate::{
     BlockProducerContext, BlockProducerError, rpc::start_api, types::BlockProducerOptions,
 };
 use ethrex_common::types::Block;
-use mojave_client::MojaveClient;
+use mojave_client::{MojaveClient, types::Strategy};
 use mojave_node_lib::{
     node::get_client_version,
     types::{MojaveNode, NodeOptions},
@@ -11,7 +11,6 @@ use mojave_node_lib::{
         store_node_config_file,
     },
 };
-use reqwest::Url;
 use std::{path::PathBuf, time::Duration};
 use tokio::sync::{
     mpsc::{self, error::TrySendError},
@@ -25,7 +24,15 @@ pub async fn run(
     node_options: &NodeOptions,
     block_producer_options: &BlockProducerOptions,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mojave_client = MojaveClient::new(block_producer_options.private_key.as_str())?;
+    let mojave_client = MojaveClient::builder()
+        .private_key(block_producer_options.private_key.clone())
+        .full_node_urls(&block_producer_options.full_node_addresses)
+        .prover_urls(std::slice::from_ref(&block_producer_options.prover_address))
+        .build()
+        .unwrap_or_else(|error| {
+            tracing::error!("Failed to build the client: {}", error);
+            std::process::exit(1);
+        });
 
     let context = BlockProducerContext::new(
         node.store.clone(),
@@ -33,20 +40,15 @@ pub async fn run(
         node.rollup_store.clone(),
         node.genesis.coinbase,
     );
-    let full_node_urls: Vec<Url> = block_producer_options
-        .full_node_addresses
-        .iter()
-        .map(|address| {
-            Url::parse(address).unwrap_or_else(|error| panic!("Failed to parse URL: {error}"))
-        })
-        .collect();
     let block_time = block_producer_options.block_time;
     let block_producer = BlockProducer::start(context, 100);
     tokio::spawn(async move {
         loop {
             match block_producer.build_block().await {
                 Ok(block) => mojave_client
-                    .send_broadcast_block(&block, &full_node_urls)
+                    .request()
+                    .strategy(Strategy::Race)
+                    .send_broadcast_block(&block)
                     .await
                     .unwrap_or_else(|error| tracing::error!("{}", error)),
                 Err(error) => {

@@ -1,6 +1,6 @@
 use crate::{
     MojaveClientError,
-    types::{JobId, ProofResponse, ProverData, SignedBlock, SignedProofResponse},
+    types::{JobId, ProofResponse, ProverData, SignedBlock, SignedProofResponse, Strategy},
 };
 use ethrex_common::types::Block;
 use ethrex_rpc::{
@@ -12,44 +12,154 @@ use futures::{
     future::{Fuse, select_ok},
 };
 use mojave_signature::{Signature, Signer, SigningKey};
-use reqwest::Url;
+use reqwest::{ClientBuilder, Url};
 use serde::de::DeserializeOwned;
 use serde_json::json;
 use std::{pin::Pin, str::FromStr, sync::Arc, time::Duration};
-use tokio::time::timeout;
 
 const INITIAL_RETRY_DELAY: Duration = Duration::from_millis(100);
 const BACKOFF_FACTOR: u32 = 2;
 const MAX_DELAY: Duration = Duration::from_secs(30);
+const DEFAULT_TIMEOUT: Duration = Duration::from_secs(10);
 
-#[derive(Clone, Debug)]
+#[derive(Default)]
+pub struct MojaveClientBuilder {
+    sequencer_urls: Option<Vec<String>>,
+    full_node_urls: Option<Vec<String>>,
+    prover_urls: Option<Vec<String>>,
+    private_key: Option<String>,
+    timeout: Option<Duration>,
+}
+
+impl MojaveClientBuilder {
+    pub fn sequencer_urls(mut self, sequencer_urls: &[String]) -> Self {
+        self.sequencer_urls = Some(sequencer_urls.to_owned());
+        self
+    }
+
+    pub fn full_node_urls(mut self, full_node_urls: &[String]) -> Self {
+        self.full_node_urls = Some(full_node_urls.to_owned());
+        self
+    }
+
+    pub fn prover_urls(mut self, prover_urls: &[String]) -> Self {
+        self.prover_urls = Some(prover_urls.to_owned());
+        self
+    }
+
+    pub fn private_key(mut self, private_key: String) -> Self {
+        self.private_key = Some(private_key);
+        self
+    }
+
+    /// Enables a total request timeout.
+    ///
+    /// The timeout is applied from when the request starts connecting until the
+    /// response body has finished. Also considered a total deadline.
+    ///
+    /// Default is no timeout.
+    pub fn timeout(mut self, timeout: Duration) -> Self {
+        self.timeout = Some(timeout);
+        self
+    }
+
+    pub fn build(mut self) -> Result<MojaveClient, MojaveClientError> {
+        let sequencer_urls = self.sequencer_urls.take();
+
+        let full_node_urls = self.full_node_urls.take();
+
+        let prover_urls = self.prover_urls.take();
+
+        let private_key = self.private_key.take();
+
+        let timeout = self.timeout.take();
+
+        MojaveClient::new(
+            sequencer_urls,
+            full_node_urls,
+            prover_urls,
+            private_key,
+            timeout,
+        )
+    }
+}
+
+#[derive(Clone)]
 pub struct MojaveClient {
     inner: Arc<MojaveClientInner>,
 }
 
-#[derive(Debug)]
 struct MojaveClientInner {
     client: reqwest::Client,
-    signing_key: SigningKey,
+    sequencer_urls: Option<Vec<Url>>,
+    full_node_urls: Option<Vec<Url>>,
+    prover_urls: Option<Vec<Url>>,
+    signing_key: Option<SigningKey>,
 }
 
 impl MojaveClient {
-    pub fn new(private_key: &str) -> Result<Self, MojaveClientError> {
-        let signing_key = SigningKey::from_str(private_key)?;
-        Ok(Self {
-            inner: Arc::new(MojaveClientInner {
-                client: reqwest::Client::new(),
-                signing_key,
-            }),
-        })
+    pub fn builder() -> MojaveClientBuilder {
+        MojaveClientBuilder::default()
     }
 
-    /// Sends multiple RPC requests to a list of urls and returns
-    /// the first response without waiting for others to finish.
-    async fn send_request_race<T>(
+    fn parse_urls(urls: Option<Vec<String>>) -> Result<Option<Vec<Url>>, MojaveClientError> {
+        match urls {
+            Some(urls) => {
+                let urls = urls
+                    .iter()
+                    .map(|url| Url::parse(url))
+                    .collect::<Result<Vec<Url>, _>>()
+                    .map_err(|error| MojaveClientError::Custom(error.to_string()))?;
+                Ok(Some(urls))
+            }
+            None => Ok(None),
+        }
+    }
+
+    pub fn new(
+        sequencer_urls: Option<Vec<String>>,
+        full_node_urls: Option<Vec<String>>,
+        prover_urls: Option<Vec<String>>,
+        private_key: Option<String>,
+        timeout: Option<Duration>,
+    ) -> Result<Self, MojaveClientError> {
+        let http_client = ClientBuilder::new()
+            .timeout(timeout.unwrap_or(DEFAULT_TIMEOUT))
+            .build()?;
+
+        let client = MojaveClient {
+            inner: Arc::new(MojaveClientInner {
+                client: http_client,
+                sequencer_urls: Self::parse_urls(sequencer_urls)?,
+                full_node_urls: Self::parse_urls(full_node_urls)?,
+                prover_urls: Self::parse_urls(prover_urls)?,
+                signing_key: match private_key {
+                    Some(private_key) => Some(
+                        SigningKey::from_str(&private_key)
+                            .map_err(|error| MojaveClientError::Custom(error.to_string()))?,
+                    ),
+                    None => None,
+                },
+            }),
+        };
+        Ok(client)
+    }
+
+    pub fn request(&self) -> Request<'_> {
+        Request {
+            client: self,
+            urls: None,
+            max_retry: Some(1),
+            strategy: Strategy::Sequential,
+        }
+    }
+
+    async fn send_request<T>(
         &self,
-        request: RpcRequest,
+        request: &RpcRequest,
         urls: &[Url],
+        max_retry: usize,
+        strategy: Strategy,
     ) -> Result<T, MojaveClientError>
     where
         T: DeserializeOwned,
@@ -58,21 +168,36 @@ impl MojaveClient {
             return Err(MojaveClientError::NoRPCUrlsConfigured);
         }
 
-        let requests: Vec<Pin<Box<Fuse<_>>>> = urls
-            .iter()
-            .map(|url| Box::pin(self.send_request_to_url(&request, url).fuse()))
-            .collect();
-
-        let (response, _) = select_ok(requests)
-            .await
-            .map_err(|error| MojaveClientError::Custom(format!("All RPC calls failed: {error}")))?;
-        Ok(response)
+        match strategy {
+            Strategy::Sequential => self.send_request_sequential(request, urls, max_retry).await,
+            Strategy::Race => self.send_request_race(request, urls).await,
+        }
     }
 
-    /// Sends the given RPC request to all configured URLs sequentially.
-    /// Returns the response from the first successful request, or the last error if all requests fail.
-    #[allow(unused)]
-    async fn send_request<T>(
+    async fn send_request_sequential<T>(
+        &self,
+        request: &RpcRequest,
+        urls: &[Url],
+        max_retry: usize,
+    ) -> Result<T, MojaveClientError>
+    where
+        T: DeserializeOwned,
+    {
+        let mut response = Err(MojaveClientError::Custom("All rpc calls failed".to_owned()));
+
+        for url in urls.iter() {
+            match self
+                .send_request_to_url_with_retry(request, url, max_retry)
+                .await
+            {
+                Ok(response) => return Ok(response),
+                Err(error) => response = Err(error),
+            }
+        }
+        response
+    }
+
+    async fn send_request_race<T>(
         &self,
         request: &RpcRequest,
         urls: &[Url],
@@ -80,21 +205,15 @@ impl MojaveClient {
     where
         T: DeserializeOwned,
     {
-        if urls.is_empty() {
-            return Err(MojaveClientError::NoRPCUrlsConfigured);
-        }
+        let requests: Vec<Pin<Box<Fuse<_>>>> = urls
+            .iter()
+            .map(|url| Box::pin(self.send_request_to_url(request, url).fuse()))
+            .collect();
 
-        let mut response = Err(MojaveClientError::Custom(
-            "All rpc calls failed".to_string(),
-        ));
-
-        for url in urls.iter() {
-            match self.send_request_to_url(request, url).await {
-                Ok(resp) => return Ok(resp),
-                Err(e) => response = Err(e),
-            }
-        }
-        response
+        let (response, _) = select_ok(requests)
+            .await
+            .map_err(|error| MojaveClientError::Custom(format!("All RPC calls failed: {error}")))?;
+        Ok(response)
     }
 
     async fn send_request_to_url<T>(
@@ -112,9 +231,23 @@ impl MojaveClient {
             .header("content-type", "application/json")
             .body(serde_json::to_string(&request)?)
             .send()
-            .await?
+            .await
+            .map_err(|error| {
+                if error.is_timeout() {
+                    MojaveClientError::TimeOut
+                } else {
+                    MojaveClientError::Custom(error.to_string())
+                }
+            })?
             .json::<RpcResponse>()
-            .await?;
+            .await
+            .map_err(|error| {
+                if error.is_timeout() {
+                    MojaveClientError::TimeOut
+                } else {
+                    MojaveClientError::Custom(error.to_string())
+                }
+            })?;
 
         match response {
             RpcResponse::Success(ok_response) => {
@@ -127,63 +260,38 @@ impl MojaveClient {
     }
 
     fn is_retryable(error: &MojaveClientError) -> bool {
-        match error {
-            MojaveClientError::RpcError(e) => {
-                let error_msg = e.to_string();
-                match error_msg.as_str() {
-                    msg if msg.starts_with("Internal Error") => true,
-                    msg if msg.starts_with("Unknown payload") => true,
-                    _ => false,
-                }
-            }
-            MojaveClientError::TimeOut => true,
-            _ => false,
-        }
+        matches!(error, MojaveClientError::TimeOut)
     }
 
     pub async fn send_request_to_url_with_retry<T>(
         &self,
         request: &RpcRequest,
         url: &Url,
-        max_attempts: u64,
-        request_timeout: u64,
+        max_retry: usize,
     ) -> Result<T, MojaveClientError>
     where
         T: DeserializeOwned,
     {
-        if max_attempts < 1 {
-            return Err(MojaveClientError::InvalidMaxAttempts(max_attempts));
-        }
-
-        let mut attempts = 0;
+        let mut retry = 0;
         let mut delay = INITIAL_RETRY_DELAY;
         let mut last_error = None;
-        while attempts < max_attempts {
-            attempts += 1;
-            match timeout(
-                Duration::from_secs(request_timeout),
-                self.send_request_to_url(request, url),
-            )
-            .await
-            {
-                Ok(Ok(response)) => return Ok(response),
-                Ok(Err(e)) => {
-                    tracing::error!("Request failed (attempt {}): {}", attempts, e);
+        while retry < max_retry {
+            retry += 1;
+            match self.send_request_to_url(request, url).await {
+                Ok(response) => return Ok(response),
+                Err(e) => {
+                    tracing::error!("Request failed (attempt {}): {}", retry, e);
                     last_error = Some(e);
                     if Self::is_retryable(last_error.as_ref().unwrap()) {
-                        tracing::info!("Retrying request (attempt {})", attempts);
+                        tracing::info!("Retrying request (attempt {})", retry);
                     } else {
                         return Err(last_error.unwrap());
                     }
                 }
-                Err(_) => {
-                    tracing::error!("Request timed out (attempt {})", attempts);
-                    last_error = Some(MojaveClientError::TimeOut);
-                }
             }
 
             // avoid sleeping on the last attempt
-            if attempts < max_attempts {
+            if retry < max_retry {
                 tokio::time::sleep(delay).await;
                 delay = delay.saturating_mul(BACKOFF_FACTOR);
                 if delay > MAX_DELAY {
@@ -191,17 +299,43 @@ impl MojaveClient {
                 }
             }
         }
-        Err(last_error.unwrap_or(MojaveClientError::RetryFailed(max_attempts)))
+        Err(last_error.unwrap_or(MojaveClientError::RetryFailed(max_retry as u64)))
+    }
+}
+
+pub struct Request<'a> {
+    client: &'a MojaveClient,
+    urls: Option<&'a [Url]>,
+    max_retry: Option<usize>,
+    strategy: Strategy,
+}
+
+impl<'a> Request<'a> {
+    pub fn urls(mut self, urls: &'a [Url]) -> Self {
+        self.urls = Some(urls);
+        self
     }
 
-    pub async fn send_broadcast_block(
-        &self,
-        block: &Block,
-        full_node_urls: &[Url],
-    ) -> Result<(), MojaveClientError> {
+    pub fn max_retry(mut self, value: usize) -> Self {
+        self.max_retry = Some(value);
+        self
+    }
+
+    pub fn strategy(mut self, strategy: Strategy) -> Self {
+        self.strategy = strategy;
+        self
+    }
+
+    pub async fn send_broadcast_block(&self, block: &Block) -> Result<(), MojaveClientError> {
         let hash = block.hash();
-        let signature: Signature = self.inner.signing_key.sign(&hash)?;
-        let verifying_key = self.inner.signing_key.verifying_key();
+        let signing_key = self
+            .client
+            .inner
+            .signing_key
+            .as_ref()
+            .ok_or(MojaveClientError::MissingPrivateKey)?;
+        let signature: Signature = signing_key.sign(&hash)?;
+        let verifying_key = signing_key.verifying_key();
 
         let params = SignedBlock {
             block: block.clone(),
@@ -215,14 +349,26 @@ impl MojaveClient {
             method: "mojave_sendBroadcastBlock".to_string(),
             params: Some(vec![json!(params)]),
         };
-        self.send_request_race(request, full_node_urls).await
+
+        let urls = match self.urls {
+            Some(urls) => urls,
+            None => self
+                .client
+                .inner
+                .full_node_urls
+                .as_ref()
+                .ok_or(MojaveClientError::MissingFullNodeUrls)?,
+        };
+
+        self.client
+            .send_request(&request, urls, self.max_retry.unwrap_or(1), self.strategy)
+            .await
     }
 
     pub async fn send_proof_input(
         &self,
         proof_input: &ProverData,
         sequencer_address: &str,
-        prover_url: &Url,
     ) -> Result<JobId, MojaveClientError> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
@@ -230,43 +376,80 @@ impl MojaveClient {
             method: "mojave_sendProofInput".to_string(),
             params: Some(vec![json!(proof_input), json!(sequencer_address)]),
         };
-        self.send_request_to_url(&request, prover_url).await
+
+        let urls = match self.urls {
+            Some(urls) => urls,
+            None => self
+                .client
+                .inner
+                .prover_urls
+                .as_ref()
+                .ok_or(MojaveClientError::MissingProverUrl)?,
+        };
+
+        self.client
+            .send_request(&request, urls, self.max_retry.unwrap_or(1), self.strategy)
+            .await
     }
 
-    pub async fn get_job_id(&self, prover_url: &Url) -> Result<Vec<JobId>, MojaveClientError> {
+    pub async fn get_job_id(&self) -> Result<Vec<JobId>, MojaveClientError> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
             jsonrpc: "2.0".to_string(),
             method: "mojave_getJobId".to_string(),
             params: None,
         };
-        self.send_request_to_url(&request, prover_url).await
+
+        let urls = match self.urls {
+            Some(urls) => urls,
+            None => self
+                .client
+                .inner
+                .prover_urls
+                .as_ref()
+                .ok_or(MojaveClientError::MissingProverUrl)?,
+        };
+
+        self.client
+            .send_request(&request, urls, self.max_retry.unwrap_or(1), self.strategy)
+            .await
     }
 
-    pub async fn get_proof(
-        &self,
-        job_id: JobId,
-        prover_url: &Url,
-        max_attempts: u64,
-        request_timeout: u64,
-    ) -> Result<ProofResponse, MojaveClientError> {
+    pub async fn get_proof(&self, job_id: JobId) -> Result<ProofResponse, MojaveClientError> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
             jsonrpc: "2.0".to_string(),
             method: "mojave_getProof".to_string(),
             params: Some(vec![json!(job_id)]),
         };
-        self.send_request_to_url_with_retry(&request, prover_url, max_attempts, request_timeout)
+
+        let urls = match self.urls {
+            Some(urls) => urls,
+            None => self
+                .client
+                .inner
+                .prover_urls
+                .as_ref()
+                .ok_or(MojaveClientError::MissingProverUrl)?,
+        };
+
+        self.client
+            .send_request(&request, urls, self.max_retry.unwrap_or(1), self.strategy)
             .await
     }
 
     pub async fn send_proof_response(
         &self,
         proof_response: &ProofResponse,
-        sequencer_url: &Url,
     ) -> Result<(), MojaveClientError> {
-        let signature: Signature = self.inner.signing_key.sign(proof_response)?;
-        let verifying_key = self.inner.signing_key.verifying_key();
+        let signing_key = self
+            .client
+            .inner
+            .signing_key
+            .as_ref()
+            .ok_or(MojaveClientError::MissingPrivateKey)?;
+        let signature: Signature = signing_key.sign(proof_response)?;
+        let verifying_key = signing_key.verifying_key();
 
         let params = SignedProofResponse {
             proof_response: proof_response.clone(),
@@ -280,6 +463,19 @@ impl MojaveClient {
             method: "mojave_sendProofResponse".to_string(),
             params: Some(vec![json!(params)]),
         };
-        self.send_request_to_url(&request, sequencer_url).await
+
+        let urls = match self.urls {
+            Some(urls) => urls,
+            None => self
+                .client
+                .inner
+                .sequencer_urls
+                .as_ref()
+                .ok_or(MojaveClientError::MissingSequencerUrl)?,
+        };
+
+        self.client
+            .send_request(&request, urls, self.max_retry.unwrap_or(1), self.strategy)
+            .await
     }
 }
