@@ -17,8 +17,8 @@ use mojave_utils::rpc::rpc_response;
 use crate::rpc::{
     ProverRpcContext,
     proof::{GetJobIdRequest, GetProofRequest, SendProofInputRequest},
-    types::{JobRecord, JobStore},
     tasks::spawn_proof_worker,
+    types::{JobRecord, JobStore},
 };
 
 pub async fn start_api(

@@ -8,7 +8,7 @@ use mojave_client::{
 };
 use tokio::{sync::mpsc, task::JoinHandle};
 
-use crate::rpc::{types::JobRecord, ProverRpcContext};
+use crate::rpc::{ProverRpcContext, types::JobRecord};
 
 pub(crate) fn spawn_proof_worker(
     ctx: Arc<ProverRpcContext>,
