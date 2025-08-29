@@ -11,7 +11,7 @@ mod tests {
         EthClient,
         types::block_identifier::{BlockIdentifier, BlockTag},
     };
-    use mojave_client::MojaveClient;
+    use mojave_client::{MojaveClient, types::Strategy};
     use mojave_tests::{start_test_api_node, start_test_api_sequencer};
     use reqwest::Url;
     use secp256k1::SecretKey;
@@ -114,9 +114,15 @@ mod tests {
 
         // create mojave client and test block broadcast
         let private_key = std::env::var("PRIVATE_KEY").unwrap();
-        let client = MojaveClient::new(&private_key).unwrap();
+        let client = MojaveClient::builder()
+            .private_key(private_key)
+            .build()
+            .unwrap();
         let result = client
-            .send_broadcast_block(&test_block, &[Url::parse(&server_url).unwrap()])
+            .request()
+            .urls(&[Url::parse(&server_url).unwrap()])
+            .strategy(Strategy::Race)
+            .send_broadcast_block(&test_block)
             .await;
 
         server_handle.abort();
@@ -194,9 +200,14 @@ mod tests {
 
         // create mojave client and test block broadcast
         let private_key = std::env::var("PRIVATE_KEY").unwrap();
-        let client = MojaveClient::new(&private_key).unwrap();
+        let client = MojaveClient::builder()
+            .private_key(private_key)
+            .build()
+            .unwrap();
         let result = client
-            .send_broadcast_block(&test_block, &[Url::parse(&server_url).unwrap()])
+            .request()
+            .urls(&[Url::parse(&server_url).unwrap()])
+            .send_broadcast_block(&test_block)
             .await;
 
         // assert the response
@@ -337,10 +348,11 @@ mod tests {
             },
         };
 
-        let full_node_urls = vec![Url::parse(&format!("http://{full_node_http_addr}")).unwrap()];
-
         sequencer_client
-            .send_broadcast_block(&block, &full_node_urls)
+            .request()
+            .urls(&[Url::parse(&format!("http://{full_node_http_addr}")).unwrap()])
+            .strategy(Strategy::Race)
+            .send_broadcast_block(&block)
             .await
             .unwrap();
     }

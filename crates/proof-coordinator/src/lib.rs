@@ -7,23 +7,18 @@ use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
 use mojave_client::{
     MojaveClient,
-    types::{ProofResponse, ProofResult, ProverData},
+    types::{ProofResponse, ProofResult, ProverData, Strategy},
 };
-use reqwest::Url;
 use tokio::sync::mpsc::Receiver;
 use zkvm_interface::io::ProgramInput;
 
 mod errors;
 
 pub struct ProofCoordinator {
+    client: MojaveClient,
     /// Come from the block builder
     proof_data_receiver: Receiver<u64>,
-    /// Send to the prover
-    prover_url: Url,
-    /// Sequencer address
     sequencer_address: String,
-    /// Mojave client
-    client: MojaveClient,
 }
 
 impl ProofCoordinator {
@@ -31,15 +26,17 @@ impl ProofCoordinator {
         proof_data_receiver: Receiver<u64>,
         prover_address: &str,
         sequencer_address: String,
-        private_key: &str,
     ) -> Result<Self, ProofCoordinatorError> {
+        let prover_url = vec![prover_address.to_string()];
+        let client = MojaveClient::builder()
+            .prover_urls(&prover_url)
+            .build()
+            .map_err(ProofCoordinatorError::ClientError)?;
+
         Ok(Self {
+            client,
             proof_data_receiver,
-            prover_url: Url::parse(prover_address)
-                .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?,
-            sequencer_address,
-            client: MojaveClient::new(private_key)
-                .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?,
+            sequencer_address: sequencer_address.to_string(),
         })
     }
 
@@ -60,7 +57,9 @@ impl ProofCoordinator {
         // send proof input to the prover
         let _job_id = self
             .client
-            .send_proof_input(&input, &self.sequencer_address, &self.prover_url)
+            .request()
+            .strategy(Strategy::Sequential)
+            .send_proof_input(&input, &self.sequencer_address)
             .await
             .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?;
 
