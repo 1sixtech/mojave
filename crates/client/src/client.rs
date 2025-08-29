@@ -23,26 +23,26 @@ const MAX_DELAY: Duration = Duration::from_secs(30);
 
 #[derive(Default)]
 pub struct MojaveClientBuilder {
-    sequencer_url: Option<Vec<String>>,
-    full_node_url: Option<Vec<String>>,
-    prover_url: Option<Vec<String>>,
+    sequencer_urls: Option<Vec<String>>,
+    full_node_urls: Option<Vec<String>>,
+    prover_urls: Option<Vec<String>>,
     private_key: Option<String>,
     timeout: Option<Duration>,
 }
 
 impl MojaveClientBuilder {
-    pub fn sequencer_url(mut self, sequencer_url: &[String]) -> Self {
-        self.sequencer_url = Some(sequencer_url.to_owned());
+    pub fn sequencer_urls(mut self, sequencer_urls: &[String]) -> Self {
+        self.sequencer_urls = Some(sequencer_urls.to_owned());
         self
     }
 
-    pub fn full_node_url(mut self, full_node_url: &[String]) -> Self {
-        self.full_node_url = Some(full_node_url.to_owned());
+    pub fn full_node_urls(mut self, full_node_urls: &[String]) -> Self {
+        self.full_node_urls = Some(full_node_urls.to_owned());
         self
     }
 
-    pub fn prover_url(mut self, prover_url: &[String]) -> Self {
-        self.prover_url = Some(prover_url.to_owned());
+    pub fn prover_urls(mut self, prover_urls: &[String]) -> Self {
+        self.prover_urls = Some(prover_urls.to_owned());
         self
     }
 
@@ -63,20 +63,20 @@ impl MojaveClientBuilder {
     }
 
     pub fn build(mut self) -> Result<MojaveClient, MojaveClientError> {
-        let sequencer_url = self.sequencer_url.take();
+        let sequencer_urls = self.sequencer_urls.take();
 
-        let full_node_url = self.full_node_url.take();
+        let full_node_urls = self.full_node_urls.take();
 
-        let prover_url = self.prover_url.take();
+        let prover_urls = self.prover_urls.take();
 
         let private_key = self.private_key.take();
 
         let timeout = self.timeout.take();
 
         MojaveClient::new(
-            sequencer_url,
-            full_node_url,
-            prover_url,
+            sequencer_urls,
+            full_node_urls,
+            prover_urls,
             private_key,
             timeout,
         )
@@ -90,9 +90,9 @@ pub struct MojaveClient {
 
 struct MojaveClientInner {
     client: reqwest::Client,
-    sequencer_url: Option<Vec<Url>>,
-    full_node_url: Option<Vec<Url>>,
-    prover_url: Option<Vec<Url>>,
+    sequencer_urls: Option<Vec<Url>>,
+    full_node_urls: Option<Vec<Url>>,
+    prover_urls: Option<Vec<Url>>,
     signing_key: Option<SigningKey>,
 }
 
@@ -116,9 +116,9 @@ impl MojaveClient {
     }
 
     pub fn new(
-        sequencer_url: Option<Vec<String>>,
-        full_node_url: Option<Vec<String>>,
-        prover_url: Option<Vec<String>>,
+        sequencer_urls: Option<Vec<String>>,
+        full_node_urls: Option<Vec<String>>,
+        prover_urls: Option<Vec<String>>,
         private_key: Option<String>,
         timeout: Option<Duration>,
     ) -> Result<Self, MojaveClientError> {
@@ -131,9 +131,9 @@ impl MojaveClient {
         let client = MojaveClient {
             inner: Arc::new(MojaveClientInner {
                 client: http_client.build()?,
-                sequencer_url: Self::parse_urls(sequencer_url)?,
-                full_node_url: Self::parse_urls(full_node_url)?,
-                prover_url: Self::parse_urls(prover_url)?,
+                sequencer_urls: Self::parse_urls(sequencer_urls)?,
+                full_node_urls: Self::parse_urls(full_node_urls)?,
+                prover_urls: Self::parse_urls(prover_urls)?,
                 signing_key: match private_key {
                     Some(private_key) => Some(
                         SigningKey::from_str(&private_key)
@@ -371,7 +371,7 @@ impl<'a> Request<'a> {
             None => self
                 .client
                 .inner
-                .full_node_url
+                .full_node_urls
                 .as_ref()
                 .ok_or(MojaveClientError::MissingFullNodeUrls)?,
         };
@@ -398,7 +398,7 @@ impl<'a> Request<'a> {
             None => self
                 .client
                 .inner
-                .prover_url
+                .prover_urls
                 .as_ref()
                 .ok_or(MojaveClientError::MissingProverUrl)?,
         };
@@ -421,7 +421,7 @@ impl<'a> Request<'a> {
             None => self
                 .client
                 .inner
-                .prover_url
+                .prover_urls
                 .as_ref()
                 .ok_or(MojaveClientError::MissingProverUrl)?,
         };
@@ -444,7 +444,7 @@ impl<'a> Request<'a> {
             None => self
                 .client
                 .inner
-                .prover_url
+                .prover_urls
                 .as_ref()
                 .ok_or(MojaveClientError::MissingProverUrl)?,
         };
@@ -485,7 +485,7 @@ impl<'a> Request<'a> {
             None => self
                 .client
                 .inner
-                .sequencer_url
+                .sequencer_urls
                 .as_ref()
                 .ok_or(MojaveClientError::MissingSequencerUrl)?,
         };

@@ -37,8 +37,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
             let mojave_client = MojaveClient::builder()
                 .private_key(sequencer_options.private_key)
-                .full_node_url(&sequencer_options.full_node_addresses)
-                .prover_url(&[sequencer_options.prover_address])
+                .full_node_urls(&sequencer_options.full_node_addresses)
+                .prover_urls(&[sequencer_options.prover_address])
                 .build()
                 .unwrap_or_else(|error| {
                     tracing::error!("Failed to build the client: {}", error);

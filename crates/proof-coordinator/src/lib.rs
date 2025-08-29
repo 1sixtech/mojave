@@ -15,9 +15,9 @@ use zkvm_interface::io::ProgramInput;
 mod errors;
 
 pub struct ProofCoordinator {
+    client: MojaveClient,
     /// Come from the block builder
     proof_data_receiver: Receiver<u64>,
-    client: MojaveClient,
     sequencer_address: String,
 }
 
@@ -28,12 +28,14 @@ impl ProofCoordinator {
         sequencer_address: String,
     ) -> Result<Self, ProofCoordinatorError> {
         let prover_url = vec![prover_address.to_string()];
+        let client = MojaveClient::builder()
+            .prover_url(&prover_url)
+            .build()
+            .map_err(ProofCoordinatorError::ClientError)?;
+
         Ok(Self {
+            client,
             proof_data_receiver,
-            client: MojaveClient::builder()
-                .prover_url(&prover_url)
-                .build()
-                .map_err(ProofCoordinatorError::ClientError)?,
             sequencer_address: sequencer_address.to_string(),
         })
     }
