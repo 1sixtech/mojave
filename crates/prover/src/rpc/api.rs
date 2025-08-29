@@ -52,9 +52,10 @@ pub async fn start_api(
     let http_server = axum::serve(http_listener, http_router).into_future();
     info!("Starting HTTP server at {http_addr}");
 
-    let client = MojaveClient::new(private_key).map_err(|err| {
-        RpcErr::Internal(format!("Error to start client to send proof back: {err}"))
-    })?;
+    let client = MojaveClient::builder()
+        .private_key(private_key.to_string())
+        .build()
+        .map_err(|err| RpcErr::Internal(err.to_string()))?;
     tracing::info!("MojaveClient initialized");
 
     // Start the proof worker in the background.

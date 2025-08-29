@@ -4,7 +4,7 @@ use ethrex_prover_lib::{backends::Backend, prove, to_batch_proof};
 use ethrex_rpc::RpcErr;
 use mojave_client::{
     MojaveClient,
-    types::{ProofResponse, ProofResult},
+    types::{ProofResponse, ProofResult, Strategy},
 };
 use tokio::{sync::mpsc, task::JoinHandle};
 
@@ -52,7 +52,10 @@ pub(crate) fn spawn_proof_worker(
                         .upsert_proof(&job_id, proof_response.clone())
                         .await;
                     match client
-                        .send_proof_response(&proof_response, &job.sequencer_url)
+                        .request()
+                        .urls(std::slice::from_ref(&job.sequencer_url))
+                        .strategy(Strategy::Sequential)
+                        .send_proof_response(&proof_response)
                         .await
                     {
                         Ok(_) => {
