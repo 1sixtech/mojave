@@ -1,15 +1,19 @@
 use crate::{
     error::Error,
     initializers::{get_local_node_record, get_signer, init_blockchain, init_store},
-    rpc::{start_api, start_network},
-    types::{MojaveNode, NodeOptions},
+    p2p::network::start_network,
+    rpc::start_api,
+    types::{MojaveNode, NodeMode, NodeOptions},
     utils::{
         NodeConfigFile, get_authrpc_socket_addr, get_http_socket_addr, get_local_p2p_node,
         read_jwtsecret_file, resolve_data_dir, store_node_config_file,
     },
 };
 use ethrex_blockchain::BlockchainType;
-use ethrex_p2p::{network::peer_table, peer_handler::PeerHandler, sync_manager::SyncManager};
+use ethrex_p2p::{
+    network::peer_table, peer_handler::PeerHandler, rlpx::l2::l2_connection::P2PBasedContext,
+    sync_manager::SyncManager,
+};
 use ethrex_rpc::EthClient;
 use ethrex_storage_rollup::{EngineTypeRollup, StoreRollup};
 use ethrex_vm::EvmEngine;
@@ -56,6 +60,12 @@ impl MojaveNode {
             &signer,
         )));
 
+        let local_node_record2 = Arc::new(Mutex::new(get_local_node_record(
+            &data_dir,
+            &local_p2p_node,
+            &signer,
+        )));
+
         let peer_table = peer_table(local_p2p_node.node_id());
         let peer_handler = PeerHandler::new(peer_table.clone());
 
@@ -63,22 +73,33 @@ impl MojaveNode {
 
         let tracker = TaskTracker::new();
 
+        let based_context = if options.mode == NodeMode::Sequencer {
+            Some(P2PBasedContext {
+                store_rollup: rollup_store.clone(),
+                committer_key: Arc::new(signer),
+            })
+        } else {
+            blockchain.set_synced();
+            Some(P2PBasedContext {
+                store_rollup: rollup_store.clone(),
+                committer_key: Arc::new(signer),
+            })
+        };
+
         start_network(
             options.bootnodes.clone(),
             &options.network,
             &options.datadir,
             local_p2p_node.clone(),
-            local_node_record.clone(),
+            local_node_record2.clone(),
             signer,
             peer_table.clone(),
             store.clone(),
             tracker,
             blockchain.clone(),
-            None,
+            based_context,
         )
         .await;
-
-        // let peer_table = peer_table.lock().await;
 
         // Create SyncManager
         let syncer = SyncManager::new(
@@ -102,6 +123,7 @@ impl MojaveNode {
             syncer,
             peer_table,
             peer_handler,
+            mode: options.mode,
         })
     }
 
@@ -127,6 +149,7 @@ impl MojaveNode {
             rpc_shutdown.clone(),
         )
         .await?;
+
         tokio::select! {
             _ = tokio::signal::ctrl_c() => {
                 tracing::info!("Shutting down the full node..");

@@ -185,6 +185,7 @@ impl From<&Options> for mojave_node_lib::types::NodeOptions {
             bootnodes: options.bootnodes.clone(),
             datadir: options.datadir.datadir.clone(),
             syncmode: options.syncmode.unwrap_or(SyncMode::Full),
+            mode: mojave_node_lib::types::NodeMode::FullNode,
             sponsorable_addresses_file_path: options.sponsorable_addresses_file_path.clone(),
             metrics_addr: options.metrics_addr.clone(),
             metrics_port: options.metrics_port.clone(),

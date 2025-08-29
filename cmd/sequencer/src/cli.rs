@@ -174,6 +174,14 @@ pub struct Options {
         help_heading = "P2P options"
     )]
     pub discovery_port: String,
+    // #[clap(
+    //     long,
+    //     default_value = "false",
+    //     value_name = "BOOLEAN",
+    //     env = "ETHREX_BASED",
+    //     help_heading = "Based options"
+    // )]
+    // pub based: bool,
 }
 
 impl From<&Options> for mojave_node_lib::types::NodeOptions {
@@ -193,11 +201,13 @@ impl From<&Options> for mojave_node_lib::types::NodeOptions {
             bootnodes: options.bootnodes.clone(),
             datadir: options.datadir.datadir.clone(),
             syncmode: options.syncmode.unwrap_or(SyncMode::Full),
+            mode: mojave_node_lib::types::NodeMode::Sequencer,
             sponsorable_addresses_file_path: options.sponsorable_addresses_file_path.clone(),
             metrics_addr: options.metrics_addr.clone(),
             metrics_port: options.metrics_port.clone(),
             metrics_enabled: options.metrics_enabled,
             force: options.force,
+            // based: options.based,
         }
     }
 }

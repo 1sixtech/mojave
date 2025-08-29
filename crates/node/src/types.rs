@@ -14,6 +14,14 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio_util::sync::CancellationToken;
 
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, ValueEnum, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum NodeMode {
+    #[default]
+    FullNode,
+    Sequencer,
+}
+
 #[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, ValueEnum)]
 #[serde(rename_all = "lowercase")]
 pub enum SyncMode {
@@ -37,6 +45,7 @@ pub struct NodeOptions {
     pub network: Network,
     pub bootnodes: Vec<Node>,
     pub syncmode: SyncMode,
+    pub mode: NodeMode,
     pub sponsorable_addresses_file_path: Option<String>,
     pub datadir: String,
     pub force: bool,
@@ -72,6 +81,7 @@ impl Default for NodeOptions {
             bootnodes: Default::default(),
             datadir: Default::default(),
             syncmode: Default::default(),
+            mode: Default::default(),
             sponsorable_addresses_file_path: None,
             metrics_addr: "0.0.0.0".to_owned(),
             metrics_port: Default::default(),
@@ -93,4 +103,22 @@ pub struct MojaveNode {
     pub syncer: SyncManager,
     pub peer_table: Arc<Mutex<KademliaTable>>,
     pub peer_handler: PeerHandler,
+    pub mode: NodeMode,
+}
+
+impl MojaveNode {
+    /// Returns true if this node is running in sequencer mode
+    pub fn is_sequencer(&self) -> bool {
+        matches!(self.mode, NodeMode::Sequencer)
+    }
+
+    /// Returns true if this node is running in full node mode
+    pub fn is_full_node(&self) -> bool {
+        matches!(self.mode, NodeMode::FullNode)
+    }
+
+    /// Returns the current node mode
+    pub fn get_mode(&self) -> NodeMode {
+        self.mode
+    }
 }
