@@ -34,7 +34,7 @@ pub enum Error {
     #[error("ProofCoordinator encountered a BlobsBundleError: {0}")]
     BlobsBundleError(#[from] ethrex_common::types::BlobsBundleError),
     #[error("Failed to execute command: {0}")]
-    Comand(std::io::Error),
+    Command(std::io::Error),
     #[error("Missing blob for batch {0}")]
     MissingBlob(u64),
     #[error("Proof failed for batch {0}: {1}")]

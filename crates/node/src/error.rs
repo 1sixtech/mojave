@@ -2,7 +2,7 @@ use ethrex_common::types::GenesisError;
 use ethrex_rpc::clients::EthClientError;
 use ethrex_storage_rollup::RollupStoreError;
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = core::result::Result<T, Error>;
 pub use ethrex_rpc::RpcErr as RpcError;
 
 #[derive(Debug, thiserror::Error)]

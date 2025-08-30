@@ -119,7 +119,7 @@ pub async fn start_api(
 async fn handle_http_request(
     State(service_context): State<RpcApiContext>,
     body: String,
-) -> std::result::Result<Json<Value>, StatusCode> {
+) -> core::result::Result<Json<Value>, StatusCode> {
     let res = match serde_json::from_str::<RpcRequestWrapper>(&body) {
         Ok(RpcRequestWrapper::Single(request)) => {
             let res = map_http_requests(&request, service_context).await;
