@@ -9,11 +9,8 @@ use tokio_util::sync::CancellationToken;
 use crate::rpc::{RpcApiContext, types::OrderedBlock};
 
 pub(crate) async fn ingest_block(context: RpcApiContext, block_number: u64) -> Result<(), RpcErr> {
-    let peeked = context
-        .pending_signed_blocks
-        .peek_wait()
-        .await;
-    
+    let peeked = context.pending_signed_blocks.peek_wait().await;
+
     if block_number == peeked.0.header.number {
         // Push the signed block from the pending queue to the block queue.
         let signed_block =
