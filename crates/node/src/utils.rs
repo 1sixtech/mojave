@@ -38,7 +38,7 @@ impl NodeConfigFile {
 
 pub fn read_node_config_file(file_path: PathBuf) -> Result<NodeConfigFile> {
     match std::fs::File::open(file_path) {
-        Ok(file) => serde_json::from_reader(file).map_err(|e| Error::SerdeJson(e)),
+        Ok(file) => serde_json::from_reader(file).map_err(Error::SerdeJson),
         Err(e) => Err(Error::Custom(format!("No config file found: {e}"))),
     }
 }
