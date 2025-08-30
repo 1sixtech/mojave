@@ -10,7 +10,7 @@ build-mojave:
 	cargo build --release
 
 clean:
-	rm -rf mojave-node mojave-sequencer
+	rm -rf mojave-node mojave-sequencer bitcoin/regtest
 
 # Run both node and sequencer in parallel, with sequencer waiting for node
 full: clean
