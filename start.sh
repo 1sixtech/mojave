@@ -17,7 +17,6 @@ GENESIS="./data/testnet-genesis.json"
 NODE_DATA_DIR="$(pwd)/mojave-node"
 SEQ_DATA_DIR="$(pwd)/mojave-sequencer"
 BITCOIN_DATA_DIR="$(pwd)/bitcoin"
-BITCOIN_REGTEST_DATA_DIR="$(pwd)/bitcoin/regtest"
 BITCOIN_CONFIG_DIR="$(pwd)/bitcoin/bitcoin.conf"
 SEQ_PRIVKEY="${SEQ_PRIVKEY:-0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}"
 
