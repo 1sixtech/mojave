@@ -1,4 +1,7 @@
-use crate::{Signature, SignatureError, SignatureScheme};
+use crate::{
+    error::{EcdsaError, EcdsaErrorKind, Error, Result},
+    types::{Signature, SignatureScheme},
+};
 use secp256k1::{
     Message, PublicKey, Secp256k1, SecretKey as PrivateKey, ecdsa::Signature as EcdsaSignature,
 };
@@ -16,35 +19,34 @@ static SECP256K1_VERIFY: LazyLock<Secp256k1<secp256k1::VerifyOnly>> =
 pub struct SigningKey(PrivateKey);
 
 impl FromStr for SigningKey {
-    type Err = SignatureError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    type Err = Error;
+    fn from_str(s: &str) -> Result<Self> {
         let private_key = PrivateKey::from_str(s).or_else(|_| {
             let s = s.strip_prefix("0x").unwrap_or(s);
 
             let bytes = hex::decode(s)
-                .map_err(|error| Error::CreateSigningKey(ErrorKind::InvalidHex(error)))?;
+                .map_err(|error| EcdsaError::CreateSigningKey(EcdsaErrorKind::InvalidHex(error)))?;
 
             PrivateKey::from_slice(&bytes)
-                .map_err(|error| Error::CreateSigningKey(ErrorKind::Secp256k1(error)))
+                .map_err(|error| EcdsaError::CreateSigningKey(EcdsaErrorKind::Secp256k1(error)))
         })?;
         Ok(Self(private_key))
     }
 }
 
-impl super::Signer for SigningKey {
-    fn from_slice(slice: &[u8]) -> Result<Self, SignatureError> {
-        let private_key =
-            PrivateKey::from_slice(slice).map_err(|error| Error::CreateSigningKey(error.into()))?;
+impl crate::types::Signer for SigningKey {
+    fn from_slice(slice: &[u8]) -> Result<Self> {
+        let private_key = PrivateKey::from_slice(slice)
+            .map_err(|error| EcdsaError::CreateSigningKey(error.into()))?;
         Ok(Self(private_key))
     }
 
-    fn sign<T: Serialize>(&self, message: &T) -> Result<Signature, SignatureError> {
+    fn sign<T: Serialize>(&self, message: &T) -> Result<Signature> {
         let message_bytes =
-            bincode::serialize(message).map_err(|error| Error::Sign(error.into()))?;
+            bincode::serialize(message).map_err(|error| EcdsaError::Sign(error.into()))?;
         let msg_hash = Sha256::digest(message_bytes);
         let message = Message::from_digest_slice(msg_hash.as_slice())
-            .map_err(|error| Error::Sign(error.into()))?;
+            .map_err(|error| EcdsaError::Sign(error.into()))?;
         let secp256k1 = &SECP256K1_SIGNING;
         let signature = secp256k1.sign_ecdsa(&message, &self.0).serialize_compact();
         Ok(Signature {
@@ -67,9 +69,8 @@ impl SigningKey {
 pub struct VerifyingKey(PublicKey);
 
 impl TryFrom<String> for VerifyingKey {
-    type Error = SignatureError;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
+    type Error = Error;
+    fn try_from(value: String) -> Result<Self> {
         Self::from_str(&value)
     }
 }
@@ -81,39 +82,34 @@ impl From<VerifyingKey> for String {
 }
 
 impl FromStr for VerifyingKey {
-    type Err = SignatureError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    type Err = Error;
+    fn from_str(s: &str) -> Result<Self> {
         let public_key =
-            PublicKey::from_str(s).map_err(|error| Error::CreateVerifyingKey(error.into()))?;
+            PublicKey::from_str(s).map_err(|error| EcdsaError::CreateVerifyingKey(error.into()))?;
         Ok(Self(public_key))
     }
 }
 
-impl crate::Verifier for VerifyingKey {
-    fn from_slice(slice: &[u8]) -> Result<Self, SignatureError> {
+impl crate::types::Verifier for VerifyingKey {
+    fn from_slice(slice: &[u8]) -> Result<Self> {
         let public_key = PublicKey::from_slice(slice)
-            .map_err(|error| Error::CreateVerifyingKey(error.into()))?;
+            .map_err(|error| EcdsaError::CreateVerifyingKey(error.into()))?;
         Ok(Self(public_key))
     }
 
-    fn verify<T: Serialize>(
-        &self,
-        message: &T,
-        signature: &Signature,
-    ) -> Result<(), SignatureError> {
+    fn verify<T: Serialize>(&self, message: &T, signature: &Signature) -> Result<()> {
         if signature.scheme != SignatureScheme::Secp256k1 {
-            return Err(Error::InvalidSignatureScheme)?;
+            return Err(EcdsaError::InvalidSignatureScheme)?;
         }
 
         let secp = &SECP256K1_VERIFY;
         let message_bytes =
-            bincode::serialize(message).map_err(|error| Error::Verify(error.into()))?;
+            bincode::serialize(message).map_err(|error| EcdsaError::Verify(error.into()))?;
         let digest = Sha256::digest(message_bytes);
-        let msg =
-            Message::from_digest_slice(&digest).map_err(|error| Error::Verify(error.into()))?;
+        let msg = Message::from_digest_slice(&digest)
+            .map_err(|error| EcdsaError::Verify(error.into()))?;
         let sig = EcdsaSignature::from_compact(&signature.bytes)
-            .map_err(|error| Error::Verify(error.into()))?;
+            .map_err(|error| EcdsaError::Verify(error.into()))?;
 
         secp.verify_ecdsa(&msg, &sig, &self.0).map_err(|e| e.into())
     }
@@ -133,35 +129,11 @@ impl VerifyingKey {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum Error {
-    #[error("Failed to create a signing key: {0}")]
-    CreateSigningKey(ErrorKind),
-    #[error("Failed to sign the message: {0}")]
-    Sign(ErrorKind),
-    #[error("Failed to create a verifying key: {0}")]
-    CreateVerifyingKey(ErrorKind),
-    #[error("Failed to verify the message: {0}")]
-    Verify(ErrorKind),
-    #[error("Invalid signature scheme")]
-    InvalidSignatureScheme,
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum ErrorKind {
-    #[error("{0}")]
-    Secp256k1(#[from] secp256k1::Error),
-    #[error("{0}")]
-    Bincode(#[from] bincode::Error),
-    #[error("{0}")]
-    InvalidHex(hex::FromHexError),
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
 
-    use crate::{Signer, Verifier};
+    use crate::types::{Signer, Verifier};
 
     /// use anvil 0 account for test in here: https://getfoundry.sh/anvil/overview/
     /// address: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
@@ -202,7 +174,7 @@ mod test {
 
     #[test]
     fn test_secp256k1_sign_and_verify() {
-        use crate::{Signer, Verifier};
+        use crate::types::{Signer, Verifier};
 
         let anvil_signing_key = SigningKey::from_str(ANVIL_ACC0_KEY).unwrap();
 
@@ -366,12 +338,12 @@ mod test {
     fn test_secp256k1_serialization_deserialization_errors() {
         // Test VerifyingKey deserialization with invalid public key string
         let invalid_json = "\"invalid_public_key_string\"";
-        let result: Result<VerifyingKey, _> = serde_json::from_str(invalid_json);
+        let result: core::result::Result<VerifyingKey, _> = serde_json::from_str(invalid_json);
         assert!(result.is_err());
 
         // Test VerifyingKey deserialization with malformed public key
         let malformed_json = "\"02invalid_public_key_hex\"";
-        let result: Result<VerifyingKey, _> = serde_json::from_str(malformed_json);
+        let result: core::result::Result<VerifyingKey, _> = serde_json::from_str(malformed_json);
         assert!(result.is_err());
     }
 

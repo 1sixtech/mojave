@@ -22,12 +22,10 @@ async fn main() -> Result<()> {
             sequencer_options,
         } => {
             let node_options: mojave_node_lib::types::NodeOptions = (&options).into();
-            let node = MojaveNode::init(&node_options)
-                .await
-                .unwrap_or_else(|error| {
-                    tracing::error!("Failed to initialize the node: {}", error);
-                    std::process::exit(1);
-                });
+            let node = MojaveNode::init(&node_options).await.map_err(|error| {
+                tracing::error!("Failed to initialize the node: {}", error);
+                std::process::exit(1);
+            })?;
 
             let mojave_client = MojaveClient::new(sequencer_options.private_key.as_str())?;
             let context = BlockProducerContext::new(

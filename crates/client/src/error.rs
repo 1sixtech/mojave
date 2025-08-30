@@ -17,7 +17,7 @@ pub enum Error {
     #[error("Serde JSON error: {0}")]
     SerdeJson(#[from] serde_json::Error),
     #[error("Signature error: {0}")]
-    SignatureError(#[from] mojave_signature::SignatureError),
+    SignatureError(#[from] mojave_signature::error::Error),
     #[error("Connection timed out")]
     TimeOut,
 }

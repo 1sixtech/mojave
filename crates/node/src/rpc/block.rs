@@ -1,6 +1,6 @@
 use crate::rpc::{RpcApiContext, types::OrderedBlock};
 use mojave_client::types::SignedBlock;
-use mojave_signature::Verifier;
+use mojave_signature::types::Verifier;
 use mojave_utils::rpc::{
     error::{Error, Result},
     types::RpcRequest,

@@ -1,6 +1,6 @@
 use crate::rpc::RpcApiContext;
 use mojave_client::types::{ProofResult, SignedProofResponse};
-use mojave_signature::Verifier;
+use mojave_signature::types::Verifier;
 use mojave_utils::rpc::{
     error::{Error, Result},
     types::RpcRequest,

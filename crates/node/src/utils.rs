@@ -1,16 +1,13 @@
 use bytes::Bytes;
-use ethrex_common::Address;
 use ethrex_p2p::{
     kademlia::KademliaTable,
     network::public_key_from_signing_key,
     types::{Node, NodeRecord},
 };
-use ethrex_storage_rollup::{EngineTypeRollup, StoreRollup};
 use mojave_utils::network::{MAINNET_BOOTNODES, Network, TESTNET_BOOTNODES};
 use secp256k1::SecretKey;
 use serde::{Deserialize, Serialize};
 use std::{
-    fs,
     fs::File,
     io,
     io::Read as _,
@@ -203,34 +200,4 @@ pub fn get_local_p2p_node(
     tracing::info!("Node: {enode}");
 
     node
-}
-
-pub fn get_valid_delegation_addresses(
-    sponsorable_addresses_file_path: Option<String>,
-) -> Vec<Address> {
-    let Some(ref path) = sponsorable_addresses_file_path else {
-        tracing::warn!("No valid addresses provided, ethrex_SendTransaction will always fail");
-        return Vec::new();
-    };
-    let addresses: Vec<Address> = fs::read_to_string(path)
-        .unwrap_or_else(|_| panic!("Failed to load file {path}"))
-        .lines()
-        .filter(|line| !line.trim().is_empty())
-        .map(|line| line.to_string().parse::<Address>())
-        .filter_map(Result::ok)
-        .collect();
-    if addresses.is_empty() {
-        tracing::warn!("No valid addresses provided, ethrex_SendTransaction will always fail");
-    }
-    addresses
-}
-
-pub async fn init_rollup_store(data_dir: &str, engine_type: EngineTypeRollup) -> StoreRollup {
-    let rollup_store =
-        StoreRollup::new(data_dir, engine_type).expect("Failed to create StoreRollup");
-    rollup_store
-        .init()
-        .await
-        .expect("Failed to init rollup store");
-    rollup_store
 }

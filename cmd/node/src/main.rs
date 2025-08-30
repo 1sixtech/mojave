@@ -15,12 +15,10 @@ async fn main() -> Result<()> {
     match cli.command {
         Command::Start { options } => {
             let node_options: mojave_node_lib::types::NodeOptions = (&options).into();
-            let node = MojaveNode::init(&node_options)
-                .await
-                .unwrap_or_else(|error| {
-                    tracing::error!("Failed to initialize the node: {}", error);
-                    std::process::exit(1);
-                });
+            let node = MojaveNode::init(&node_options).await.map_err(|error| {
+                tracing::error!("Failed to initialize the node: {}", error);
+                std::process::exit(1);
+            })?;
             tokio::select! {
                 res = node.run(&node_options) => {
                     if let Err(err) = res {

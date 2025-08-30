@@ -1,9 +1,18 @@
-use std::collections::{HashMap, HashSet};
-
-use reqwest::Url;
-use tokio::sync::Mutex;
-
 use mojave_client::types::{ProofResponse, ProverData};
+use reqwest::Url;
+use std::collections::{HashMap, HashSet};
+use tokio::sync::{Mutex, mpsc};
+
+pub struct ProverRpcContext {
+    pub aligned_mode: bool,
+    pub job_store: JobStore,
+    pub sender: mpsc::Sender<JobRecord>,
+}
+
+pub struct SendProofInputRequest {
+    pub prover_data: ProverData,
+    pub sequencer_addr: Url,
+}
 
 pub struct JobRecord {
     pub job_id: String,

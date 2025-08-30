@@ -152,7 +152,7 @@ async fn map_http_requests(req: &RpcRequest, context: RpcApiContext) -> Result<V
 
 pub async fn map_mojave_requests(req: &RpcRequest, context: RpcApiContext) -> Result<Value> {
     match req.method.as_str() {
-        "mojave_sendProofResponse" => SendBatchProofRequest::call(req, context).await,
+        "moj_sendProofResponse" => SendBatchProofRequest::call(req, context).await,
         _ => Err(Error::MethodNotFound(req.method.clone())),
     }
 }

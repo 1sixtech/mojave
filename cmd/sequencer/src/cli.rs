@@ -249,7 +249,7 @@ pub enum Command {
     },
 }
 
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 #[clap(group(ArgGroup::new("mojave::SequencerOptions")))]
 pub struct SequencerOptions {
     #[arg(
@@ -275,13 +275,4 @@ pub struct SequencerOptions {
     pub block_time: u64,
     #[arg(long = "private_key", help = "Private key used for signing blocks")]
     pub private_key: String,
-}
-
-impl std::fmt::Debug for SequencerOptions {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SequencerOptions")
-            .field("full_node_addresses", &self.full_node_addresses)
-            .field("block_time", &self.block_time)
-            .finish()
-    }
 }

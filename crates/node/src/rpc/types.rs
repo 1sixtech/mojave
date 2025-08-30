@@ -21,7 +21,7 @@ use mojave_utils::unique_heap::{AsyncUniqueHeap, UniqueHeapItem};
 ///
 /// assert!(block1 > block2); // block1 has higher priority (lower number)
 /// ```
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq)]
 pub struct OrderedBlock(pub Block);
 
 impl PartialEq for OrderedBlock {
@@ -29,8 +29,6 @@ impl PartialEq for OrderedBlock {
         self.0.header.number == other.0.header.number
     }
 }
-
-impl Eq for OrderedBlock {}
 
 impl PartialOrd for OrderedBlock {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {

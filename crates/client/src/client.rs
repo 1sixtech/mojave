@@ -11,7 +11,10 @@ use futures::{
     FutureExt,
     future::{Fuse, select_ok},
 };
-use mojave_signature::{Signature, Signer, SigningKey};
+use mojave_signature::{
+    SigningKey,
+    types::{Signature, Signer},
+};
 use mojave_utils::rpc::types::MojaveRequestMethods;
 use reqwest::Url;
 use serde::de::DeserializeOwned;

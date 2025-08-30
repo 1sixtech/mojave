@@ -1,6 +1,6 @@
-use std::sync::Arc;
+mod errors;
 
-use crate::errors::ProofCoordinatorError;
+use crate::errors::{Error, Result};
 use ethrex_blockchain::Blockchain;
 use ethrex_common::types::{BlobsBundle, Block};
 use ethrex_storage::Store;
@@ -10,10 +10,9 @@ use mojave_client::{
     types::{ProofResponse, ProofResult, ProverData},
 };
 use reqwest::Url;
+use std::sync::Arc;
 use tokio::sync::mpsc::Receiver;
 use zkvm_interface::io::ProgramInput;
-
-mod errors;
 
 pub struct ProofCoordinator {
     /// Come from the block builder
@@ -32,21 +31,16 @@ impl ProofCoordinator {
         prover_address: &str,
         sequencer_address: String,
         private_key: &str,
-    ) -> Result<Self, ProofCoordinatorError> {
+    ) -> Result<Self> {
         Ok(Self {
             proof_data_receiver,
-            prover_url: Url::parse(prover_address)
-                .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?,
+            prover_url: Url::parse(prover_address).map_err(|e| Error::Custom(e.to_string()))?,
             sequencer_address,
-            client: MojaveClient::new(private_key)
-                .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?,
+            client: MojaveClient::new(private_key).map_err(|e| Error::Custom(e.to_string()))?,
         })
     }
 
-    pub async fn process_new_block(
-        &mut self,
-        context: ProofCoordinatorContext,
-    ) -> Result<(), ProofCoordinatorError> {
+    pub async fn process_new_block(&mut self, context: ProofCoordinatorContext) -> Result<()> {
         let batch_number = match self.proof_data_receiver.recv().await {
             Some(batch_number) => batch_number,
             None => return Ok(()),
@@ -62,7 +56,7 @@ impl ProofCoordinator {
             .client
             .send_proof_input(&input, &self.sequencer_address, &self.prover_url)
             .await
-            .map_err(|e| ProofCoordinatorError::Custom(e.to_string()))?;
+            .map_err(|e| Error::Custom(e.to_string()))?;
 
         Ok(())
     }
@@ -72,7 +66,7 @@ impl ProofCoordinator {
         context: &ProofCoordinatorContext,
         proof_response: ProofResponse,
         batch_number: u64,
-    ) -> Result<(), ProofCoordinatorError> {
+    ) -> Result<()> {
         context.store_proof(proof_response, batch_number).await
     }
 }
@@ -85,18 +79,11 @@ pub struct ProofCoordinatorContext {
 }
 
 impl ProofCoordinatorContext {
-    async fn store_proof(
-        &self,
-        proof_response: ProofResponse,
-        batch_number: u64,
-    ) -> Result<(), ProofCoordinatorError> {
+    async fn store_proof(&self, proof_response: ProofResponse, batch_number: u64) -> Result<()> {
         let batch_proof = match proof_response.result {
             ProofResult::Proof(proof) => proof,
             ProofResult::Error(err) => {
-                return Err(ProofCoordinatorError::ProofFailed(
-                    batch_number,
-                    err.to_string(),
-                ));
+                return Err(Error::ProofFailed(batch_number, err.to_string()));
             }
         };
 
@@ -122,16 +109,13 @@ impl ProofCoordinatorContext {
         Ok(())
     }
 
-    pub async fn create_prover_input(
-        &self,
-        batch_number: u64,
-    ) -> Result<ProverData, ProofCoordinatorError> {
+    pub async fn create_prover_input(&self, batch_number: u64) -> Result<ProverData> {
         let Some(block_numbers) = self
             .rollup_store
             .get_block_numbers_by_batch(batch_number)
             .await?
         else {
-            return Err(ProofCoordinatorError::ItemNotFoundInStore(format!(
+            return Err(Error::ItemNotFoundInStore(format!(
                 "Batch number {batch_number} not found in store"
             )));
         };
@@ -142,7 +126,7 @@ impl ProofCoordinatorContext {
             .blockchain
             .generate_witness_for_blocks(&blocks)
             .await
-            .map_err(ProofCoordinatorError::from)?;
+            .map_err(Error::from)?;
 
         // Get blobs bundle cached by the L1 Committer (blob, commitment, proof)
         let (blob_commitment, blob_proof) = {
@@ -150,7 +134,7 @@ impl ProofCoordinatorContext {
                 .rollup_store
                 .get_blobs_by_batch(batch_number)
                 .await?
-                .ok_or(ProofCoordinatorError::MissingBlob(batch_number))?;
+                .ok_or(Error::MissingBlob(batch_number))?;
             let BlobsBundle {
                 mut commitments,
                 mut proofs,
@@ -158,7 +142,7 @@ impl ProofCoordinatorContext {
             } = BlobsBundle::create_from_blobs(&blob)?;
             match (commitments.pop(), proofs.pop()) {
                 (Some(commitment), Some(proof)) => (commitment, proof),
-                _ => return Err(ProofCoordinatorError::MissingBlob(batch_number)),
+                _ => return Err(Error::MissingBlob(batch_number)),
             }
         };
 
@@ -176,21 +160,18 @@ impl ProofCoordinatorContext {
         })
     }
 
-    async fn fetch_blocks(
-        &self,
-        block_numbers: Vec<u64>,
-    ) -> Result<Vec<Block>, ProofCoordinatorError> {
+    async fn fetch_blocks(&self, block_numbers: Vec<u64>) -> Result<Vec<Block>> {
         let mut blocks = vec![];
         for block_number in block_numbers {
             let header = self
                 .store
                 .get_block_header(block_number)?
-                .ok_or(ProofCoordinatorError::StorageDataIsNone)?;
+                .ok_or(Error::StorageDataIsNone)?;
             let body = self
                 .store
                 .get_block_body(block_number)
                 .await?
-                .ok_or(ProofCoordinatorError::StorageDataIsNone)?;
+                .ok_or(Error::StorageDataIsNone)?;
             blocks.push(Block::new(header, body));
         }
         Ok(blocks)

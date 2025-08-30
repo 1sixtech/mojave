@@ -21,12 +21,14 @@ use ethrex_p2p::{
 use ethrex_rpc::{
     ActiveFilters, EthClient, GasTipEstimator, NodeData, RpcApiContext as L1Context, RpcErr,
     RpcRequestWrapper,
-    utils::{RpcRequest, RpcRequestId},
 };
 use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
 use mojave_utils::{
-    rpc::error::{Error, Result},
+    rpc::{
+        error::{Error, Result},
+        types::{RpcRequest, RpcRequestId},
+    },
     unique_heap::AsyncUniqueHeap,
 };
 use serde_json::Value;
@@ -306,7 +308,7 @@ pub async fn map_eth_requests(req: &RpcRequest, context: RpcApiContext) -> Resul
 
 pub async fn map_mojave_requests(req: &RpcRequest, context: RpcApiContext) -> Result<Value> {
     match req.method.as_str() {
-        "mojave_sendBroadcastBlock" => SendBroadcastBlockRequest::call(req, context).await,
+        "moj_sendBroadcastBlock" => SendBroadcastBlockRequest::call(req, context).await,
         others => Err(Error::MethodNotFound(others.to_owned())),
     }
 }

@@ -89,7 +89,7 @@ mod tests {
                     serde_json::from_str(&body).map_err(|_| StatusCode::BAD_REQUEST)?;
 
                 if let Some(method) = request.get("method").and_then(|m| m.as_str())
-                    && method == "mojave_sendBroadcastBlock"
+                    && method == "moj_sendBroadcastBlock"
                 {
                     let response = json!({
                         "id": request.get("id").unwrap_or(&json!(1)),
