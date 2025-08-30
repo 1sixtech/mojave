@@ -3,37 +3,50 @@ set -Eeuo pipefail
 
 NODE_HOST="127.0.0.1"
 SEQ_HOST="127.0.0.1"
+BITCOIN_HOST="127.0.0.1"
 NODE_PORT="8545"
 SEQ_PORT="1739"
+BITCOIN_PORT_RPC="18443"
+BITCOIN_PORT_P2P="18444"
 
 NODE_HTTP="http://${NODE_HOST}:${NODE_PORT}"
 SEQ_HTTP="http://${SEQ_HOST}:${SEQ_PORT}"
+BITCOIN_HTTP="http://${BITCOIN_HOST}:${BITCOIN_PORT_RPC}"
 
 GENESIS="./data/testnet-genesis.json"
 NODE_DATA_DIR="$(pwd)/mojave-node"
 SEQ_DATA_DIR="$(pwd)/mojave-sequencer"
+BITCOIN_DATA_DIR="$(pwd)/bitcoin"
+BITCOIN_REGTEST_DATA_DIR="$(pwd)/bitcoin/regtest"
+BITCOIN_CONFIG_DIR="$(pwd)/bitcoin/bitcoin.conf"
 SEQ_PRIVKEY="${SEQ_PRIVKEY:-0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}"
 
 NODE_READY_TIMEOUT=120
 SEQ_READY_TIMEOUT=60
+BITCOIN_READY_TIMEOUT=60
 CHECK_INTERVAL=2
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
+PURPLE="\033[0;35m" 
 NC='\033[0m'
 
 NODE_PIPE="$(mktemp -u)"
 SEQUENCER_PIPE="$(mktemp -u)"
-mkfifo "$NODE_PIPE" "$SEQUENCER_PIPE"
+BITCOIN_PIPE="$(mktemp -u)"
+mkfifo "$NODE_PIPE" "$SEQUENCER_PIPE" "$BITCOIN_PIPE"
 NODE_LOG="$(mktemp -t node.log.XXXXXX)"
 SEQ_LOG="$(mktemp -t sequencer.log.XXXXXX)"
+BITCOIN_LOG="$(mktemp -t bitcoin.log.XXXXXX)"
 
 NODE_PID=""
 SEQUENCER_PID=""
+BITCOIN_PID=""  
 LOG_NODE_PID=""
 LOG_SEQ_PID=""
+LOG_BITCOIN_PID=""
 
 cleanup() {
   echo -e "\n${RED}[CLEANUP]${NC} Shutting down services..."
@@ -50,9 +63,16 @@ cleanup() {
   if [[ -n "${LOG_SEQ_PID}" ]]; then
     kill "${LOG_SEQ_PID}" 2>/dev/null || true
   fi
-  rm -f "$NODE_PIPE" "$SEQUENCER_PIPE" 2>/dev/null || true
+  if [[ -n "${BITCOIN_PID}" ]]; then
+    kill "${BITCOIN_PID}" 2>/dev/null || true
+  fi
+  if [[ -n "${LOG_BITCOIN_PID}" ]]; then
+    kill "${LOG_BITCOIN_PID}" 2>/dev/null || true
+  fi
+  rm -f "$NODE_PIPE" "$SEQUENCER_PIPE" "$BITCOIN_PIPE" 2>/dev/null || true
   echo -e "${YELLOW}[LOG]${NC} Node log: ${NODE_LOG}"
   echo -e "${YELLOW}[LOG]${NC} Sequencer log: ${SEQ_LOG}"
+  echo -e "${YELLOW}[LOG]${NC} Bitcoin log: ${BITCOIN_LOG}"
 }
 trap cleanup INT TERM EXIT
 
@@ -179,6 +199,8 @@ start_loggers() {
   LOG_NODE_PID=$!
   (while read -r line; do echo -e "${BLUE}[SEQUENCER]${NC} $line"; done <"$SEQUENCER_PIPE") | tee -a "$SEQ_LOG" &
   LOG_SEQ_PID=$!
+  (while read -r line; do echo -e "${PURPLE}[BITCOIN]${NC} $line"; done <"$BITCOIN_PIPE") | tee -a "$BITCOIN_LOG" &
+  LOG_BITCOIN_PID=$!
 }
 
 build_binaries() {
@@ -190,6 +212,8 @@ build_binaries() {
 require_cmd cargo
 require_cmd curl
 require_cmd bash
+require_cmd bitcoind
+require_cmd bitcoin-cli
 
 load_env_if_present
 export RUST_LOG="${RUST_LOG:-info},mojave=debug"
@@ -206,6 +230,14 @@ if port_in_use "$NODE_HOST" "$NODE_PORT"; then
 fi
 if port_in_use "$SEQ_HOST" "$SEQ_PORT"; then
   echo -e "${RED}[ERROR]${NC} Port in use: ${SEQ_HOST}:${SEQ_PORT}. Stop the process using it and retry."
+  exit 1
+fi
+if port_in_use "$BITCOIN_HOST" "$BITCOIN_PORT_RPC"; then
+  echo -e "${RED}[ERROR]${NC} Port in use: ${BITCOIN_HOST}:${BITCOIN_PORT_RPC}. Stop the process using it and retry."
+  exit 1
+fi
+if port_in_use "$BITCOIN_HOST" "$BITCOIN_PORT_P2P"; then
+  echo -e "${RED}[ERROR]${NC} Port in use: ${BITCOIN_HOST}:${BITCOIN_PORT_P2P}. Stop the process using it and retry."
   exit 1
 fi
 
@@ -251,18 +283,54 @@ if ! wait_service "$SEQUENCER_PID" "$SEQ_HOST" "$SEQ_PORT" "$SEQ_HTTP" "/health"
 fi
 echo -e "${BLUE}[SEQUENCER]${NC} Sequencer is ready at ${SEQ_HTTP}"
 
+echo -e "${PURPLE}[BITCOIN]${NC} Starting bitcoin…"
+(
+  set -a
+  set +a
+  exec bitcoind -datadir="$BITCOIN_DATA_DIR" -conf="$BITCOIN_CONFIG_DIR"
+) >"$BITCOIN_PIPE" 2>&1 &
+BITCOIN_PID=$!
+
+echo -e "${PURPLE}[BITCOIN]${NC} Waiting for bitcoin to be ready on ${BITCOIN_HTTP}…"
+if ! wait_service "$BITCOIN_PID" "$BITCOIN_HOST" "$BITCOIN_PORT_RPC" "$BITCOIN_HTTP" "/health" "$BITCOIN_READY_TIMEOUT" "Bitcoin" "getnetworkinfo"; then
+  echo -e "${YELLOW}[BITCOIN LOG TAIL]${NC}"
+  tail -n 120 "$BITCOIN_LOG" || true
+  exit 1
+fi
+echo -e "${PURPLE}[BITCOIN]${NC} Bitcoin is ready at ${BITCOIN_HTTP}"
+
+# SET UP BITCOIN
+if [ -d "$BITCOIN_DATA_DIR/wallets" ]; then
+    bitcoin-cli -datadir="$BITCOIN_DATA_DIR" -conf="$BITCOIN_CONFIG_DIR" loadwallet "mojave-wallet"
+else
+    bitcoin-cli -datadir="$BITCOIN_DATA_DIR" -conf="$BITCOIN_CONFIG_DIR" createwallet "mojave-wallet"
+fi
+
+BITCOIN_ADDRESS=$(bitcoin-cli -datadir="$BITCOIN_DATA_DIR" -conf="$BITCOIN_CONFIG_DIR" getnewaddress "mojave-address")
+
+# generate 101 blocks and pay a block rewards of 50 bitcoins
+bitcoin-cli -datadir="$BITCOIN_DATA_DIR" -conf="$BITCOIN_CONFIG_DIR" generatetoaddress 101 "$BITCOIN_ADDRESS"
+
+BITCOIN_BALANCE=$(bitcoin-cli -datadir="$BITCOIN_DATA_DIR" -conf="$BITCOIN_CONFIG_DIR" getbalance)
+if [ "$BITCOIN_BALANCE" != "50.00000000" ]; then
+    echo -e "${RED}[ERROR]${NC} Bitcoin balance is not 50.00000000"
+    exit 1
+fi
+
 echo -e "\n${GREEN}✅ Both services are running!${NC}"
 echo -e "   Full node: ${NODE_HTTP}"
 echo -e "   Sequencer: ${SEQ_HTTP}"
+echo -e "   Bitcoin: ${BITCOIN_HTTP}"
 echo -e "   Press ${RED}Ctrl+C${NC} to stop both services…"
 
 # Propagate failure if any process exits
-if ! wait -n "$NODE_PID" "$SEQUENCER_PID"; then
-  true
-fi
+wait "$NODE_PID" "$SEQUENCER_PID" "$BITCOIN_PID"
 echo -e "${RED}[ERROR]${NC} One of the services exited. Showing recent logs…"
 echo -e "${YELLOW}[NODE LOG TAIL]${NC}"
 tail -n 120 "$NODE_LOG" || true
 echo -e "${YELLOW}[SEQUENCER LOG TAIL]${NC}"
 tail -n 120 "$SEQ_LOG" || true
+echo -e "${YELLOW}[BITCOIN LOG TAIL]${NC}"
+tail -n 120 "$BITCOIN_LOG" || true
 exit 1
+za
