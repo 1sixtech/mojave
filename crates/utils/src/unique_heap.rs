@@ -109,6 +109,15 @@ where
         inner.heap.peek().cloned()
     }
 
+    pub async fn peek_wait(&self) -> T {
+        loop {
+            if let Some(block) = self.peek().await {
+                return block;
+            }
+            self.notify.notified().await;
+        }
+    }
+
     pub async fn len(&self) -> usize {
         let inner = self.inner.read().await;
         inner.heap.len()
