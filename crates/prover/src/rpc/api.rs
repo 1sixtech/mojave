@@ -9,10 +9,10 @@ use ethrex_rpc::RpcRequestWrapper;
 use mojave_client::MojaveClient;
 use mojave_utils::rpc::{
     error::{Error, Result},
-    rpc_response,
-    types::{RpcRequest, RpcRequestId},
+    resolve_namespace, rpc_response,
+    types::{MojaveRequestMethods, Namespace, RpcRequest, RpcRequestId},
 };
-use serde_json::Value;
+use serde_json::{Value, from_str};
 use std::sync::Arc;
 use tokio::{net::TcpListener, sync::mpsc};
 use tower_http::cors::CorsLayer;
@@ -110,8 +110,9 @@ async fn handle_http_request(
 
 async fn map_http_requests(req: &RpcRequest, context: Arc<ProverRpcContext>) -> Result<Value> {
     tracing::debug!(method = %req.method, "Dispatching RPC request");
-    match RpcNamespace::resolve_namespace(req) {
-        Ok(RpcNamespace::Mojave) => map_mojave_requests(req, context).await,
+    match resolve_namespace(req) {
+        Ok(Namespace::Mojave) => map_mojave_requests(req, context).await,
+        Ok(_) => Err(Error::MethodNotFound(req.method.clone())),
         Err(err) => Err(err),
     }
 }
@@ -122,27 +123,11 @@ pub async fn map_mojave_requests(
     context: Arc<ProverRpcContext>,
 ) -> Result<Value> {
     tracing::debug!(method = %req.method, "Handling Mojave namespace request");
-    match req.method.as_str() {
-        "moj_sendProofInput" => SendProofInputRequest::call(req, context).await,
-        "moj_getJobId" => GetJobIdRequest::call(req, context).await,
-        "moj_getProof" => GetProofRequest::call(req, context).await,
+    let method = from_str(&req.method)?;
+    match method {
+        MojaveRequestMethods::SendProofInput => SendProofInputRequest::call(req, context).await,
+        MojaveRequestMethods::GetJobId => GetJobIdRequest::call(req, context).await,
+        MojaveRequestMethods::GetProof => GetProofRequest::call(req, context).await,
         _others => Err(Error::MethodNotFound(req.method.clone())),
-    }
-}
-
-pub enum RpcNamespace {
-    Mojave,
-}
-
-impl RpcNamespace {
-    pub fn resolve_namespace(request: &RpcRequest) -> Result<Self> {
-        let mut parts = request.method.split('_');
-        let Some(namespace) = parts.next() else {
-            return Err(Error::MethodNotFound(request.method.clone()));
-        };
-        match namespace {
-            "moj" => Ok(Self::Mojave),
-            _others => Err(Error::MethodNotFound(request.method.to_owned())),
-        }
     }
 }

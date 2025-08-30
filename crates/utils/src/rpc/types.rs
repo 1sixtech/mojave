@@ -18,16 +18,16 @@ pub enum Namespace {
     Web3,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Eq, PartialEq, Serialize, Deserialize)]
 pub enum MojaveRequestMethods {
+    #[serde(rename = "moj_getJobId")]
+    GetJobId,
+    #[serde(rename = "moj_getProof")]
+    GetProof,
     #[serde(rename = "moj_sendBroadcastBlock")]
     SendBroadcastBlock,
     #[serde(rename = "moj_sendProofInput")]
     SendProofInput,
     #[serde(rename = "moj_sendProofResponse")]
     SendProofResponse,
-    #[serde(rename = "moj_getJobId")]
-    GetJobId,
-    #[serde(rename = "moj_getProof")]
-    GetProof,
 }

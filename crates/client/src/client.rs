@@ -223,29 +223,18 @@ impl MojaveClient {
             .header("content-type", "application/json")
             .body(serde_json::to_string(&request)?)
             .send()
-            .await
-            .map_err(|error| {
-                if error.is_timeout() {
-                    Error::TimeOut
-                } else {
-                    Error::Custom(error.to_string())
-                }
-            })?
+            .await?
             .json::<RpcResponse>()
-            .await
-            .map_err(|error| {
-                if error.is_timeout() {
-                    Error::TimeOut
-                } else {
-                    Error::Custom(error.to_string())
-                }
-            })?;
+            .await?;
 
         match response {
             RpcResponse::Success(ok_response) => {
                 Ok(serde_json::from_value::<T>(ok_response.result)?)
             }
-            RpcResponse::Error(error_response) => Err(Error::Rpc(error_response.error.message)),
+            RpcResponse::Error(error_response) => Err(Error::Custom(format!(
+                "RPC Error {}: {}",
+                error_response.error.code, error_response.error.message
+            ))),
         }
     }
 
@@ -386,7 +375,7 @@ impl<'a> Request<'a> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
             jsonrpc: "2.0".to_string(),
-            method: "moj_getJobId".to_string(),
+            method: to_string(&MojaveRequestMethods::GetJobId)?,
             params: None,
         };
 
@@ -409,7 +398,7 @@ impl<'a> Request<'a> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
             jsonrpc: "2.0".to_string(),
-            method: "moj_getProof".to_string(),
+            method: to_string(&MojaveRequestMethods::GetProof)?,
             params: Some(vec![json!(job_id)]),
         };
 

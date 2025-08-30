@@ -22,8 +22,8 @@ pub enum Error {
     Reqwest(#[from] reqwest::Error),
     #[error("Retry failed after {0} attempts")]
     RetryFailed(u64),
-    #[error("RPC error: {0}")]
-    Rpc(String),
+    #[error(transparent)]
+    Rpc(#[from] mojave_utils::rpc::error::Error),
     #[error("Serde JSON error: {0}")]
     SerdeJson(#[from] serde_json::Error),
     #[error("Signature error: {0}")]

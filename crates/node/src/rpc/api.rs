@@ -21,11 +21,12 @@ use ethrex_storage_rollup::StoreRollup;
 use mojave_utils::{
     rpc::{
         error::{Error, Result},
-        rpc_response,
+        resolve_namespace, rpc_response,
+        types::{MojaveRequestMethods, Namespace},
     },
     unique_heap::AsyncUniqueHeap,
 };
-use serde_json::Value;
+use serde_json::{Value, from_str, to_string};
 use std::{
     collections::HashMap,
     net::SocketAddr,
@@ -155,9 +156,11 @@ async fn handle_http_request(
 }
 
 async fn map_http_requests(req: &RpcRequest, context: RpcApiContext) -> Result<Value> {
-    match RpcNamespace::resolve_namespace(req) {
-        Ok(RpcNamespace::Eth) => map_eth_requests(req, context).await,
-        Ok(RpcNamespace::Mojave) => map_mojave_requests(req, context).await,
+    println!("Received RPC request: {:?}", req);
+    match resolve_namespace(req) {
+        Ok(Namespace::Eth) => map_eth_requests(req, context).await,
+        Ok(Namespace::Mojave) => map_mojave_requests(req, context).await,
+        Ok(_) => Err(Error::MethodNotFound(req.method.clone())),
         Err(error) => Err(error),
     }
 }
@@ -170,27 +173,11 @@ async fn map_eth_requests(req: &RpcRequest, context: RpcApiContext) -> Result<Va
 }
 
 async fn map_mojave_requests(req: &RpcRequest, context: RpcApiContext) -> Result<Value> {
-    match req.method.as_str() {
-        "moj_sendBroadcastBlock" => SendBroadcastBlockRequest::call(req, context).await,
-        others => Err(Error::MethodNotFound(others.to_owned())),
-    }
-}
-
-pub enum RpcNamespace {
-    Eth,
-    Mojave,
-}
-
-impl RpcNamespace {
-    pub fn resolve_namespace(request: &RpcRequest) -> Result<Self> {
-        let mut parts = request.method.split('_');
-        let Some(namespace) = parts.next() else {
-            return Err(Error::MethodNotFound(request.method.clone()));
-        };
-        match namespace {
-            "eth" => Ok(Self::Eth),
-            "moj" => Ok(Self::Mojave),
-            _others => Err(Error::MethodNotFound(request.method.to_owned())),
+    let method = from_str(&req.method)?;
+    match method {
+        MojaveRequestMethods::SendBroadcastBlock => {
+            SendBroadcastBlockRequest::call(req, context).await
         }
+        others => Err(Error::MethodNotFound(to_string(&others)?)),
     }
 }
