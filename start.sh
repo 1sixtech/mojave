@@ -284,14 +284,12 @@ echo -e "${BLUE}[SEQUENCER]${NC} Sequencer is ready at ${SEQ_HTTP}"
 
 echo -e "${PURPLE}[BITCOIN]${NC} Starting bitcoin…"
 (
-  set -a
-  set +a
   exec bitcoind -datadir="$BITCOIN_DATA_DIR" -conf="$BITCOIN_CONFIG_DIR"
 ) >"$BITCOIN_PIPE" 2>&1 &
 BITCOIN_PID=$!
 
 echo -e "${PURPLE}[BITCOIN]${NC} Waiting for bitcoin to be ready on ${BITCOIN_HTTP}…"
-if ! wait_service "$BITCOIN_PID" "$BITCOIN_HOST" "$BITCOIN_PORT_RPC" "$BITCOIN_HTTP" "/health" "$BITCOIN_READY_TIMEOUT" "Bitcoin" "getnetworkinfo"; then
+if ! wait_service "$BITCOIN_PID" "$BITCOIN_HOST" "$BITCOIN_PORT_RPC" "$BITCOIN_HTTP" "" "$BITCOIN_READY_TIMEOUT" "Bitcoin" "getnetworkinfo"; then
   echo -e "${YELLOW}[BITCOIN LOG TAIL]${NC}"
   tail -n 120 "$BITCOIN_LOG" || true
   exit 1
@@ -323,7 +321,9 @@ echo -e "   Bitcoin: ${BITCOIN_HTTP}"
 echo -e "   Press ${RED}Ctrl+C${NC} to stop both services…"
 
 # Propagate failure if any process exits
-wait "$NODE_PID" "$SEQUENCER_PID" "$BITCOIN_PID"
+if ! wait -n "$NODE_PID" "$SEQUENCER_PID" "$BITCOIN_PID"; then
+  true
+fi
 echo -e "${RED}[ERROR]${NC} One of the services exited. Showing recent logs…"
 echo -e "${YELLOW}[NODE LOG TAIL]${NC}"
 tail -n 120 "$NODE_LOG" || true
@@ -332,4 +332,3 @@ tail -n 120 "$SEQ_LOG" || true
 echo -e "${YELLOW}[BITCOIN LOG TAIL]${NC}"
 tail -n 120 "$BITCOIN_LOG" || true
 exit 1
-za
