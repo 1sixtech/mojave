@@ -28,3 +28,6 @@ Cargo.toml.bak
 
 mojave-node
 mojave-sequencer
+
+# bitcoin
+bitcoin/regtest

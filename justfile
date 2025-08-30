@@ -12,6 +12,9 @@ build-mojave:
 clean:
 	rm -rf mojave-node mojave-sequencer
 
+clean-bitcoin:
+	rm -rf bitcoin/regtest
+
 # Run both node and sequencer in parallel, with sequencer waiting for node
 full: clean
 	./start.sh
@@ -30,6 +33,9 @@ sequencer:
         --datadir {{current-dir}}/mojave-sequencer \
         --private_key 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
         --network {{current-dir}}/data/testnet-genesis.json
+
+bitcoin-regtest:
+	./start-regtest.sh
 
 generate-key-pair:
 	cargo build --bin mojave
