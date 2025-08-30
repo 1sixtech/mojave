@@ -123,9 +123,9 @@ pub async fn map_mojave_requests(
 ) -> Result<Value> {
     tracing::debug!(method = %req.method, "Handling Mojave namespace request");
     match req.method.as_str() {
-        "mojave_sendProofInput" => SendProofInputRequest::call(req, context).await,
-        "mojave_getJobId" => GetJobIdRequest::call(req, context).await,
-        "mojave_getProof" => GetProofRequest::call(req, context).await,
+        "moj_sendProofInput" => SendProofInputRequest::call(req, context).await,
+        "moj_getJobId" => GetJobIdRequest::call(req, context).await,
+        "moj_getProof" => GetProofRequest::call(req, context).await,
         _others => Err(Error::MethodNotFound(req.method.clone())),
     }
 }

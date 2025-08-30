@@ -171,7 +171,7 @@ async fn map_eth_requests(req: &RpcRequest, context: RpcApiContext) -> Result<Va
 
 async fn map_mojave_requests(req: &RpcRequest, context: RpcApiContext) -> Result<Value> {
     match req.method.as_str() {
-        "mojave_sendBroadcastBlock" => SendBroadcastBlockRequest::call(req, context).await,
+        "moj_sendBroadcastBlock" => SendBroadcastBlockRequest::call(req, context).await,
         others => Err(Error::MethodNotFound(others.to_owned())),
     }
 }

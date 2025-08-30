@@ -386,7 +386,7 @@ impl<'a> Request<'a> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
             jsonrpc: "2.0".to_string(),
-            method: "mojave_getJobId".to_string(),
+            method: "moj_getJobId".to_string(),
             params: None,
         };
 
@@ -409,7 +409,7 @@ impl<'a> Request<'a> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
             jsonrpc: "2.0".to_string(),
-            method: "mojave_getProof".to_string(),
+            method: "moj_getProof".to_string(),
             params: Some(vec![json!(job_id)]),
         };
 
