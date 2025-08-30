@@ -23,6 +23,8 @@ pub enum Error {
     FailedToCreateExecutionWitness(#[from] ChainError),
     #[error("ProofCoordinator JoinError: {0}")]
     JoinError(#[from] JoinError),
+    #[error("Failed to build the client: {0}")]
+    Client(#[from] mojave_client::error::Error),
     #[error("ProofCoordinator failed: {0}")]
     Custom(String),
     #[error("ProofCoordinator failed to get data from Store: {0}")]

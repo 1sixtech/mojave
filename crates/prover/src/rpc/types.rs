@@ -1,13 +1,7 @@
 use mojave_client::types::{ProofResponse, ProverData};
 use reqwest::Url;
 use std::collections::{HashMap, HashSet};
-use tokio::sync::{Mutex, mpsc};
-
-pub struct ProverRpcContext {
-    pub aligned_mode: bool,
-    pub job_store: JobStore,
-    pub sender: mpsc::Sender<JobRecord>,
-}
+use tokio::sync::Mutex;
 
 pub struct SendProofInputRequest {
     pub prover_data: ProverData,

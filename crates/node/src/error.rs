@@ -3,7 +3,6 @@ use ethrex_rpc::clients::EthClientError;
 use ethrex_storage_rollup::RollupStoreError;
 
 pub type Result<T> = core::result::Result<T, Error>;
-pub use ethrex_rpc::RpcErr as RpcError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -17,11 +16,13 @@ pub enum Error {
     #[error(transparent)]
     Genesis(#[from] GenesisError),
     #[error(transparent)]
+    Hex(#[from] hex::FromHexError),
+    #[error(transparent)]
     Io(#[from] std::io::Error),
     #[error("Failed to initiate the node: {0}")]
     NodeInit(std::io::Error),
     #[error(transparent)]
-    Rpc(#[from] RpcError),
+    Rpc(#[from] mojave_utils::rpc::error::Error),
     #[error(transparent)]
     Secp256k1(#[from] secp256k1::Error),
     #[error(transparent)]

@@ -2,11 +2,8 @@ pub mod cli;
 
 use crate::cli::Command;
 use anyhow::Result;
-use mojave_block_producer::{BlockProducer, BlockProducerContext};
-use mojave_client::MojaveClient;
+use mojave_block_producer::types::BlockProducerOptions;
 use mojave_node_lib::types::MojaveNode;
-use reqwest::Url;
-use std::time::Duration;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -22,51 +19,21 @@ async fn main() -> Result<()> {
             sequencer_options,
         } => {
             let node_options: mojave_node_lib::types::NodeOptions = (&options).into();
-            let node = MojaveNode::init(&node_options).await.map_err(|error| {
-                tracing::error!("Failed to initialize the node: {}", error);
-                std::process::exit(1);
-            })?;
-
-            let mojave_client = MojaveClient::new(sequencer_options.private_key.as_str())?;
-            let context = BlockProducerContext::new(
-                node.store.clone(),
-                node.blockchain.clone(),
-                node.rollup_store.clone(),
-                node.genesis.coinbase,
-            );
-            let block_producer = BlockProducer::start(context, 100);
-            let full_node_urls: Vec<Url> = sequencer_options
-                .full_node_addresses
-                .iter()
-                .map(|address| {
-                    Url::parse(address)
-                        .unwrap_or_else(|error| panic!("Failed to parse URL: {error}"))
-                })
-                .collect();
-
-            tokio::spawn(async move {
-                loop {
-                    match block_producer.build_block().await {
-                        Ok(block) => mojave_client
-                            .send_broadcast_block(&block, &full_node_urls)
-                            .await
-                            .unwrap_or_else(|error| tracing::error!("{}", error)),
-                        Err(error) => {
-                            tracing::error!("Failed to build a block: {}", error);
-                        }
-                    }
-                    tokio::time::sleep(Duration::from_millis(sequencer_options.block_time)).await;
-                }
-            });
-
+            let node = MojaveNode::init(&node_options)
+                .await
+                .unwrap_or_else(|error| {
+                    tracing::error!("Failed to initialize the node: {}", error);
+                    std::process::exit(1);
+                });
+            let block_producer_options: BlockProducerOptions = (&sequencer_options).into();
             tokio::select! {
-                res = node.run(&node_options) => {
+                res = mojave_block_producer::run(node, &node_options, &block_producer_options) => {
                     if let Err(err) = res {
-                        tracing::error!("Node stopped unexpectedly: {}", err);
+                        tracing::error!("Sequencer stopped unexpectedly: {}", err);
                     }
                 }
                 _ = tokio::signal::ctrl_c() => {
-                    tracing::info!("Shutting down the full node..");
+                    tracing::info!("Shutting down the sequencer..");
                 }
             }
         }

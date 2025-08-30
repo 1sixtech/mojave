@@ -1,4 +1,7 @@
-use crate::rpc::{ProverRpcContext, SendProofInputRequest, types::JobRecord};
+use crate::rpc::{
+    ProverRpcContext,
+    types::{JobRecord, SendProofInputRequest},
+};
 use mojave_client::types::ProverData;
 use mojave_utils::rpc::{
     error::{Error, Result},

@@ -4,6 +4,14 @@ use mojave_signature::{VerifyingKey, types::Signature};
 use serde::{Deserialize, Serialize};
 use zkvm_interface::io::ProgramInput;
 
+#[derive(Clone, Copy, Debug)]
+pub enum Strategy {
+    /// Create sequential RPC requests that returns a first succesful response or an error if all requests fail.
+    Sequential,
+    /// Sends multiple RPC requests to a list of urls and returns the first response without waiting for others to finish.
+    Race,
+}
+
 // need to check whether we will use Message and contain other data or not
 #[derive(Serialize, Deserialize)]
 pub struct SignedBlock {

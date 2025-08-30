@@ -1,4 +1,5 @@
 use clap::{ArgAction, ArgGroup, Parser, Subcommand};
+use mojave_block_producer::types::BlockProducerOptions;
 use mojave_node_lib::types::{Node, SyncMode};
 use mojave_utils::network::Network;
 use tracing::Level;
@@ -275,4 +276,15 @@ pub struct SequencerOptions {
     pub block_time: u64,
     #[arg(long = "private_key", help = "Private key used for signing blocks")]
     pub private_key: String,
+}
+
+impl From<&SequencerOptions> for BlockProducerOptions {
+    fn from(value: &SequencerOptions) -> Self {
+        Self {
+            full_node_addresses: value.full_node_addresses.clone(),
+            prover_address: value.prover_address.clone(),
+            block_time: value.block_time,
+            private_key: value.private_key.clone(),
+        }
+    }
 }

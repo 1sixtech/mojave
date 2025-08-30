@@ -24,10 +24,14 @@ pub enum Error {
     FailedToGetSystemTime(#[from] SystemTimeError),
     #[error("Failed to build a block because the queue is full.")]
     Full,
+    #[error(transparent)]
+    Node(#[from] mojave_node_lib::error::Error),
     #[error("BlockProducer failed because of a InvalidForkChoice error: {0}")]
     InvalidForkChoice(#[from] InvalidForkChoice),
     #[error("BlockProducer failed because of a rollup store error: {0}")]
     RollupStoreError(#[from] RollupStoreError),
+    #[error(transparent)]
+    Rpc(#[from] mojave_utils::rpc::error::Error),
     #[error("BlockProducer stopped.")]
     Stopped,
     #[error("BlockProducer failed to retrieve a block from storage, data is None.")]

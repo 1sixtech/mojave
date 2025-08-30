@@ -4,8 +4,18 @@ pub type Result<T> = core::result::Result<T, Error>;
 pub enum Error {
     #[error("Error: {0}")]
     Custom(String),
-    #[error("Invalid max attempts: {0}")]
-    InvalidMaxAttempts(u64),
+    #[error("Missing full node URLs")]
+    MissingFullNodeUrls,
+    #[error("Missing max attempts")]
+    MissingMaxAttempts,
+    #[error("Missing private key")]
+    MissingPrivateKey,
+    #[error("Missing prover URL")]
+    MissingProverUrl,
+    #[error("Missing sequencer URL")]
+    MissingSequencerUrl,
+    #[error("Missing timeout")]
+    MissingTimeout,
     #[error("No RPC URLs configured")]
     NoRPCUrlsConfigured,
     #[error("Reqwest error: {0}")]
