@@ -80,6 +80,10 @@ impl PendingHeap {
     pub async fn peek(&self) -> Option<OrderedBlock> {
         self.inner.peek().await
     }
+
+    pub async fn peek_wait(&self) -> OrderedBlock {
+        self.inner.peek_wait().await
+    }
 }
 
 impl Default for PendingHeap {
