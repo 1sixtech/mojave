@@ -9,6 +9,8 @@ repository = { workspace = true }
 documentation = { workspace = true }
 
 [dependencies]
+mojave-utils = { workspace = true }
+
 anyhow = { workspace = true }
 bitcoin = { workspace = true, features = ["std"] }
 bytes = { workspace = true }

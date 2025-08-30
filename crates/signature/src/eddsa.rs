@@ -1,4 +1,7 @@
-use crate::{Signature, SignatureError, SignatureScheme};
+use crate::{
+    error::{EddsaError, EddsaErrorKind, Error, Result},
+    types::{Signature, SignatureScheme},
+};
 use ed25519_dalek::{
     Signature as EddsaSignature, Signer, SigningKey as PrivateKey, Verifier,
     VerifyingKey as PublicKey,
@@ -10,27 +13,26 @@ use std::str::FromStr;
 pub struct SigningKey(PrivateKey);
 
 impl FromStr for SigningKey {
-    type Err = SignatureError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    type Err = Error;
+    fn from_str(s: &str) -> Result<Self> {
         let s = s.strip_prefix("0x").unwrap_or(s);
-        let bytes = hex::decode(s).map_err(|error| Error::CreateSigningKey(error.into()))?;
+        let bytes = hex::decode(s).map_err(|error| EddsaError::CreateSigningKey(error.into()))?;
         let secret_key = PrivateKey::try_from(bytes.as_slice())
-            .map_err(|error| Error::CreateSigningKey(error.into()))?;
+            .map_err(|error| EddsaError::CreateSigningKey(error.into()))?;
         Ok(Self(secret_key))
     }
 }
 
-impl super::Signer for SigningKey {
-    fn from_slice(slice: &[u8]) -> Result<Self, SignatureError> {
-        let secret_key =
-            PrivateKey::try_from(slice).map_err(|error| Error::CreateSigningKey(error.into()))?;
+impl crate::types::Signer for SigningKey {
+    fn from_slice(slice: &[u8]) -> Result<Self> {
+        let secret_key = PrivateKey::try_from(slice)
+            .map_err(|error| EddsaError::CreateSigningKey(error.into()))?;
         Ok(Self(secret_key))
     }
 
-    fn sign<T: Serialize>(&self, message: &T) -> Result<Signature, SignatureError> {
+    fn sign<T: Serialize>(&self, message: &T) -> Result<Signature> {
         let message_bytes =
-            bincode::serialize(message).map_err(|error| Error::Sign(error.into()))?;
+            bincode::serialize(message).map_err(|error| EddsaError::Sign(error.into()))?;
         let signature = self.0.sign(&message_bytes);
         Ok(Signature {
             bytes: signature.to_vec(),
@@ -51,9 +53,8 @@ impl SigningKey {
 pub struct VerifyingKey(PublicKey);
 
 impl TryFrom<String> for VerifyingKey {
-    type Error = SignatureError;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
+    type Error = Error;
+    fn try_from(value: String) -> Result<Self> {
         Self::from_str(&value)
     }
 }
@@ -65,40 +66,35 @@ impl From<VerifyingKey> for String {
 }
 
 impl FromStr for VerifyingKey {
-    type Err = SignatureError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(|error| Error::CreateVerifyingKey(error.into()))?;
+    type Err = Error;
+    fn from_str(s: &str) -> Result<Self> {
+        let bytes = hex::decode(s).map_err(|error| EddsaError::CreateVerifyingKey(error.into()))?;
         let public_key = PublicKey::try_from(bytes.as_slice())
-            .map_err(|error| Error::CreateVerifyingKey(error.into()))?;
+            .map_err(|error| EddsaError::CreateVerifyingKey(error.into()))?;
         Ok(Self(public_key))
     }
 }
 
-impl crate::Verifier for VerifyingKey {
-    fn from_slice(slice: &[u8]) -> Result<Self, SignatureError> {
-        let public_key =
-            PublicKey::try_from(slice).map_err(|error| Error::CreateVerifyingKey(error.into()))?;
+impl crate::types::Verifier for VerifyingKey {
+    fn from_slice(slice: &[u8]) -> Result<Self> {
+        let public_key = PublicKey::try_from(slice)
+            .map_err(|error| EddsaError::CreateVerifyingKey(error.into()))?;
         Ok(Self(public_key))
     }
 
-    fn verify<T: Serialize>(
-        &self,
-        message: &T,
-        signature: &Signature,
-    ) -> Result<(), SignatureError> {
+    fn verify<T: Serialize>(&self, message: &T, signature: &Signature) -> Result<()> {
         if signature.scheme != SignatureScheme::Ed25519 {
-            return Err(Error::InvalidSignatureScheme)?;
+            return Err(EddsaError::InvalidSignatureScheme)?;
         }
 
         let message_bytes =
-            bincode::serialize(message).map_err(|error| Error::Verify(error.into()))?;
+            bincode::serialize(message).map_err(|error| EddsaError::Verify(error.into()))?;
         let signature = EddsaSignature::from_slice(&signature.bytes)
-            .map_err(|error| Error::Verify(error.into()))?;
+            .map_err(|error| EddsaError::Verify(error.into()))?;
 
         match self.0.verify(&message_bytes, &signature) {
             Ok(()) => Ok(()),
-            Err(error) => Err(Error::Verify(ErrorKind::Ed25519(error)).into()),
+            Err(error) => Err(EddsaError::Verify(EddsaErrorKind::Ed25519(error)).into()),
         }
     }
 }
@@ -109,35 +105,11 @@ impl VerifyingKey {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum Error {
-    #[error("Failed to create a signing key: {0}")]
-    CreateSigningKey(ErrorKind),
-    #[error("Failed to sign the message: {0}")]
-    Sign(ErrorKind),
-    #[error("Failed to create a verifying key: {0}")]
-    CreateVerifyingKey(ErrorKind),
-    #[error("Failed to verify the message: {0}")]
-    Verify(ErrorKind),
-    #[error("Invalid signature scheme")]
-    InvalidSignatureScheme,
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum ErrorKind {
-    #[error("{0}")]
-    Ed25519(#[from] ed25519_dalek::ed25519::Error),
-    #[error("{0}")]
-    Hex(#[from] hex::FromHexError),
-    #[error("{0}")]
-    Bincode(#[from] bincode::Error),
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use crate::{Signer, Verifier};
+    use crate::types::{Signer, Verifier};
 
     /// made key pair using `solana-keygen new --no-passphrase`
     ///
@@ -376,12 +348,12 @@ mod tests {
     fn test_ed25519_serialization_deserialization_errors() {
         // Test VerifyingKey deserialization with invalid hex
         let invalid_json = "\"invalid_hex_string\"";
-        let result: Result<VerifyingKey, _> = serde_json::from_str(invalid_json);
+        let result: core::result::Result<VerifyingKey, _> = serde_json::from_str(invalid_json);
         assert!(result.is_err());
 
         // Test VerifyingKey deserialization with wrong length hex
         let wrong_length_json = "\"6881ee1e6d502328de7abdcb7ea81cd8\""; // Too short
-        let result: Result<VerifyingKey, _> = serde_json::from_str(wrong_length_json);
+        let result: core::result::Result<VerifyingKey, _> = serde_json::from_str(wrong_length_json);
         assert!(result.is_err());
     }
 }

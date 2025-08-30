@@ -1,11 +1,11 @@
 pub mod cli;
 
 use crate::cli::Command;
+use anyhow::Result;
 use mojave_node_lib::types::MojaveNode;
-use std::error::Error;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<()> {
     mojave_utils::logging::init();
     let cli = cli::Cli::run();
 
@@ -15,12 +15,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     match cli.command {
         Command::Start { options } => {
             let node_options: mojave_node_lib::types::NodeOptions = (&options).into();
-            let node = MojaveNode::init(&node_options)
-                .await
-                .unwrap_or_else(|error| {
-                    tracing::error!("Failed to initialize the node: {}", error);
-                    std::process::exit(1);
-                });
+            let node = MojaveNode::init(&node_options).await.map_err(|error| {
+                tracing::error!("Failed to initialize the node: {}", error);
+                std::process::exit(1);
+            })?;
             tokio::select! {
                 res = node.run(&node_options) => {
                     if let Err(err) = res {

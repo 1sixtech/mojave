@@ -1,18 +1,17 @@
+use crate::{
+    error::{Error, Result},
+    types::NodeConfigFile,
+};
 use bytes::Bytes;
-use ethrex_common::Address;
 use ethrex_p2p::{
     kademlia::KademliaTable,
     network::public_key_from_signing_key,
     types::{Node, NodeRecord},
 };
-use ethrex_storage_rollup::{EngineTypeRollup, StoreRollup};
 use mojave_utils::network::{MAINNET_BOOTNODES, Network, TESTNET_BOOTNODES};
 use secp256k1::SecretKey;
-use serde::{Deserialize, Serialize};
 use std::{
-    fs,
     fs::File,
-    io,
     io::Read as _,
     net::{Ipv4Addr, SocketAddr, ToSocketAddrs},
     path::PathBuf,
@@ -20,12 +19,6 @@ use std::{
 };
 use tokio::sync::Mutex;
 use tracing::{error, info};
-
-#[derive(Serialize, Deserialize)]
-pub struct NodeConfigFile {
-    pub known_peers: Vec<Node>,
-    pub node_record: NodeRecord,
-}
 
 impl NodeConfigFile {
     pub async fn new(table: Arc<Mutex<KademliaTable>>, node_record: NodeRecord) -> Self {
@@ -43,12 +36,10 @@ impl NodeConfigFile {
     }
 }
 
-pub fn read_node_config_file(file_path: PathBuf) -> Result<NodeConfigFile, String> {
+pub fn read_node_config_file(file_path: PathBuf) -> Result<NodeConfigFile> {
     match std::fs::File::open(file_path) {
-        Ok(file) => {
-            serde_json::from_reader(file).map_err(|e| format!("Invalid node config file {e}"))
-        }
-        Err(e) => Err(format!("No config file found: {e}")),
+        Ok(file) => serde_json::from_reader(file).map_err(Error::SerdeJson),
+        Err(e) => Err(Error::Custom(format!("No config file found: {e}"))),
     }
 }
 
@@ -66,7 +57,7 @@ pub async fn store_node_config_file(config: NodeConfigFile, file_path: PathBuf) 
     };
 }
 
-pub fn jwtsecret_file(file: &mut File) -> Result<Bytes, Box<dyn std::error::Error>> {
+pub fn jwtsecret_file(file: &mut File) -> Result<Bytes> {
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
     if contents.starts_with("0x") {
@@ -76,7 +67,7 @@ pub fn jwtsecret_file(file: &mut File) -> Result<Bytes, Box<dyn std::error::Erro
     Ok(hex::decode(contents)?.into())
 }
 
-pub fn read_jwtsecret_file(jwt_secret_path: &str) -> Result<Bytes, Box<dyn std::error::Error>> {
+pub fn read_jwtsecret_file(jwt_secret_path: &str) -> Result<Bytes> {
     match File::open(jwt_secret_path) {
         Ok(mut file) => Ok(jwtsecret_file(&mut file)?),
         Err(_) => Ok(write_jwtsecret_file(jwt_secret_path)),
@@ -149,15 +140,14 @@ pub fn get_bootnodes(bootnodes: Vec<Node>, network: &Network, data_dir: &str) ->
     bootnodes
 }
 
-pub fn parse_socket_addr(addr: &str, port: &str) -> io::Result<SocketAddr> {
+pub fn parse_socket_addr(addr: &str, port: &str) -> Result<SocketAddr> {
     // NOTE: this blocks until hostname can be resolved
     format!("{addr}:{port}")
         .to_socket_addrs()?
         .next()
-        .ok_or(io::Error::new(
-            io::ErrorKind::NotFound,
-            "Failed to parse socket address",
-        ))
+        .ok_or(Error::Custom(format!(
+            "Could not resolve address: {addr}:{port}"
+        )))
 }
 
 pub fn get_http_socket_addr(http_addr: &str, http_port: &str) -> SocketAddr {
@@ -203,34 +193,4 @@ pub fn get_local_p2p_node(
     tracing::info!("Node: {enode}");
 
     node
-}
-
-pub fn get_valid_delegation_addresses(
-    sponsorable_addresses_file_path: Option<String>,
-) -> Vec<Address> {
-    let Some(ref path) = sponsorable_addresses_file_path else {
-        tracing::warn!("No valid addresses provided, ethrex_SendTransaction will always fail");
-        return Vec::new();
-    };
-    let addresses: Vec<Address> = fs::read_to_string(path)
-        .unwrap_or_else(|_| panic!("Failed to load file {path}"))
-        .lines()
-        .filter(|line| !line.trim().is_empty())
-        .map(|line| line.to_string().parse::<Address>())
-        .filter_map(Result::ok)
-        .collect();
-    if addresses.is_empty() {
-        tracing::warn!("No valid addresses provided, ethrex_SendTransaction will always fail");
-    }
-    addresses
-}
-
-pub async fn init_rollup_store(data_dir: &str, engine_type: EngineTypeRollup) -> StoreRollup {
-    let rollup_store =
-        StoreRollup::new(data_dir, engine_type).expect("Failed to create StoreRollup");
-    rollup_store
-        .init()
-        .await
-        .expect("Failed to init rollup store");
-    rollup_store
 }

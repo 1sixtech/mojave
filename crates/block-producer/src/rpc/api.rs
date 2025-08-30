@@ -15,7 +15,7 @@ use ethrex_rpc::{
 };
 use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
-use serde_json::Value;
+use serde_json::{Value, from_str};
 use std::{
     collections::HashMap,
     net::SocketAddr,
@@ -26,7 +26,10 @@ use tokio::{net::TcpListener, sync::Mutex as TokioMutex};
 use tower_http::cors::CorsLayer;
 use tracing::info;
 
-use mojave_utils::rpc::rpc_response;
+use mojave_utils::rpc::{
+    resolve_namespace, rpc_response,
+    types::{MojaveRequestMethods, Namespace},
+};
 
 pub const FILTER_DURATION: Duration = {
     if cfg!(test) {
@@ -133,9 +136,10 @@ async fn handle_http_request(
 }
 
 async fn map_http_requests(req: &RpcRequest, context: RpcApiContext) -> Result<Value, RpcErr> {
-    match RpcNamespace::resolve_namespace(req) {
-        Ok(RpcNamespace::Eth) => map_eth_requests(req, context.l1_context).await,
-        Ok(RpcNamespace::Mojave) => map_mojave_requests(req, context).await,
+    match resolve_namespace(req) {
+        Ok(Namespace::Eth) => map_eth_requests(req, context.l1_context).await,
+        Ok(Namespace::Mojave) => map_mojave_requests(req, context).await,
+        Ok(_) => Err(RpcErr::MethodNotFound(req.method.clone())),
         Err(err) => Err(err),
     }
 }
@@ -144,27 +148,9 @@ pub async fn map_mojave_requests(
     req: &RpcRequest,
     context: RpcApiContext,
 ) -> Result<Value, RpcErr> {
-    match req.method.as_str() {
-        "mojave_sendProofResponse" => SendBatchProofRequest::call(req, context).await,
+    let method = from_str(&req.method)?;
+    match method {
+        MojaveRequestMethods::SendProofResponse => SendBatchProofRequest::call(req, context).await,
         _ => Err(RpcErr::MethodNotFound(req.method.clone())),
-    }
-}
-
-pub enum RpcNamespace {
-    Eth,
-    Mojave,
-}
-
-impl RpcNamespace {
-    pub fn resolve_namespace(request: &RpcRequest) -> Result<Self, RpcErr> {
-        let mut parts = request.method.split('_');
-        let Some(namespace) = parts.next() else {
-            return Err(RpcErr::MethodNotFound(request.method.clone()));
-        };
-        match namespace {
-            "eth" => Ok(Self::Eth),
-            "mojave" => Ok(Self::Mojave),
-            _others => Err(RpcErr::MethodNotFound(request.method.to_owned())),
-        }
     }
 }

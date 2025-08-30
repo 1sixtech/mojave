@@ -1,5 +1,5 @@
 use crate::{
-    MojaveClientError,
+    error::{Error, Result},
     types::{JobId, ProofResponse, ProverData, SignedBlock, SignedProofResponse, Strategy},
 };
 use ethrex_common::types::Block;
@@ -11,10 +11,14 @@ use futures::{
     FutureExt,
     future::{Fuse, select_ok},
 };
-use mojave_signature::{Signature, Signer, SigningKey};
+use mojave_signature::{
+    SigningKey,
+    types::{Signature, Signer},
+};
+use mojave_utils::rpc::types::MojaveRequestMethods;
 use reqwest::{ClientBuilder, Url};
 use serde::de::DeserializeOwned;
-use serde_json::json;
+use serde_json::{json, to_string};
 use std::{pin::Pin, str::FromStr, sync::Arc, time::Duration};
 
 const INITIAL_RETRY_DELAY: Duration = Duration::from_millis(100);
@@ -63,15 +67,11 @@ impl MojaveClientBuilder {
         self
     }
 
-    pub fn build(mut self) -> Result<MojaveClient, MojaveClientError> {
+    pub fn build(mut self) -> Result<MojaveClient> {
         let sequencer_urls = self.sequencer_urls.take();
-
         let full_node_urls = self.full_node_urls.take();
-
         let prover_urls = self.prover_urls.take();
-
         let private_key = self.private_key.take();
-
         let timeout = self.timeout.take();
 
         MojaveClient::new(
@@ -102,14 +102,14 @@ impl MojaveClient {
         MojaveClientBuilder::default()
     }
 
-    fn parse_urls(urls: Option<Vec<String>>) -> Result<Option<Vec<Url>>, MojaveClientError> {
+    fn parse_urls(urls: Option<Vec<String>>) -> Result<Option<Vec<Url>>> {
         match urls {
             Some(urls) => {
                 let urls = urls
                     .iter()
                     .map(|url| Url::parse(url))
-                    .collect::<Result<Vec<Url>, _>>()
-                    .map_err(|error| MojaveClientError::Custom(error.to_string()))?;
+                    .collect::<core::result::Result<Vec<Url>, _>>()
+                    .map_err(|error| Error::Custom(error.to_string()))?;
                 Ok(Some(urls))
             }
             None => Ok(None),
@@ -122,7 +122,7 @@ impl MojaveClient {
         prover_urls: Option<Vec<String>>,
         private_key: Option<String>,
         timeout: Option<Duration>,
-    ) -> Result<Self, MojaveClientError> {
+    ) -> Result<Self> {
         let http_client = ClientBuilder::new()
             .timeout(timeout.unwrap_or(DEFAULT_TIMEOUT))
             .build()?;
@@ -136,7 +136,7 @@ impl MojaveClient {
                 signing_key: match private_key {
                     Some(private_key) => Some(
                         SigningKey::from_str(&private_key)
-                            .map_err(|error| MojaveClientError::Custom(error.to_string()))?,
+                            .map_err(|error| Error::Custom(error.to_string()))?,
                     ),
                     None => None,
                 },
@@ -160,12 +160,12 @@ impl MojaveClient {
         urls: &[Url],
         max_retry: usize,
         strategy: Strategy,
-    ) -> Result<T, MojaveClientError>
+    ) -> Result<T>
     where
         T: DeserializeOwned,
     {
         if urls.is_empty() {
-            return Err(MojaveClientError::NoRPCUrlsConfigured);
+            return Err(Error::NoRPCUrlsConfigured);
         }
 
         match strategy {
@@ -179,11 +179,11 @@ impl MojaveClient {
         request: &RpcRequest,
         urls: &[Url],
         max_retry: usize,
-    ) -> Result<T, MojaveClientError>
+    ) -> Result<T>
     where
         T: DeserializeOwned,
     {
-        let mut response = Err(MojaveClientError::Custom("All rpc calls failed".to_owned()));
+        let mut response = Err(Error::Custom("All rpc calls failed".to_owned()));
 
         for url in urls.iter() {
             match self
@@ -197,11 +197,7 @@ impl MojaveClient {
         response
     }
 
-    async fn send_request_race<T>(
-        &self,
-        request: &RpcRequest,
-        urls: &[Url],
-    ) -> Result<T, MojaveClientError>
+    async fn send_request_race<T>(&self, request: &RpcRequest, urls: &[Url]) -> Result<T>
     where
         T: DeserializeOwned,
     {
@@ -212,15 +208,11 @@ impl MojaveClient {
 
         let (response, _) = select_ok(requests)
             .await
-            .map_err(|error| MojaveClientError::Custom(format!("All RPC calls failed: {error}")))?;
+            .map_err(|error| Error::Custom(format!("All RPC calls failed: {error}")))?;
         Ok(response)
     }
 
-    async fn send_request_to_url<T>(
-        &self,
-        request: &RpcRequest,
-        url: &Url,
-    ) -> Result<T, MojaveClientError>
+    async fn send_request_to_url<T>(&self, request: &RpcRequest, url: &Url) -> Result<T>
     where
         T: DeserializeOwned,
     {
@@ -231,36 +223,23 @@ impl MojaveClient {
             .header("content-type", "application/json")
             .body(serde_json::to_string(&request)?)
             .send()
-            .await
-            .map_err(|error| {
-                if error.is_timeout() {
-                    MojaveClientError::TimeOut
-                } else {
-                    MojaveClientError::Custom(error.to_string())
-                }
-            })?
+            .await?
             .json::<RpcResponse>()
-            .await
-            .map_err(|error| {
-                if error.is_timeout() {
-                    MojaveClientError::TimeOut
-                } else {
-                    MojaveClientError::Custom(error.to_string())
-                }
-            })?;
+            .await?;
 
         match response {
             RpcResponse::Success(ok_response) => {
                 Ok(serde_json::from_value::<T>(ok_response.result)?)
             }
-            RpcResponse::Error(error_response) => {
-                Err(MojaveClientError::RpcError(error_response.error.message))
-            }
+            RpcResponse::Error(error_response) => Err(Error::Custom(format!(
+                "RPC Error {}: {}",
+                error_response.error.code, error_response.error.message
+            ))),
         }
     }
 
-    fn is_retryable(error: &MojaveClientError) -> bool {
-        matches!(error, MojaveClientError::TimeOut)
+    fn is_retryable(error: &Error) -> bool {
+        matches!(error, Error::TimeOut)
     }
 
     pub async fn send_request_to_url_with_retry<T>(
@@ -268,7 +247,7 @@ impl MojaveClient {
         request: &RpcRequest,
         url: &Url,
         max_retry: usize,
-    ) -> Result<T, MojaveClientError>
+    ) -> Result<T>
     where
         T: DeserializeOwned,
     {
@@ -299,7 +278,7 @@ impl MojaveClient {
                 }
             }
         }
-        Err(last_error.unwrap_or(MojaveClientError::RetryFailed(max_retry as u64)))
+        Err(last_error.unwrap_or(Error::RetryFailed(max_retry as u64)))
     }
 }
 
@@ -326,14 +305,14 @@ impl<'a> Request<'a> {
         self
     }
 
-    pub async fn send_broadcast_block(&self, block: &Block) -> Result<(), MojaveClientError> {
+    pub async fn send_broadcast_block(&self, block: &Block) -> Result<()> {
         let hash = block.hash();
         let signing_key = self
             .client
             .inner
             .signing_key
             .as_ref()
-            .ok_or(MojaveClientError::MissingPrivateKey)?;
+            .ok_or(Error::MissingPrivateKey)?;
         let signature: Signature = signing_key.sign(&hash)?;
         let verifying_key = signing_key.verifying_key();
 
@@ -346,7 +325,7 @@ impl<'a> Request<'a> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
             jsonrpc: "2.0".to_string(),
-            method: "mojave_sendBroadcastBlock".to_string(),
+            method: to_string(&MojaveRequestMethods::SendBroadcastBlock)?,
             params: Some(vec![json!(params)]),
         };
 
@@ -357,7 +336,7 @@ impl<'a> Request<'a> {
                 .inner
                 .full_node_urls
                 .as_ref()
-                .ok_or(MojaveClientError::MissingFullNodeUrls)?,
+                .ok_or(Error::MissingFullNodeUrls)?,
         };
 
         self.client
@@ -369,11 +348,11 @@ impl<'a> Request<'a> {
         &self,
         proof_input: &ProverData,
         sequencer_address: &str,
-    ) -> Result<JobId, MojaveClientError> {
+    ) -> Result<JobId> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
             jsonrpc: "2.0".to_string(),
-            method: "mojave_sendProofInput".to_string(),
+            method: to_string(&MojaveRequestMethods::SendProofInput)?,
             params: Some(vec![json!(proof_input), json!(sequencer_address)]),
         };
 
@@ -384,7 +363,7 @@ impl<'a> Request<'a> {
                 .inner
                 .prover_urls
                 .as_ref()
-                .ok_or(MojaveClientError::MissingProverUrl)?,
+                .ok_or(Error::MissingProverUrl)?,
         };
 
         self.client
@@ -392,11 +371,11 @@ impl<'a> Request<'a> {
             .await
     }
 
-    pub async fn get_job_id(&self) -> Result<Vec<JobId>, MojaveClientError> {
+    pub async fn get_job_id(&self) -> Result<Vec<JobId>> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
             jsonrpc: "2.0".to_string(),
-            method: "mojave_getJobId".to_string(),
+            method: to_string(&MojaveRequestMethods::GetJobId)?,
             params: None,
         };
 
@@ -407,7 +386,7 @@ impl<'a> Request<'a> {
                 .inner
                 .prover_urls
                 .as_ref()
-                .ok_or(MojaveClientError::MissingProverUrl)?,
+                .ok_or(Error::MissingProverUrl)?,
         };
 
         self.client
@@ -415,11 +394,11 @@ impl<'a> Request<'a> {
             .await
     }
 
-    pub async fn get_proof(&self, job_id: JobId) -> Result<ProofResponse, MojaveClientError> {
+    pub async fn get_proof(&self, job_id: JobId) -> Result<ProofResponse> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
             jsonrpc: "2.0".to_string(),
-            method: "mojave_getProof".to_string(),
+            method: to_string(&MojaveRequestMethods::GetProof)?,
             params: Some(vec![json!(job_id)]),
         };
 
@@ -430,7 +409,7 @@ impl<'a> Request<'a> {
                 .inner
                 .prover_urls
                 .as_ref()
-                .ok_or(MojaveClientError::MissingProverUrl)?,
+                .ok_or(Error::MissingProverUrl)?,
         };
 
         self.client
@@ -438,16 +417,13 @@ impl<'a> Request<'a> {
             .await
     }
 
-    pub async fn send_proof_response(
-        &self,
-        proof_response: &ProofResponse,
-    ) -> Result<(), MojaveClientError> {
+    pub async fn send_proof_response(&self, proof_response: &ProofResponse) -> Result<()> {
         let signing_key = self
             .client
             .inner
             .signing_key
             .as_ref()
-            .ok_or(MojaveClientError::MissingPrivateKey)?;
+            .ok_or(Error::MissingPrivateKey)?;
         let signature: Signature = signing_key.sign(proof_response)?;
         let verifying_key = signing_key.verifying_key();
 
@@ -460,7 +436,7 @@ impl<'a> Request<'a> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
             jsonrpc: "2.0".to_string(),
-            method: "mojave_sendProofResponse".to_string(),
+            method: to_string(&MojaveRequestMethods::SendProofResponse)?,
             params: Some(vec![json!(params)]),
         };
 
@@ -471,7 +447,7 @@ impl<'a> Request<'a> {
                 .inner
                 .sequencer_urls
                 .as_ref()
-                .ok_or(MojaveClientError::MissingSequencerUrl)?,
+                .ok_or(Error::MissingSequencerUrl)?,
         };
 
         self.client

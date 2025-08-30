@@ -4,11 +4,13 @@ use ethrex_storage::error::StoreError;
 use ethrex_storage_rollup::RollupStoreError;
 use tokio::task::JoinError;
 
+pub type Result<T> = core::result::Result<T, Error>;
+
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, thiserror::Error)]
-pub enum ProofCoordinatorError {
+pub enum Error {
     #[error("ProofCoordinator connection failed: {0}")]
-    ConnectionError(#[from] std::io::Error),
+    Connection(#[from] std::io::Error),
     #[error("ProofCoordinator failed to send transaction: {0}")]
     FailedToVerifyProofOnChain(String),
     #[error("ProofCoordinator failed to access Store: {0}")]
@@ -21,22 +23,22 @@ pub enum ProofCoordinatorError {
     FailedToCreateExecutionWitness(#[from] ChainError),
     #[error("ProofCoordinator JoinError: {0}")]
     JoinError(#[from] JoinError),
+    #[error("Failed to build the client: {0}")]
+    Client(#[from] mojave_client::error::Error),
     #[error("ProofCoordinator failed: {0}")]
     Custom(String),
     #[error("ProofCoordinator failed to get data from Store: {0}")]
     ItemNotFoundInStore(String),
     #[error("Unexpected Error: {0}")]
-    InternalError(String),
+    Internal(String),
     #[error("ProofCoordinator encountered a ExecutionCacheError")]
     ExecutionCacheError(#[from] ExecutionCacheError),
     #[error("ProofCoordinator encountered a BlobsBundleError: {0}")]
     BlobsBundleError(#[from] ethrex_common::types::BlobsBundleError),
     #[error("Failed to execute command: {0}")]
-    ComandError(std::io::Error),
+    Command(std::io::Error),
     #[error("Missing blob for batch {0}")]
     MissingBlob(u64),
     #[error("Proof failed for batch {0}: {1}")]
     ProofFailed(u64, String),
-    #[error("Failed to build the client: {0}")]
-    ClientError(#[from] mojave_client::MojaveClientError),
 }

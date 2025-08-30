@@ -13,6 +13,7 @@ mod tests {
     };
     use mojave_client::{MojaveClient, types::Strategy};
     use mojave_tests::{start_test_api_node, start_test_api_sequencer};
+    use mojave_utils::rpc::types::MojaveRequestMethods;
     use reqwest::Url;
     use secp256k1::SecretKey;
     use serde_json::{Value, json};
@@ -87,10 +88,11 @@ mod tests {
             async fn handle_rpc(body: String) -> Result<Json<Value>, StatusCode> {
                 let request: Value =
                     serde_json::from_str(&body).map_err(|_| StatusCode::BAD_REQUEST)?;
+                let method: MojaveRequestMethods =
+                    serde_json::from_str(request.get("method").and_then(|m| m.as_str()).unwrap())
+                        .map_err(|_| StatusCode::BAD_REQUEST)?;
 
-                if let Some(method) = request.get("method").and_then(|m| m.as_str())
-                    && method == "mojave_sendBroadcastBlock"
-                {
+                if method == MojaveRequestMethods::SendBroadcastBlock {
                     let response = json!({
                         "id": request.get("id").unwrap_or(&json!(1)),
                         "jsonrpc": "2.0",
@@ -348,6 +350,7 @@ mod tests {
             },
         };
 
+        tracing::info!("Sending block: {:?}", block);
         sequencer_client
             .request()
             .urls(&[Url::parse(&format!("http://{full_node_http_addr}")).unwrap()])

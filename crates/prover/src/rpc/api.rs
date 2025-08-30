@@ -1,32 +1,29 @@
-use std::sync::Arc;
-
+use crate::rpc::{
+    ProverRpcContext,
+    requests::{GetJobIdRequest, GetProofRequest},
+    tasks::spawn_proof_worker,
+    types::{JobRecord, JobStore, SendProofInputRequest},
+};
 use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
-use serde_json::Value;
+use ethrex_rpc::RpcRequestWrapper;
+use mojave_client::MojaveClient;
+use mojave_utils::rpc::{
+    error::{Error, Result},
+    resolve_namespace, rpc_response,
+    types::{MojaveRequestMethods, Namespace, RpcRequest, RpcRequestId},
+};
+use serde_json::{Value, from_str};
+use std::sync::Arc;
 use tokio::{net::TcpListener, sync::mpsc};
 use tower_http::cors::CorsLayer;
 use tracing::info;
-
-use ethrex_rpc::{
-    RpcErr, RpcRequestWrapper,
-    utils::{RpcRequest, RpcRequestId},
-};
-
-use mojave_client::MojaveClient;
-use mojave_utils::rpc::rpc_response;
-
-use crate::rpc::{
-    ProverRpcContext,
-    requests::{GetJobIdRequest, GetProofRequest, SendProofInputRequest},
-    tasks::spawn_proof_worker,
-    types::{JobRecord, JobStore},
-};
 
 pub async fn start_api(
     aligned_mode: bool,
     http_addr: &str,
     private_key: &str,
     queue_capacity: usize,
-) -> Result<(), RpcErr> {
+) -> Result<()> {
     let (job_sender, job_receiver) = mpsc::channel::<JobRecord>(queue_capacity);
     let context = Arc::new(ProverRpcContext {
         aligned_mode,
@@ -47,7 +44,7 @@ pub async fn start_api(
         .with_state(context.clone());
     let http_listener = TcpListener::bind(http_addr)
         .await
-        .map_err(|error| RpcErr::Internal(error.to_string()))?;
+        .map_err(|error| Error::Internal(error.to_string()))?;
     tracing::info!(addr = %http_addr, "HTTP server bound");
     let http_server = axum::serve(http_listener, http_router).into_future();
     info!("Starting HTTP server at {http_addr}");
@@ -55,7 +52,7 @@ pub async fn start_api(
     let client = MojaveClient::builder()
         .private_key(private_key.to_string())
         .build()
-        .map_err(|err| RpcErr::Internal(err.to_string()))?;
+        .map_err(|err| Error::Internal(err.to_string()))?;
     tracing::info!("MojaveClient initialized");
 
     // Start the proof worker in the background.
@@ -66,12 +63,12 @@ pub async fn start_api(
         async {
             http_server
                 .await
-                .map_err(|e| RpcErr::Internal(e.to_string()))
+                .map_err(|e| Error::Internal(e.to_string()))
         },
         async {
             proof_worker_handle
                 .await
-                .map_err(|e| RpcErr::Internal(e.to_string()))
+                .map_err(|e| Error::Internal(e.to_string()))
         }
     )
     .inspect_err(|e| tracing::error!("Error shutting down server:{e:?}"));
@@ -82,7 +79,7 @@ pub async fn start_api(
 async fn handle_http_request(
     State(service_context): State<Arc<ProverRpcContext>>,
     body: String,
-) -> Result<Json<Value>, StatusCode> {
+) -> core::result::Result<Json<Value>, StatusCode> {
     tracing::trace!(len = body.len(), "Received HTTP request body");
     let res = match serde_json::from_str::<RpcRequestWrapper>(&body) {
         Ok(RpcRequestWrapper::Single(request)) => {
@@ -103,7 +100,7 @@ async fn handle_http_request(
             tracing::error!("Invalid request body");
             rpc_response(
                 RpcRequestId::String("".to_string()),
-                Err(RpcErr::BadParams("Invalid request body".to_string())),
+                Err(Error::BadParams("Invalid request body".to_string())),
             )
             .map_err(|_| StatusCode::BAD_REQUEST)?
         }
@@ -111,13 +108,11 @@ async fn handle_http_request(
     Ok(Json(res))
 }
 
-async fn map_http_requests(
-    req: &RpcRequest,
-    context: Arc<ProverRpcContext>,
-) -> Result<Value, RpcErr> {
+async fn map_http_requests(req: &RpcRequest, context: Arc<ProverRpcContext>) -> Result<Value> {
     tracing::debug!(method = %req.method, "Dispatching RPC request");
-    match RpcNamespace::resolve_namespace(req) {
-        Ok(RpcNamespace::Mojave) => map_mojave_requests(req, context).await,
+    match resolve_namespace(req) {
+        Ok(Namespace::Mojave) => map_mojave_requests(req, context).await,
+        Ok(_) => Err(Error::MethodNotFound(req.method.clone())),
         Err(err) => Err(err),
     }
 }
@@ -126,29 +121,13 @@ async fn map_http_requests(
 pub async fn map_mojave_requests(
     req: &RpcRequest,
     context: Arc<ProverRpcContext>,
-) -> Result<Value, RpcErr> {
+) -> Result<Value> {
     tracing::debug!(method = %req.method, "Handling Mojave namespace request");
-    match req.method.as_str() {
-        "mojave_sendProofInput" => SendProofInputRequest::call(req, context).await,
-        "mojave_getJobId" => GetJobIdRequest::call(req, context).await,
-        "mojave_getProof" => GetProofRequest::call(req, context).await,
-        _others => Err(RpcErr::MethodNotFound(req.method.clone())),
-    }
-}
-
-pub enum RpcNamespace {
-    Mojave,
-}
-
-impl RpcNamespace {
-    pub fn resolve_namespace(request: &RpcRequest) -> Result<Self, RpcErr> {
-        let mut parts = request.method.split('_');
-        let Some(namespace) = parts.next() else {
-            return Err(RpcErr::MethodNotFound(request.method.clone()));
-        };
-        match namespace {
-            "mojave" => Ok(Self::Mojave),
-            _others => Err(RpcErr::MethodNotFound(request.method.to_owned())),
-        }
+    let method = from_str(&req.method)?;
+    match method {
+        MojaveRequestMethods::SendProofInput => SendProofInputRequest::call(req, context).await,
+        MojaveRequestMethods::GetJobId => GetJobIdRequest::call(req, context).await,
+        MojaveRequestMethods::GetProof => GetProofRequest::call(req, context).await,
+        _others => Err(Error::MethodNotFound(req.method.clone())),
     }
 }
