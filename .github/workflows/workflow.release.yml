@@ -13,8 +13,14 @@ jobs:
   build-release:
     name: Build & Release Binaries
     uses: ./.github/workflows/task.release-binaries.yml
+    permissions:
+      contents: write
+    with:
+      release_tag_name: ${{ github.event.release.tag_name }}
 
   docker:
     name: Build & Push Docker Image
     uses: ./.github/workflows/task.docker.yml
     needs: [build-release]
+    with:
+      release_tag_name: ${{ github.event.release.tag_name }}
