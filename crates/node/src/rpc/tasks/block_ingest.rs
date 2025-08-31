@@ -5,7 +5,7 @@ use mojave_utils::rpc::error::{Error, Result};
 use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 
-pub(crate) async fn ingest_block(context: RpcApiContext, block_number: u64) -> Result<(), RpcErr> {
+pub(crate) async fn ingest_block(context: RpcApiContext, block_number: u64) -> Result<()> {
     let peeked = context.pending_signed_blocks.peek_wait().await;
 
     if block_number == peeked.0.header.number {
