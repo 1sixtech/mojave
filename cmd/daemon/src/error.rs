@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
-use thiserror::Error;
 use sysinfo::Pid;
+use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum DaemonError {
@@ -24,5 +24,3 @@ pub enum DaemonError {
     #[error("failed to parse pid from '{0}': expected integer")]
     ParsePid(String),
 }
-
-

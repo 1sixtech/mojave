@@ -280,9 +280,9 @@ pub enum Command {
             long = "pid.file",
             default_value = "mojave/sequencer.pid",
             value_name = "PID_FILE",
-            help = "Path to the file where the sequencer's process ID (PID) has written. (Default: inside the data directory)",
+            help = "Path to the file where the sequencer's process ID (PID) has written. (Default: inside the data directory)"
         )]
-        pid_file: std::path::PathBuf
+        pid_file: std::path::PathBuf,
     },
     #[command(name = "get-pub-key", about = "Display the public key of the node")]
     GetPubKey {

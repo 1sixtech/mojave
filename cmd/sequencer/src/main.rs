@@ -3,9 +3,9 @@ use crate::cli::Command;
 
 use anyhow::Result;
 use mojave_block_producer::types::BlockProducerOptions;
+use mojave_daemon::{DaemonOptions, run_daemonized, stop_daemonized};
 use mojave_node_lib::{initializers::get_signer, types::MojaveNode};
 use mojave_utils::p2p::public_key_from_signing_key;
-use mojave_daemon::{DaemonOptions, run_daemonized, stop_daemonized};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -35,16 +35,16 @@ async fn main() -> Result<()> {
                         tracing::error!("Failed to initialize the node: {}", error);
                         std::process::exit(1);
                     });
-                mojave_block_producer::run(node, &node_options, &block_producer_options).await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
+                mojave_block_producer::run(node, &node_options, &block_producer_options)
+                    .await
+                    .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
             })
             .await
             .unwrap_or_else(|err| {
                 tracing::error!("Failed to start daemonized node: {}", err);
             });
-        },
-        Command::Stop { pid_file } => {
-            stop_daemonized(pid_file)?
-        },
+        }
+        Command::Stop { pid_file } => stop_daemonized(pid_file)?,
         Command::GetPubKey { datadir } => {
             let signer = get_signer(&datadir)?;
             let public_key = public_key_from_signing_key(&signer);

@@ -2,9 +2,9 @@ pub mod cli;
 use crate::cli::Command;
 
 use anyhow::Result;
+use mojave_daemon::{DaemonOptions, run_daemonized, stop_daemonized};
 use mojave_node_lib::{initializers::get_signer, types::MojaveNode};
 use mojave_utils::p2p::public_key_from_signing_key;
-use mojave_daemon::{DaemonOptions, run_daemonized, stop_daemonized};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -35,10 +35,8 @@ async fn main() -> Result<()> {
             .unwrap_or_else(|err| {
                 tracing::error!("Failed to start daemonized node: {}", err);
             });
-        },
-        Command::Stop { pid_file } => {
-            stop_daemonized(pid_file)?
         }
+        Command::Stop { pid_file } => stop_daemonized(pid_file)?,
         Command::GetPubKey { datadir } => {
             let signer = get_signer(&datadir)?;
             let public_key = public_key_from_signing_key(&signer);

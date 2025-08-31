@@ -1,6 +1,5 @@
 pub mod cli;
-use crate::cli::{Command, ProofCommand};
-
+use crate::cli::Command;
 
 use anyhow::Result;
 use mojave_daemon::{DaemonOptions, run_daemonized, stop_daemonized};
@@ -36,16 +35,14 @@ async fn main() -> Result<()> {
                     &prover_options.private_key,
                     prover_options.queue_capacity,
                 )
-                .await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
+                .await
+                .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
             })
             .await
             .unwrap_or_else(|err| tracing::error!("Failed to start daemonized node: {}", err));
-        },
-        Command::Stop { pid_file } => {
-            stop_daemonized(pid_file)?
-        },
-        _ => {}
-                // Command::Status { rpc_url } => {}
+        }
+        Command::Stop { pid_file } => stop_daemonized(pid_file)?,
+        _ => {} // Command::Status { rpc_url } => {}
                 // Command::Proof(job_command) => match job_command {
                 //     ProofCommand::Get { rpc_url, job_id } => {}
                 //     ProofCommand::Pending { rpc_url } => {}
