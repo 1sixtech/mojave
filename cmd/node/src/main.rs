@@ -1,9 +1,10 @@
 pub mod cli;
-
 use crate::cli::Command;
+
 use anyhow::Result;
 use mojave_node_lib::{initializers::get_signer, types::MojaveNode};
 use mojave_utils::p2p::public_key_from_signing_key;
+use mojave_daemon::{DaemonOptions, run_daemonized, stop_daemonized};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -16,13 +17,27 @@ async fn main() -> Result<()> {
     match cli.command {
         Command::Start { options } => {
             let node_options: mojave_node_lib::types::NodeOptions = (&options).into();
-            let node = MojaveNode::init(&node_options).await.map_err(|error| {
-                tracing::error!("Failed to initialize the node: {}", error);
-                std::process::exit(1);
-            })?;
-            if let Err(err) = node.run(&node_options).await {
-                tracing::error!("Node stopped unexpectedly: {}", err);
-            }
+            let daemon_opts = DaemonOptions {
+                no_daemon: options.no_daemon,
+                pid_file_path: options.pid_file,
+                log_file_path: options.log_file,
+            };
+            run_daemonized(daemon_opts, || async move {
+                let node = MojaveNode::init(&node_options)
+                    .await
+                    .unwrap_or_else(|error| {
+                        tracing::error!("Failed to initialize the node: {}", error);
+                        std::process::exit(1);
+                    });
+                node.run(&node_options).await
+            })
+            .await
+            .unwrap_or_else(|err| {
+                tracing::error!("Failed to start daemonized node: {}", err);
+            });
+        },
+        Command::Stop { pid_file } => {
+            stop_daemonized(pid_file)?
         }
         Command::GetPubKey { datadir } => {
             let signer = get_signer(&datadir)?;
