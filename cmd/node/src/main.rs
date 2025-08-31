@@ -34,10 +34,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .unwrap_or_else(|err| {
                 tracing::error!("Failed to start daemonized node: {}", err);
             });
-        },
-        Command::Stop { pid_file } => {
-            stop_daemonized(pid_file)?
         }
+        Command::Stop { pid_file } => stop_daemonized(pid_file)?,
     }
     Ok(())
 }

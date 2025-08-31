@@ -269,8 +269,8 @@ pub enum Command {
             long = "pid.file",
             default_value = "mojave/node.pid",
             value_name = "PID_FILE",
-            help = "Path to the file where the node's process ID (PID) has written. (Default: inside the data directory)",
+            help = "Path to the file where the node's process ID (PID) has written. (Default: inside the data directory)"
         )]
-        pid_file: std::path::PathBuf
-    }
+        pid_file: std::path::PathBuf,
+    },
 }
