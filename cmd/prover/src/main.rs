@@ -2,7 +2,7 @@ pub mod cli;
 use crate::cli::{Command, ProofCommand};
 
 use mojave_client::MojaveClient;
-use mojave_daemon::{DaemonOptions, run_daemonized, stop_daemonized};
+use mojave_utils::daemon::{DaemonOptions, run_daemonized, stop_daemonized};
 use mojave_prover_lib::start_api;
 use serde_json::json;
 use std::error::Error;

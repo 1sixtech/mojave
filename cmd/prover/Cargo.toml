@@ -9,7 +9,6 @@ repository = { workspace = true }
 documentation = { workspace = true }
 
 [dependencies]
-mojave-daemon = { path = "../daemon" }
 mojave-prover-lib = { workspace = true }
 mojave-utils = { workspace = true }
 mojave-client = { workspace = true }

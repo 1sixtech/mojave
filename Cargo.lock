@@ -4812,23 +4812,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "mojave-daemon"
-version = "0.1.0"
-dependencies = [
- "daemonize",
- "sysinfo",
- "thiserror 2.0.16",
- "tokio",
- "tracing",
-]
-
-[[package]]
 name = "mojave-node"
 version = "0.1.0"
 dependencies = [
  "clap",
  "eyre",
- "mojave-daemon",
  "mojave-node-lib",
  "mojave-utils",
  "tokio",
@@ -4898,7 +4886,6 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "mojave-client",
- "mojave-daemon",
  "mojave-prover-lib",
  "mojave-utils",
  "serde_json",
@@ -4937,7 +4924,6 @@ dependencies = [
  "eyre",
  "mojave-block-producer",
  "mojave-client",
- "mojave-daemon",
  "mojave-node-lib",
  "mojave-utils",
  "reqwest 0.12.23",
@@ -4997,6 +4983,7 @@ version = "0.1.0"
 dependencies = [
  "bytes",
  "cfg-if 1.0.3",
+ "daemonize",
  "ethrex-blockchain",
  "ethrex-common",
  "ethrex-l2",
@@ -5015,6 +5002,7 @@ dependencies = [
  "secp256k1",
  "serde",
  "serde_json",
+ "sysinfo",
  "thiserror 2.0.16",
  "tokio",
  "tracing",
