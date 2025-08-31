@@ -19,7 +19,6 @@ package.keywords = [
 ]
 
 members = [
-  "cmd/daemon",
   "cmd/node",
   "cmd/prover",
   "cmd/sequencer",
@@ -34,7 +33,7 @@ members = [
   "crates/tests",
   "crates/utils",
 ]
-default-members = ["cmd/daemon", "cmd/node", "cmd/prover", "cmd/sequencer"]
+default-members = ["cmd/node", "cmd/prover", "cmd/sequencer"]
 resolver = "2"
 
 [workspace.dependencies]
