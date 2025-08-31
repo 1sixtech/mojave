@@ -3,9 +3,11 @@ use crate::cli::Command;
 
 use anyhow::Result;
 use mojave_block_producer::types::BlockProducerOptions;
-use mojave_daemon::{DaemonOptions, run_daemonized, stop_daemonized};
 use mojave_node_lib::{initializers::get_signer, types::MojaveNode};
-use mojave_utils::p2p::public_key_from_signing_key;
+use mojave_utils::{
+    daemon::{DaemonOptions, run_daemonized, stop_daemonized},
+    p2p::public_key_from_signing_key,
+};
 
 #[tokio::main]
 async fn main() -> Result<()> {

@@ -13,9 +13,13 @@ ethrex-common = { workspace = true }
 ethrex-p2p = { workspace = true }
 ethrex-rpc = { workspace = true }
 
+anyhow = { workspace = true }
+daemonize = { workspace = true }
 lazy_static = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+sysinfo = { workspace = true }
+thiserror = { workspace = true }
 tokio = { workspace = true, features = ["signal", "sync"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
