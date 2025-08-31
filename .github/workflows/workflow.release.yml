@@ -21,6 +21,5 @@ jobs:
   docker:
     name: Build & Push Docker Image
     uses: ./.github/workflows/task.docker.yml
-    needs: [build-release]
     with:
       release_tag_name: ${{ github.event.release.tag_name }}
