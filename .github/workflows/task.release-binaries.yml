@@ -26,7 +26,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
-      - run: cargo build --release --target ${{ matrix.build }}
+      - run: cargo build --release
       - run: mv target/release/mojave-node target/release/${{ matrix.asset_name }}-mojave-node
       - run: mv target/release/mojave-prover target/release/${{ matrix.asset_name }}-mojave-prover
       - run: mv target/release/mojave-sequencer target/release/${{ matrix.asset_name }}-mojave-sequencer
