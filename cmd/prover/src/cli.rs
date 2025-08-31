@@ -1,7 +1,5 @@
 use clap::{Parser, Subcommand};
-
 use std::fmt;
-
 use tracing::Level;
 
 #[derive(Parser)]
