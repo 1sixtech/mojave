@@ -156,7 +156,6 @@ async fn handle_http_request(
 }
 
 async fn map_http_requests(req: &RpcRequest, context: RpcApiContext) -> Result<Value> {
-    println!("Received RPC request: {:?}", req);
     match resolve_namespace(req) {
         Ok(Namespace::Eth) => map_eth_requests(req, context).await,
         Ok(Namespace::Mojave) => map_mojave_requests(req, context).await,
