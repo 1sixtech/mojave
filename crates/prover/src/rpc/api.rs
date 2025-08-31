@@ -26,7 +26,7 @@ pub async fn start_api(
     http_addr: &str,
     private_key: &str,
     queue_capacity: usize,
-) -> Result<(), RpcErr> {
+) -> Result<(), Box<dyn std::error::Error>> {
     let (job_sender, job_receiver) = mpsc::channel::<JobRecord>(queue_capacity);
     let context = Arc::new(ProverRpcContext {
         aligned_mode,
