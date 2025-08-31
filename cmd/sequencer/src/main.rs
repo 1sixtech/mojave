@@ -2,8 +2,8 @@ pub mod cli;
 
 use crate::cli::Command;
 use mojave_block_producer::types::BlockProducerOptions;
-use mojave_utils::daemon::{DaemonOptions, run_daemonized, stop_daemonized};
 use mojave_node_lib::types::MojaveNode;
+use mojave_utils::daemon::{DaemonOptions, run_daemonized, stop_daemonized};
 use std::error::Error;
 
 #[tokio::main]
