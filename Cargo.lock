@@ -4848,9 +4848,11 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "mojave-client",
  "mojave-daemon",
  "mojave-prover-lib",
  "mojave-utils",
+ "serde_json",
  "tokio",
  "tracing",
 ]
