@@ -10,26 +10,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  pr-title:
-    name: Enforce PR title
-    uses: ./.github/workflows/task.pr-title.yml
-
-  linters:
-    name: Run linters
-    uses: ./.github/workflows/linters.yml
-    needs: [pr-title]
-
-  cargo-linters:
-    name: Run Cargo linters
-    uses: ./.github/workflows/linters-cargo.yml
-    needs: [pr-title]
-
-  build-test:
-    name: Build & Tests
-    uses: ./.github/workflows/task.build-test.yml
-    needs: [linters, cargo-linters]
-
   build-prod:
     name: Build Production
     uses: ./.github/workflows/task.build-prod.yml
-    needs: [linters, cargo-linters]
+
+  # release binaries to GitHub Releases
+
+  docker:
+    name: Build & Push Docker Image
+    uses: ./.github/workflows/task.docker.yml
+    needs: [build-prod]

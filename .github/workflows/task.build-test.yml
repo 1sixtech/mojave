@@ -1,5 +1,5 @@
 ---
-name: Task - Build (Development)
+name: Task - Build & Test (Development)
 on:
   workflow_dispatch:
   workflow_call:
@@ -19,35 +19,3 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Run cargo test
         run: cargo test --workspace
-
-  format:
-    name: Format
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Install nightly toolchain
-        uses: dtolnay/rust-toolchain@nightly
-        with:
-          toolchain: nightly
-          components: rustfmt
-      - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
-      - name: Run cargo clippy
-        run: cargo fmt --all --check
-
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Install nightly toolchain
-        uses: dtolnay/rust-toolchain@nightly
-        with:
-          toolchain: nightly
-          components: clippy
-      - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
-      - name: Run cargo clippy
-        run: cargo clippy --all-targets --all-features --workspace -- -D warnings

@@ -3,3 +3,19 @@ name: Task - Build (Production)
 on:
   workflow_dispatch:
   workflow_call:
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install nightly toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+      - name: Run cargo test
+        run: cargo build --workspace --release
