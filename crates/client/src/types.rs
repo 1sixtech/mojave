@@ -1,6 +1,6 @@
 use ethrex_common::types::Block;
 use ethrex_l2_common::prover::BatchProof;
-use mojave_signature::{Signature, VerifyingKey};
+use mojave_signature::{VerifyingKey, types::Signature};
 use serde::{Deserialize, Serialize};
 use zkvm_interface::io::ProgramInput;
 

@@ -1,4 +1,4 @@
-use crate::BlockProducerError;
+use crate::error::{Error, Result};
 use ethrex_blockchain::{
     Blockchain,
     constants::TX_GAS_COST,
@@ -60,13 +60,13 @@ impl BlockProducerContext {
         }
     }
 
-    pub(crate) async fn build_block(&self) -> Result<Block, BlockProducerError> {
+    pub(crate) async fn build_block(&self) -> Result<Block> {
         let version = 3;
         let head_header = {
             let current_block_number = self.store.get_latest_block_number().await?;
             self.store
                 .get_block_header(current_block_number)?
-                .ok_or(BlockProducerError::StorageDataIsNone)?
+                .ok_or(Error::StorageDataIsNone)?
         };
         let head_hash = head_header.hash();
         let head_beacon_block_root = H256::zero();
@@ -115,7 +115,7 @@ impl BlockProducerContext {
             .store
             .apply_account_updates_batch(block.header.parent_hash, &account_updates)
             .await?
-            .ok_or(BlockProducerError::ChainError(ChainError::ParentNotFound))?;
+            .ok_or(Error::ChainError(ChainError::ParentNotFound))?;
 
         self.blockchain
             .store_block(&block, account_updates_list, execution_result)
@@ -145,7 +145,7 @@ impl BlockProducerContext {
 
     /// Creates a new payload based on the payload arguments
     /// Basic payload block building, can and should be improved
-    fn create_payload(&self, args: &BuildPayloadArgs) -> Result<Block, BlockProducerError> {
+    fn create_payload(&self, args: &BuildPayloadArgs) -> Result<Block> {
         let parent_block = self
             .store
             .get_block_header_by_hash(args.parent)?
@@ -215,10 +215,7 @@ impl BlockProducerContext {
     /// L2 payload builder
     /// Completes the payload building process, return the block value
     /// Same as `blockchain::build_payload` without applying system operations and using a different `fill_transactions`
-    async fn build_payload(
-        &self,
-        payload: Block,
-    ) -> Result<PayloadBuildResult, BlockProducerError> {
+    async fn build_payload(&self, payload: Block) -> Result<PayloadBuildResult> {
         let since = Instant::now();
         let gas_limit = payload.header.gas_limit;
 
@@ -271,10 +268,7 @@ impl BlockProducerContext {
 
     /// Same as `blockchain::fill_transactions` but enforces that the `StateDiff` size
     /// stays within the blob size limit after processing each transaction.
-    async fn fill_transactions(
-        &self,
-        context: &mut PayloadBuildContext,
-    ) -> Result<(), BlockProducerError> {
+    async fn fill_transactions(&self, context: &mut PayloadBuildContext) -> Result<()> {
         // version (u8) + header fields (struct) + messages_len (u16) + deposits_len (u16) + accounts_diffs_len (u16)
         let mut acc_size_without_accounts = 1 + *BLOCK_HEADER_LEN + 2 + 2 + 2;
         let mut size_accounts_diffs = 0;
@@ -418,7 +412,7 @@ impl BlockProducerContext {
     fn fetch_mempool_transactions(
         &self,
         context: &mut PayloadBuildContext,
-    ) -> Result<TransactionQueue, BlockProducerError> {
+    ) -> Result<TransactionQueue> {
         let (plain_txs, mut blob_txs) = self.blockchain.fetch_mempool_transactions(context)?;
         while let Some(blob_tx) = blob_txs.peek() {
             let tx_hash = blob_tx.compute_hash();
@@ -434,28 +428,29 @@ impl BlockProducerContext {
     fn get_account_diffs_in_tx(
         &self,
         context: &PayloadBuildContext,
-    ) -> Result<HashMap<Address, AccountStateDiff>, BlockProducerError> {
+    ) -> Result<HashMap<Address, AccountStateDiff>> {
         let mut modified_accounts = HashMap::new();
         match &context.vm {
             Evm::REVM { .. } => {
-                return Err(BlockProducerError::EvmError(EvmError::InvalidEVM(
+                return Err(Error::EvmError(EvmError::InvalidEVM(
                     "REVM not supported for L2".to_string(),
                 )));
             }
             Evm::LEVM { db, .. } => {
-                let transaction_backup = db.get_tx_backup().map_err(|e| {
-                    BlockProducerError::FailedToGetDataFrom(format!("TransactionBackup: {e}"))
-                })?;
+                let transaction_backup = db
+                    .get_tx_backup()
+                    .map_err(|e| Error::FailedToGetDataFrom(format!("TransactionBackup: {e}")))?;
                 // First we add the account info
                 for (address, original_account) in transaction_backup.original_accounts_info.iter()
                 {
-                    let new_account = db.current_accounts_state.get(address).ok_or(
-                        BlockProducerError::FailedToGetDataFrom("DB Cache".to_owned()),
-                    )?;
+                    let new_account = db
+                        .current_accounts_state
+                        .get(address)
+                        .ok_or(Error::FailedToGetDataFrom("DB Cache".to_owned()))?;
 
                     let nonce_diff: u16 = (new_account.info.nonce - original_account.info.nonce)
                         .try_into()
-                        .map_err(BlockProducerError::TryIntoError)?;
+                        .map_err(Error::TryInto)?;
 
                     let new_balance = if new_account.info.balance != original_account.info.balance {
                         Some(new_account.info.balance)
@@ -478,19 +473,21 @@ impl BlockProducerContext {
                 for (address, original_storage_slots) in
                     transaction_backup.original_account_storage_slots.iter()
                 {
-                    let account_info = db.current_accounts_state.get(address).ok_or(
-                        BlockProducerError::FailedToGetDataFrom("DB Cache".to_owned()),
-                    )?;
+                    let account_info = db
+                        .current_accounts_state
+                        .get(address)
+                        .ok_or(Error::FailedToGetDataFrom("DB Cache".to_owned()))?;
 
                     let mut added_storage = BTreeMap::new();
                     for key in original_storage_slots.keys() {
                         added_storage.insert(
                             *key,
-                            *account_info.storage.get(key).ok_or(
-                                BlockProducerError::FailedToGetDataFrom(
+                            *account_info
+                                .storage
+                                .get(key)
+                                .ok_or(Error::FailedToGetDataFrom(
                                     "Account info Storage".to_owned(),
-                                ),
-                            )?,
+                                ))?,
                         );
                     }
                     if let Some(account_state_diff) = modified_accounts.get_mut(address) {
@@ -559,7 +556,7 @@ impl BlockProducerContext {
         receipt: &Receipt,
         deposits_log_len: usize,
         messages_log_len: usize,
-    ) -> Result<(usize, usize), BlockProducerError> {
+    ) -> Result<(usize, usize)> {
         let mut tx_state_diff_size = 0;
         let mut new_accounts_diff_size = 0;
 
@@ -572,7 +569,7 @@ impl BlockProducerContext {
                 }
                 Err(e) => {
                     error!("Failed to encode account state diff: {e}");
-                    return Err(BlockProducerError::FailedToEncodeAccountStateDiff(e));
+                    return Err(Error::FailedToEncodeAccountStateDiff(e));
                 }
             };
             new_accounts_diff_size += encoded.len();

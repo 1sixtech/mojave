@@ -1,13 +1,8 @@
+use crate::{error::Result, watch::WatcherHandle};
 use bitcoin::consensus::deserialize;
+use mojave_utils::constants::{ZMQ_MESSAGE_MIN_FRAMES, ZMQ_PAYLOAD_FRAME_INDEX};
 use tokio_util::sync::CancellationToken;
 use zeromq::{Socket, SocketRecv, SubSocket, ZmqMessage};
-
-use crate::{error::Result, watch::WatcherHandle};
-
-/// ZMQ message format: frame 0 is topic, frame 1 is payload.
-/// We expect at least 2 frames: [topic, payload].
-const ZMQ_MESSAGE_MIN_FRAMES: usize = 2;
-const ZMQ_PAYLOAD_FRAME_INDEX: usize = 1;
 
 /// Trait describing the default subscription topic for a watcher type.
 pub trait Topic {

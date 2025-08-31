@@ -1,13 +1,12 @@
-use std::{
-    collections::HashMap,
-    net::SocketAddr,
-    sync::{Arc, Mutex},
+use crate::rpc::{
+    context::RpcApiContext,
+    requests::{SendBroadcastBlockRequest, SendRawTransactionRequest},
+    tasks::{spawn_block_ingestion_task, spawn_block_processing_task, spawn_filter_cleanup_task},
+    types::{OrderedBlock, PendingHeap},
 };
-
 use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
-use ethrex_common::Bytes;
-
 use ethrex_blockchain::Blockchain;
+use ethrex_common::Bytes;
 use ethrex_p2p::{
     peer_handler::PeerHandler,
     sync_manager::SyncManager,
@@ -19,19 +18,24 @@ use ethrex_rpc::{
 };
 use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
-use mojave_utils::{rpc::rpc_response, unique_heap::AsyncUniqueHeap};
-use serde_json::Value;
+use mojave_utils::{
+    rpc::{
+        error::{Error, Result},
+        resolve_namespace, rpc_response,
+        types::{MojaveRequestMethods, Namespace},
+    },
+    unique_heap::AsyncUniqueHeap,
+};
+use serde_json::{Value, from_str, to_string};
+use std::{
+    collections::HashMap,
+    net::SocketAddr,
+    sync::{Arc, Mutex},
+};
 use tokio::{net::TcpListener, sync::Mutex as TokioMutex};
 use tokio_util::sync::CancellationToken;
 use tower_http::cors::CorsLayer;
 use tracing::info;
-
-use crate::rpc::{
-    context::RpcApiContext,
-    requests::{SendBroadcastBlockRequest, SendRawTransactionRequest},
-    tasks::{spawn_block_ingestion_task, spawn_block_processing_task, spawn_filter_cleanup_task},
-    types::{OrderedBlock, PendingHeap},
-};
 
 #[expect(clippy::too_many_arguments)]
 pub async fn start_api(
@@ -49,7 +53,7 @@ pub async fn start_api(
     eth_client: EthClient,
     block_queue: AsyncUniqueHeap<OrderedBlock, u64>,
     shutdown_token: CancellationToken,
-) -> Result<(), RpcErr> {
+) -> Result<()> {
     let active_filters = Arc::new(Mutex::new(HashMap::new()));
     let context = RpcApiContext {
         l1_context: L1Context {
@@ -128,7 +132,7 @@ pub async fn start_api(
 async fn handle_http_request(
     State(service_context): State<RpcApiContext>,
     body: String,
-) -> Result<Json<Value>, StatusCode> {
+) -> core::result::Result<Json<Value>, StatusCode> {
     let res = match serde_json::from_str::<RpcRequestWrapper>(&body) {
         Ok(RpcRequestWrapper::Single(request)) => {
             let res = map_http_requests(&request, service_context).await;
@@ -151,43 +155,28 @@ async fn handle_http_request(
     Ok(Json(res))
 }
 
-async fn map_http_requests(req: &RpcRequest, context: RpcApiContext) -> Result<Value, RpcErr> {
-    match RpcNamespace::resolve_namespace(req) {
-        Ok(RpcNamespace::Eth) => map_eth_requests(req, context).await,
-        Ok(RpcNamespace::Mojave) => map_mojave_requests(req, context).await,
+async fn map_http_requests(req: &RpcRequest, context: RpcApiContext) -> Result<Value> {
+    match resolve_namespace(req) {
+        Ok(Namespace::Eth) => map_eth_requests(req, context).await,
+        Ok(Namespace::Mojave) => map_mojave_requests(req, context).await,
+        Ok(_) => Err(Error::MethodNotFound(req.method.clone())),
         Err(error) => Err(error),
     }
 }
 
-async fn map_eth_requests(req: &RpcRequest, context: RpcApiContext) -> Result<Value, RpcErr> {
+async fn map_eth_requests(req: &RpcRequest, context: RpcApiContext) -> Result<Value> {
     match req.method.as_str() {
         "eth_sendRawTransaction" => SendRawTransactionRequest::call(req, context).await,
         _others => ethrex_rpc::map_eth_requests(req, context.l1_context).await,
     }
 }
 
-async fn map_mojave_requests(req: &RpcRequest, context: RpcApiContext) -> Result<Value, RpcErr> {
-    match req.method.as_str() {
-        "mojave_sendBroadcastBlock" => SendBroadcastBlockRequest::call(req, context).await,
-        others => Err(RpcErr::MethodNotFound(others.to_owned())),
-    }
-}
-
-pub enum RpcNamespace {
-    Eth,
-    Mojave,
-}
-
-impl RpcNamespace {
-    pub fn resolve_namespace(request: &RpcRequest) -> Result<Self, RpcErr> {
-        let mut parts = request.method.split('_');
-        let Some(namespace) = parts.next() else {
-            return Err(RpcErr::MethodNotFound(request.method.clone()));
-        };
-        match namespace {
-            "eth" => Ok(Self::Eth),
-            "mojave" => Ok(Self::Mojave),
-            _others => Err(RpcErr::MethodNotFound(request.method.to_owned())),
+async fn map_mojave_requests(req: &RpcRequest, context: RpcApiContext) -> Result<Value> {
+    let method = from_str(&req.method)?;
+    match method {
+        MojaveRequestMethods::SendBroadcastBlock => {
+            SendBroadcastBlockRequest::call(req, context).await
         }
+        others => Err(Error::MethodNotFound(to_string(&others)?)),
     }
 }

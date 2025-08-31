@@ -12,6 +12,7 @@ documentation = { workspace = true }
 mojave-prover-lib = { workspace = true }
 mojave-utils = { workspace = true }
 
+anyhow = { workspace = true }
 clap = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }

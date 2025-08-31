@@ -2,10 +2,10 @@ use crate::{
     error::Error,
     initializers::{get_local_node_record, get_signer, init_blockchain, init_store},
     rpc::start_api,
-    types::{MojaveNode, NodeOptions},
+    types::{MojaveNode, NodeConfigFile, NodeOptions},
     utils::{
-        NodeConfigFile, get_authrpc_socket_addr, get_http_socket_addr, get_local_p2p_node,
-        read_jwtsecret_file, resolve_data_dir, store_node_config_file,
+        get_authrpc_socket_addr, get_http_socket_addr, get_local_p2p_node, read_jwtsecret_file,
+        resolve_data_dir, store_node_config_file,
     },
 };
 use ethrex_blockchain::BlockchainType;
@@ -30,7 +30,7 @@ impl MojaveNode {
 
         let genesis = options.network.get_genesis()?;
 
-        let store = init_store(&data_dir, genesis.clone()).await;
+        let store = init_store(&data_dir, genesis.clone()).await?;
         tracing::info!("Successfully initialized the database.");
 
         let rollup_store = StoreRollup::new(&data_dir, EngineTypeRollup::InMemory)?;
@@ -54,7 +54,7 @@ impl MojaveNode {
             &data_dir,
             &local_p2p_node,
             &signer,
-        )));
+        )?));
 
         let peer_table = peer_table(local_p2p_node.node_id());
         let peer_handler = PeerHandler::new(peer_table.clone());

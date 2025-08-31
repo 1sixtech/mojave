@@ -1,21 +1,18 @@
+use crate::rpc::{RpcApiContext, types::OrderedBlock};
 use ethrex_common::types::{Block, BlockBody, Transaction};
-use ethrex_rpc::{
-    RpcErr,
-    types::{block::RpcBlock, block_identifier::BlockIdentifier},
-};
+use ethrex_rpc::types::{block::RpcBlock, block_identifier::BlockIdentifier};
+use mojave_utils::rpc::error::{Error, Result};
 use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 
-use crate::rpc::{RpcApiContext, types::OrderedBlock};
-
-pub(crate) async fn ingest_block(context: RpcApiContext, block_number: u64) -> Result<(), RpcErr> {
+pub(crate) async fn ingest_block(context: RpcApiContext, block_number: u64) -> Result<()> {
     let peeked = context.pending_signed_blocks.peek_wait().await;
 
     if block_number == peeked.0.header.number {
         // Push the signed block from the pending queue to the block queue.
         let signed_block =
             context.pending_signed_blocks.pop().await.ok_or_else(|| {
-                RpcErr::Internal("Pending queue became empty while ingesting".into())
+                Error::Internal("Pending queue became empty while ingesting".into())
             })?;
 
         context.block_queue.push(signed_block).await;
@@ -27,7 +24,7 @@ pub(crate) async fn ingest_block(context: RpcApiContext, block_number: u64) -> R
         .eth_client
         .get_block_by_number(BlockIdentifier::Number(block_number))
         .await
-        .map_err(|e| RpcErr::Internal(e.to_string()))?;
+        .map_err(|e| Error::Internal(e.to_string()))?;
 
     let block = rpc_block_to_block(rpc_block);
     context.block_queue.push(OrderedBlock(block)).await;

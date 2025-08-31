@@ -1,3 +1,3 @@
 mod proof;
 
-pub use proof::{GetJobIdRequest, GetProofRequest, SendProofInputRequest};
+pub use proof::{GetJobIdRequest, GetProofRequest};

@@ -1,14 +1,16 @@
 use crate::{
-    BlockProducerContext, BlockProducerError, rpc::start_api, types::BlockProducerOptions,
+    BlockProducerContext,
+    error::{Error, Result},
+    rpc::start_api,
+    types::BlockProducerOptions,
 };
 use ethrex_common::types::Block;
 use mojave_client::{MojaveClient, types::Strategy};
 use mojave_node_lib::{
     node::get_client_version,
-    types::{MojaveNode, NodeOptions},
+    types::{MojaveNode, NodeConfigFile, NodeOptions},
     utils::{
-        NodeConfigFile, get_authrpc_socket_addr, get_http_socket_addr, read_jwtsecret_file,
-        store_node_config_file,
+        get_authrpc_socket_addr, get_http_socket_addr, read_jwtsecret_file, store_node_config_file,
     },
 };
 use std::{path::PathBuf, time::Duration};
@@ -23,7 +25,7 @@ pub async fn run(
     node: MojaveNode,
     node_options: &NodeOptions,
     block_producer_options: &BlockProducerOptions,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<()> {
     let mojave_client = MojaveClient::builder()
         .private_key(block_producer_options.private_key.clone())
         .full_node_urls(&block_producer_options.full_node_addresses)
@@ -109,13 +111,13 @@ impl BlockProducer {
         Self { sender }
     }
 
-    pub async fn build_block(&self) -> Result<Block, BlockProducerError> {
+    pub async fn build_block(&self) -> Result<Block> {
         let (sender, receiver) = oneshot::channel();
         self.sender
             .try_send(Message::BuildBlock(sender))
             .map_err(|error| match error {
-                TrySendError::Full(_) => BlockProducerError::Full,
-                TrySendError::Closed(_) => BlockProducerError::Stopped,
+                TrySendError::Full(_) => Error::Full,
+                TrySendError::Closed(_) => Error::Stopped,
             })?;
         receiver.await?
     }
@@ -131,5 +133,5 @@ async fn handle_message(context: &BlockProducerContext, message: Message) {
 
 #[allow(clippy::large_enum_variant)]
 enum Message {
-    BuildBlock(oneshot::Sender<Result<Block, BlockProducerError>>),
+    BuildBlock(oneshot::Sender<Result<Block>>),
 }

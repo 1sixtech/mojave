@@ -1,7 +1,10 @@
 use crate::rpc::RpcApiContext;
-use ethrex_rpc::{RpcErr, utils::RpcRequest};
 use mojave_client::types::{ProofResult, SignedProofResponse};
-use mojave_signature::Verifier;
+use mojave_signature::types::Verifier;
+use mojave_utils::rpc::{
+    error::{Error, Result},
+    types::RpcRequest,
+};
 use serde_json::Value;
 
 pub struct SendBatchProofRequest {
@@ -9,25 +12,25 @@ pub struct SendBatchProofRequest {
 }
 
 impl SendBatchProofRequest {
-    fn get_proof_response(rpc_req_params: &Option<Vec<Value>>) -> Result<Self, RpcErr> {
+    fn get_proof_response(rpc_req_params: &Option<Vec<Value>>) -> Result<Self> {
         let params = rpc_req_params
             .as_ref()
-            .ok_or(RpcErr::BadParams("No params provided".to_owned()))?;
+            .ok_or(Error::BadParams("No params provided".to_owned()))?;
 
         if params.len() != 1 {
-            return Err(RpcErr::BadParams(format!(
+            return Err(Error::BadParams(format!(
                 "Expected exactly 1 parameter (SignedProofResponse), but {} were provided",
                 params.len()
             )));
         }
 
         let signed_proof = serde_json::from_value::<SignedProofResponse>(params[0].clone())
-            .map_err(|e| RpcErr::BadParams(format!("Invalid SignedProofResponse: {e}")))?;
+            .map_err(|e| Error::BadParams(format!("Invalid SignedProofResponse: {e}")))?;
 
         Ok(Self { signed_proof })
     }
 
-    pub async fn call(request: &RpcRequest, context: RpcApiContext) -> Result<Value, RpcErr> {
+    pub async fn call(request: &RpcRequest, context: RpcApiContext) -> Result<Value> {
         let data = Self::get_proof_response(&request.params)?;
 
         data.signed_proof
@@ -36,13 +39,13 @@ impl SendBatchProofRequest {
                 &data.signed_proof.proof_response,
                 &data.signed_proof.signature,
             )
-            .map_err(|err| RpcErr::Internal(format!("Invalid signature: {err}")))?;
+            .map_err(|err| Error::Internal(format!("Invalid signature: {err}")))?;
 
         let batch_number = data.signed_proof.proof_response.batch_number;
         let proof = match data.signed_proof.proof_response.result {
             ProofResult::Proof(proof) => proof,
             ProofResult::Error(err) => {
-                return Err(RpcErr::Internal(format!(
+                return Err(Error::Internal(format!(
                     "Error while generate proof: {err}"
                 )));
             }
@@ -54,8 +57,8 @@ impl SendBatchProofRequest {
             .rollup_store
             .store_proof_by_batch_and_type(batch_number, proof_type, proof)
             .await
-            .map_err(|e| RpcErr::Internal(format!("Failed to store proof: {e}")))?;
+            .map_err(|e| Error::Internal(format!("Failed to store proof: {e}")))?;
 
-        serde_json::to_value("Proof accepted").map_err(|e| RpcErr::Internal(e.to_string()))
+        serde_json::to_value("Proof accepted").map_err(|e| Error::Internal(e.to_string()))
     }
 }

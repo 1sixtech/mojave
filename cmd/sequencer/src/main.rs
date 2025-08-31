@@ -1,12 +1,12 @@
 pub mod cli;
 
 use crate::cli::Command;
+use anyhow::Result;
 use mojave_block_producer::types::BlockProducerOptions;
 use mojave_node_lib::types::MojaveNode;
-use std::error::Error;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<()> {
     mojave_utils::logging::init();
     let cli = cli::Cli::run();
 

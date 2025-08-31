@@ -14,6 +14,12 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio_util::sync::CancellationToken;
 
+#[derive(Serialize, Deserialize)]
+pub struct NodeConfigFile {
+    pub known_peers: Vec<Node>,
+    pub node_record: NodeRecord,
+}
+
 #[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, ValueEnum)]
 #[serde(rename_all = "lowercase")]
 pub enum SyncMode {

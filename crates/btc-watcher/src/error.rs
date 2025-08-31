@@ -1,3 +1,5 @@
+pub type Result<T, E> = core::result::Result<T, Error<E>>;
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error<T>
 where
@@ -12,5 +14,3 @@ where
     #[error("Join error: {0}")]
     Join(#[from] tokio::task::JoinError),
 }
-
-pub type Result<T, E> = core::result::Result<T, Error<E>>;
