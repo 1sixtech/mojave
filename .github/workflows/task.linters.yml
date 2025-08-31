@@ -9,9 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Install Taplo CLI
-        run: cargo install taplo-cli
-      - name: Run taplo
-        run: |
+      - run: cargo install taplo-cli
+      - run: |
           taplo check --default-schema-catalogs
           taplo fmt --check --diff

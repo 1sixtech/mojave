@@ -6,16 +6,11 @@ on:
 
 jobs:
   test:
-    name: Test
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Install nightly toolchain
-        uses: dtolnay/rust-toolchain@master
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly
-      - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
-      - name: Run cargo test
-        run: cargo test --workspace
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --workspace

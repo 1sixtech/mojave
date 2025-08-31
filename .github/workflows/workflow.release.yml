@@ -10,13 +10,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-prod:
-    name: Build Production
-    uses: ./.github/workflows/task.build-prod.yml
-
-  # release binaries to GitHub Releases
+  build-release:
+    name: Build & Release Binaries
+    uses: ./.github/workflows/task.release-binaries.yml
 
   docker:
     name: Build & Push Docker Image
     uses: ./.github/workflows/task.docker.yml
-    needs: [build-prod]
+    needs: [build-release]
