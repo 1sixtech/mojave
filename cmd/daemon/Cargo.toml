@@ -1,5 +1,5 @@
 [package]
-name = "mojave-sequencer"
+name = "mojave-daemon"
 version = { workspace = true }
 edition = { workspace = true }
 authors = { workspace = true }
@@ -9,14 +9,9 @@ repository = { workspace = true }
 documentation = { workspace = true }
 
 [dependencies]
-mojave-block-producer = { workspace = true }
-mojave-client = { workspace = true }
-mojave-daemon = { path = "../daemon" }
-mojave-node-lib = { workspace = true }
-mojave-utils = { workspace = true }
-
 anyhow = { workspace = true }
-clap = { workspace = true }
-hex = { workspace = true }
-tokio = { workspace = true }
+daemonize = { workspace = true}
+sysinfo = { workspace = true}
+tokio = { workspace = true, features = ["macros", "signal"] }
 tracing = { workspace = true }
+thiserror = { workspace = true }
