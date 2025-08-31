@@ -6,7 +6,6 @@ on:
 
 jobs:
   fmt-lint:
-    name: Format Lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -22,7 +21,6 @@ jobs:
         run: cargo fmt --all --check
 
   clippy-lint:
-    name: Clippy Lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
