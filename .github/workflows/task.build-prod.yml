@@ -1,0 +1,5 @@
+---
+name: Task - Build (Production)
+on:
+  workflow_dispatch:
+  workflow_call:
