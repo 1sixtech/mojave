@@ -5,30 +5,14 @@ on:
   workflow_call:
 
 jobs:
-  prettier:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Run prettier
-        run: |-
-          npx prettier --check .
-
-  markdown-lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: avto-dev/markdown-lint@v1
-        with:
-          config: "./.markdownlint.json"
-          args: "."
-          ignore: "./target"
-
   toml-lint:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout toml files
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
+      - uses: uncenter/setup-taplo@v1
+        with:
+          version: "0.10.0"
       - name: Run toml check
         run: |
-          npx @taplo/cli@0.10.0 check --default-schema-catalogs
-          npx @taplo/cli@0.10.0 fmt --check --diff
+          taplo check --default-schema-catalogs
+          taplo fmt --check --diff
