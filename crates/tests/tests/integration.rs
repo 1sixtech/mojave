@@ -9,8 +9,6 @@ mod tests {
     use ethrex_rlp::encode::RLPEncode;
     use ethrex_rpc::EthClient;
     use mojave_tests::{start_test_api_node, start_test_api_sequencer};
-    use mojave_utils::rpc::types::MojaveRequestMethods;
-    use reqwest::Url;
     use secp256k1::SecretKey;
     use serde_json::{Value, json};
     use std::str::FromStr;

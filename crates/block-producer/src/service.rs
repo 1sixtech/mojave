@@ -42,6 +42,8 @@ pub async fn run(
         }
     });
 
+    let local_node_record = node.local_node_record.lock().await.clone();
+
     start_api(
         get_http_socket_addr(&node_options.http_addr, &node_options.http_port),
         get_authrpc_socket_addr(&node_options.authrpc_addr, &node_options.authrpc_port),
@@ -49,7 +51,7 @@ pub async fn run(
         node.blockchain,
         read_jwtsecret_file(&node_options.authrpc_jwtsecret)?,
         node.local_p2p_node,
-        node.local_node_record.lock().await.clone(),
+        local_node_record,
         node.syncer,
         node.peer_handler,
         get_client_version(),

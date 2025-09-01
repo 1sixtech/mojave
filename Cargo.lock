@@ -4810,8 +4810,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
- "ethrex-p2p",
- "eyre",
  "mojave-node-lib",
  "mojave-utils",
  "tokio",
