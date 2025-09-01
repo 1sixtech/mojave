@@ -18,7 +18,6 @@ ethrex-rpc = { workspace = true }
 zkvm_interface = { workspace = true }
 
 futures = { workspace = true }
-hex = { workspace = true }
 reqwest = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -27,4 +26,3 @@ tokio = { workspace = true, features = ["full"] }
 tracing = { workspace = true }
 
 [dev-dependencies]
-mockito = "0.31"

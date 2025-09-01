@@ -11,10 +11,7 @@ documentation = { workspace = true }
 [dependencies]
 mojave-utils = { workspace = true }
 
-anyhow = { workspace = true }
 bitcoin = { workspace = true, features = ["std"] }
-bytes = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["sync", "rt", "macros"] }
 tokio-util = { workspace = true }

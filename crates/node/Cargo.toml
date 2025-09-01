@@ -15,7 +15,6 @@ mojave-utils = { workspace = true }
 
 ethrex-blockchain = { workspace = true }
 ethrex-common = { workspace = true }
-ethrex-l2-common = { workspace = true }
 ethrex-p2p = { workspace = true }
 ethrex-rpc = { workspace = true }
 ethrex-storage = { workspace = true, features = ["libmdbx"] }
@@ -25,8 +24,6 @@ ethrex-vm = { workspace = true }
 axum = { workspace = true }
 bytes = { workspace = true, features = ["serde"] }
 clap = { workspace = true }
-eyre = { workspace = true }
-futures = { workspace = true }
 hex = { workspace = true }
 local-ip-address = { workspace = true }
 rand = { workspace = true }
@@ -35,13 +32,8 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
-tokio-stream = { workspace = true }
 tokio-util = { workspace = true }
 tower-http = { workspace = true, features = ["cors"] }
 tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
 
 [dev-dependencies]
-ctor = "0.4.2"
-ethrex-rlp = { workspace = true }
-mockito = "0.31"
