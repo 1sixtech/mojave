@@ -9,10 +9,10 @@ repository = { workspace = true }
 documentation = { workspace = true }
 
 [dependencies]
-mojave-utils = { workspace = true }
 mojave-client = { workspace = true }
 mojave-node-lib = { workspace = true }
 mojave-signature = { workspace = true }
+mojave-utils = { workspace = true }
 
 ethrex-blockchain = { workspace = true }
 ethrex-common = { workspace = true }
@@ -26,8 +26,8 @@ reqwest = { workspace = true }
 
 axum = { workspace = true }
 clap = { workspace = true }
-hex = { workspace = true }
 futures = { workspace = true }
+hex = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
