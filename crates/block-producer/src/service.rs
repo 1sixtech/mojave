@@ -24,33 +24,7 @@ pub async fn run(
     node: MojaveNode,
     node_options: &NodeOptions,
     block_producer_options: &BlockProducerOptions,
-<<<<<<< HEAD
 ) -> Result<()> {
-    let mojave_client = MojaveClient::builder()
-        .private_key(block_producer_options.private_key.clone())
-        .full_node_urls(&block_producer_options.full_node_addresses)
-        .prover_urls(std::slice::from_ref(&block_producer_options.prover_address))
-        .build()
-        .unwrap_or_else(|error| {
-            tracing::error!("Failed to build the client: {}", error);
-            std::process::exit(1);
-        });
-
-||||||| parent of 0b47c10 (feat: use real p2p layer to propagate block)
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mojave_client = MojaveClient::builder()
-        .private_key(block_producer_options.private_key.clone())
-        .full_node_urls(&block_producer_options.full_node_addresses)
-        .prover_urls(std::slice::from_ref(&block_producer_options.prover_address))
-        .build()
-        .unwrap_or_else(|error| {
-            tracing::error!("Failed to build the client: {}", error);
-            std::process::exit(1);
-        });
-
-=======
-) -> Result<(), Box<dyn std::error::Error>> {
->>>>>>> 0b47c10 (feat: use real p2p layer to propagate block)
     let context = BlockProducerContext::new(
         node.store.clone(),
         node.blockchain.clone(),

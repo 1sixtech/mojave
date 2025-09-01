@@ -250,7 +250,7 @@ pub enum Command {
     },
 }
 
-#[derive(Debug, Parser)]
+#[derive(Parser)]
 #[clap(group(ArgGroup::new("mojave::SequencerOptions")))]
 pub struct SequencerOptions {
     #[arg(
