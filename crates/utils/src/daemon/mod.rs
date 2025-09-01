@@ -66,6 +66,7 @@ where
 }
 
 pub fn stop_daemonized<P: AsRef<Path>>(pid_file: P) -> Result<(), DaemonError> {
+    let pid_file = resolve_path(pid_file)?;
     let pid = read_pid_from_file(pid_file)?;
 
     let system = System::new_all();
@@ -78,9 +79,9 @@ pub fn stop_daemonized<P: AsRef<Path>>(pid_file: P) -> Result<(), DaemonError> {
     }
 }
 
-fn resolve_path(path: &Path) -> Result<PathBuf, DaemonError> {
-    if path.is_absolute() {
-        return Ok(path.to_path_buf());
+fn resolve_path<P: AsRef<Path>>(path: P) -> Result<PathBuf, DaemonError> {
+    if path.as_ref().is_absolute() {
+        return Ok(path.as_ref().to_path_buf());
     }
 
     let path_buf = match std::env::home_dir() {
