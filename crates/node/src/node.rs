@@ -71,18 +71,12 @@ impl MojaveNode {
 
         let tracker = TaskTracker::new();
 
-        let local_node_record2 = Arc::new(Mutex::new(get_local_node_record(
-            &data_dir,
-            &local_p2p_node,
-            &signer,
-        )?));
-
         start_network(
             options.bootnodes.clone(),
             &options.network,
             &options.datadir,
             local_p2p_node.clone(),
-            local_node_record2.clone(),
+            local_node_record.clone(),
             signer,
             peer_table.clone(),
             store.clone(),

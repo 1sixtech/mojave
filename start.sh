@@ -218,7 +218,6 @@ build_binaries() {
 }
 
 require_cmd cargo
-@@ -196,73 +234,98 @@ export RUST_LOG="${RUST_LOG:-info},mojave=debug"
 export RUST_BACKTRACE="${RUST_BACKTRACE:-1}"
 
 if [[ ! -f "$GENESIS" ]]; then
