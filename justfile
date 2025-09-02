@@ -28,7 +28,7 @@ sequencer:
     cargo run --release --bin mojave-sequencer init \
         --http.port 1739 \
         --full_node.addresses http://0.0.0.0:8545 \
-		--datadir {{home-dir}}/.mojave/mojave-sequencer \
+        --datadir {{home-dir}}/.mojave/mojave-sequencer \
         --private_key 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
         --network {{current-dir}}/data/testnet-genesis.json
 
