@@ -18,6 +18,9 @@ pub enum DaemonError {
         source: std::io::Error,
     },
 
+    #[error("I/O error: {0}")]
+    Io(#[from] std::io::Error),
+
     #[error("no such process with pid: {0}")]
     NoSuchProcess(Pid),
 
