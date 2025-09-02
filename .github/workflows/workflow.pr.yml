@@ -1,0 +1,39 @@
+---
+name: Workflow - Pull Request
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    types:
+      - opened
+      - edited
+      - synchronize
+
+concurrency:
+  group: pr-checks-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  pr-title:
+    name: Enforce PR title
+    uses: ./.github/workflows/task.pr-title.yml
+
+  linters:
+    name: Run linters
+    uses: ./.github/workflows/task.linters.yml
+    needs: [pr-title]
+
+  cargo-linters:
+    name: Run Cargo linters
+    uses: ./.github/workflows/task.linters-cargo.yml
+    needs: [pr-title]
+
+  build-test:
+    name: Build & Tests
+    uses: ./.github/workflows/task.build-test.yml
+    needs: [linters, cargo-linters]
+
+  build-prod:
+    name: Build Production
+    uses: ./.github/workflows/task.build-prod.yml
+    needs: [linters, cargo-linters]
