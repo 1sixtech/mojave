@@ -1,3 +1,4 @@
+pub mod block_on;
 pub mod convert;
 pub mod daemon;
 pub mod logging;
