@@ -16,13 +16,13 @@ pub struct DaemonOptions {
     pub log_file_path: PathBuf,
 }
 
-pub async fn run_daemonized<F, Fut>(opts: DaemonOptions, proc: F) -> Result<(), DaemonError>
+pub fn run_daemonized<F, Fut>(opts: DaemonOptions, proc: F) -> Result<(), DaemonError>
 where
     F: FnOnce() -> Fut,
     Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
 {
     if opts.no_daemon {
-        run_main_task(proc).await;
+        run_main_task(proc);
         return Ok(());
     }
 
@@ -51,14 +51,17 @@ where
             source,
         })?;
 
+    let working_dir = std::env::current_dir()?;
+
     let daemon = Daemonize::new()
         .pid_file(pid_path.clone())
         .chown_pid_file(true)
+        .working_directory(working_dir)
         .stdout(log_file)
         .stderr(log_file_err);
     daemon.start()?;
 
-    run_main_task(proc).await;
+    run_main_task(proc);
     let _ = std::fs::remove_file(pid_path);
 
     Ok(())
@@ -112,19 +115,26 @@ fn is_pid_running(pid: Pid) -> bool {
     System::new_all().process(pid).is_some()
 }
 
-async fn run_main_task<F, Fut>(proc: F)
+fn run_main_task<F, Fut>(proc: F)
 where
     F: FnOnce() -> Fut,
     Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
 {
-    tokio::select! {
-        res = proc() => {
-            if let Err(err) = res {
-                tracing::error!("Process stopped unexpectedly: {}", err);
+    let rt = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+
+    rt.block_on(async move {
+        tokio::select! {
+            res = proc() => {
+                if let Err(err) = res {
+                    tracing::error!("Process stopped unexpectedly: {}", err);
+                }
+            },
+            _ = tokio::signal::ctrl_c() => {
+                tracing::info!("Shutting down...");
             }
-        },
-        _ = tokio::signal::ctrl_c() => {
-            tracing::info!("Shutting down...");
         }
-    }
+    });
 }

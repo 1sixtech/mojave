@@ -5,8 +5,7 @@ use mojave_node_lib::types::MojaveNode;
 use mojave_utils::daemon::{DaemonOptions, run_daemonized, stop_daemonized};
 use std::error::Error;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<(), Box<dyn Error>> {
     mojave_utils::logging::init();
     let cli = cli::Cli::run();
 
@@ -30,7 +29,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     });
                 node.run(&node_options).await
             })
-            .await
             .unwrap_or_else(|err| {
                 tracing::error!("Failed to start daemonized node: {}", err);
             });

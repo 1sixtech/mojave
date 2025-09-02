@@ -36,7 +36,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     });
                 mojave_block_producer::run(node, &node_options, &block_producer_options).await
             })
-            .await
             .unwrap_or_else(|err| {
                 tracing::error!("Failed to start daemonized node: {}", err);
             });

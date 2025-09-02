@@ -3,13 +3,14 @@ use crate::cli::{Command, ProofCommand};
 
 use mojave_client::MojaveClient;
 use mojave_prover_lib::start_api;
-use mojave_utils::daemon::{DaemonOptions, run_daemonized, stop_daemonized};
+use mojave_utils::{
+    daemon::{DaemonOptions, run_daemonized, stop_daemonized},
+    runtime::execute_command_with_runtime,
+};
 use serde_json::json;
 use std::error::Error;
 
-#[tokio::main]
-
-async fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<(), Box<dyn Error>> {
     mojave_utils::logging::init();
 
     let cli = cli::Cli::run();
@@ -40,7 +41,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 )
                 .await
             })
-            .await
             .unwrap_or_else(|err| tracing::error!("Failed to start daemonized node: {}", err));
         }
         Command::Stop { pid_file } => stop_daemonized(pid_file)?,
@@ -49,7 +49,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 .prover_urls(&[rpc_url.clone()])
                 .build()?;
 
-            let reachable = client.request().get_job_id().await.is_ok();
+            let reachable =
+                execute_command_with_runtime(|| async move { client.request().get_job_id().await })
+                    .is_ok();
 
             println!(
                 "{}",
@@ -68,14 +70,20 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     .build()?;
                 let job_id_obj: mojave_client::types::JobId =
                     serde_json::from_value(json!(job_id))?;
-                let proof = client.request().get_proof(job_id_obj).await?;
+
+                let proof = execute_command_with_runtime(|| async move {
+                    client.request().get_proof(job_id_obj).await
+                })?;
                 println!("{}", serde_json::to_string_pretty(&proof)?);
             }
             ProofCommand::Pending { rpc_url } => {
                 let client = MojaveClient::builder()
                     .prover_urls(&[rpc_url.clone()])
                     .build()?;
-                let jobs = client.request().get_job_id().await?;
+                let jobs =
+                    execute_command_with_runtime(
+                        || async move { client.request().get_job_id().await },
+                    )?;
                 println!(
                     "{}",
                     serde_json::to_string_pretty(&json!({ "pending": jobs }))?
