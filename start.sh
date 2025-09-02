@@ -10,8 +10,8 @@ NODE_HTTP="http://${NODE_HOST}:${NODE_PORT}"
 SEQ_HTTP="http://${SEQ_HOST}:${SEQ_PORT}"
 
 GENESIS="./data/testnet-genesis.json"
-NODE_DATA_DIR="$(pwd)/mojave-node"
-SEQ_DATA_DIR="$(pwd)/mojave-sequencer"
+NODE_DATA_DIR="$HOME/.mojave/mojave-node"
+SEQ_DATA_DIR="$HOME/.mojave/mojave-sequencer"
 SEQ_PRIVKEY="${SEQ_PRIVKEY:-0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}"
 
 NODE_READY_TIMEOUT=120

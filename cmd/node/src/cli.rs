@@ -50,7 +50,7 @@ pub struct Options {
         long = "datadir",
         value_name = "DATABASE_DIRECTORY",
         help = "If the datadir is the word `memory`, ethrex will use the InMemory Engine",
-        default_value = "mojave",
+        default_value = ".mojave/mojave-node",
         help = "Receives the name of the directory where the Database is located.",
         long_help = "If the datadir is the word `memory`, ethrex will use the `InMemory Engine`.",
         help_heading = "Node options",
