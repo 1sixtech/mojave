@@ -4,7 +4,7 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Bitcoin configuration
 BITCOIN_DATA_DIR="/bitcoin"
 BITCOIN_CONFIG_DIR="/bitcoin/bitcoin.conf"
-WALLETNAME=mojave-wallet
+WALLETNAME="mojave-wallet"
 
 bitcoind -daemon \
     -conf=$BITCOIN_CONFIG_DIR \
@@ -18,11 +18,12 @@ while ! $BTC getblockchaininfo > /dev/null 2>&1; do
   sleep 2
 done
 
-
-if $BTC listwallets | grep -q "$WALLETNAME"; then
-    $BTC loadwallet "$WALLETNAME"
+if $BTC listwallets | tr -d ' \n' | grep -F -q "\"$WALLETNAME\""; then
+  echo "Wallet '$WALLETNAME' already loaded."
+elif $BTC listwalletdir | tr -d ' \n' | grep -F -q "\"name\":\"$WALLETNAME\""; then
+  $BTC loadwallet "$WALLETNAME" 
 else
-    $BTC createwallet "$WALLETNAME"
+  $BTC -named createwallet wallet_name="$WALLETNAME"
 fi
 
 MOJAVE_ADDRESS=$($BTC getnewaddress "mojave-address")
@@ -33,7 +34,7 @@ $BTC generatetoaddress 101 "$MOJAVE_ADDRESS"
 # Verify balance
 MOJAVE_BALANCE=$($BTC getbalance)
 if [ "$MOJAVE_BALANCE" != "50.00000000" ]; then
-    echo -e "${RED}[ERROR]${NC} Bitcoin balance is not 50.00000000, got: $MOJAVE_BALANCE"
+    echo -e "ERROR: Bitcoin balance is not 50.00000000, got: $MOJAVE_BALANCE"
     exit 1
 fi
 
