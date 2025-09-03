@@ -242,7 +242,6 @@ echo -e "${BLUE}[SEQUENCER]${NC} Starting sequencer…"
     exec cargo run --bin mojave-sequencer -- init \
         --network "$GENESIS" \
         --http.port "$SEQ_PORT" \
-        --full_node.addresses "${NODE_HTTP}" \
         --private_key "$SEQ_PRIVKEY"
 ) >"$SEQUENCER_PIPE" 2>&1 &
 SEQUENCER_PID=$!
