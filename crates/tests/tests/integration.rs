@@ -2,26 +2,16 @@
 mod tests {
     use ctor::ctor;
     use ethrex_common::{
-        Address, Bloom, Bytes, H256, U256,
-        types::{Block, BlockBody, BlockHeader, EIP1559Transaction, TxKind, TxType},
+        Address, Bytes, H256, U256,
+        types::{EIP1559Transaction, TxKind, TxType},
     };
     use ethrex_l2_rpc::signer::{LocalSigner, Signable, Signer};
     use ethrex_rlp::encode::RLPEncode;
-    use ethrex_rpc::{
-        EthClient,
-        types::block_identifier::{BlockIdentifier, BlockTag},
-    };
-    use mojave_client::{MojaveClient, types::Strategy};
+    use ethrex_rpc::EthClient;
     use mojave_tests::{start_test_api_node, start_test_api_sequencer};
-    use mojave_utils::rpc::types::MojaveRequestMethods;
-    use reqwest::Url;
     use secp256k1::SecretKey;
     use serde_json::{Value, json};
-    use std::{
-        net::SocketAddr,
-        str::FromStr,
-        time::{SystemTime, UNIX_EPOCH},
-    };
+    use std::str::FromStr;
     use tokio::time::{Duration, sleep};
     #[ctor]
     fn test_setup() {
@@ -32,105 +22,6 @@ mod tests {
             )
         };
         println!("PRIVATE_KEY initialized for all tests");
-    }
-
-    fn create_test_block() -> Block {
-        Block {
-            header: BlockHeader {
-                parent_hash: H256::zero(),
-                ommers_hash: H256::zero(),
-                coinbase: Address::zero(),
-                state_root: H256::zero(),
-                transactions_root: H256::zero(),
-                receipts_root: H256::zero(),
-                logs_bloom: Bloom::default(),
-                difficulty: U256::zero(),
-                number: 1u64,
-                gas_limit: 21000u64,
-                gas_used: 0u64,
-                timestamp: 0u64,
-                extra_data: Bytes::new(),
-                prev_randao: H256::zero(),
-                nonce: 0u64,
-                base_fee_per_gas: Some(0u64),
-                withdrawals_root: None,
-                blob_gas_used: None,
-                excess_blob_gas: None,
-                parent_beacon_block_root: None,
-                requests_hash: None,
-                ..Default::default()
-            },
-            body: BlockBody {
-                transactions: vec![],
-                ommers: vec![],
-                withdrawals: None,
-            },
-        }
-    }
-
-    #[tokio::test]
-    async fn test_sequencer_to_full_node_broadcast_block() {
-        // create a test block
-        let test_block = create_test_block();
-
-        // Find an available port
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let addr = listener.local_addr().unwrap();
-        drop(listener);
-
-        let server_url = format!("http://{addr}");
-
-        // spawn full node server
-        let server_handle = tokio::spawn(async move {
-            use axum::{Json, Router, http::StatusCode, routing::post};
-            use tower_http::cors::CorsLayer;
-
-            async fn handle_rpc(body: String) -> Result<Json<Value>, StatusCode> {
-                let request: Value =
-                    serde_json::from_str(&body).map_err(|_| StatusCode::BAD_REQUEST)?;
-                let method: MojaveRequestMethods =
-                    serde_json::from_str(request.get("method").and_then(|m| m.as_str()).unwrap())
-                        .map_err(|_| StatusCode::BAD_REQUEST)?;
-
-                if method == MojaveRequestMethods::SendBroadcastBlock {
-                    let response = json!({
-                        "id": request.get("id").unwrap_or(&json!(1)),
-                        "jsonrpc": "2.0",
-                        "result": null
-                    });
-                    return Ok(Json(response));
-                }
-                Err(StatusCode::METHOD_NOT_ALLOWED)
-            }
-
-            let app = Router::new()
-                .route("/", post(handle_rpc))
-                .layer(CorsLayer::permissive());
-
-            let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-            axum::serve(listener, app).await.unwrap();
-        });
-
-        // Wait for server to start
-        sleep(Duration::from_millis(100)).await;
-
-        // create mojave client and test block broadcast
-        let private_key = std::env::var("PRIVATE_KEY").unwrap();
-        let client = MojaveClient::builder()
-            .private_key(private_key)
-            .build()
-            .unwrap();
-        let result = client
-            .request()
-            .urls(&[Url::parse(&server_url).unwrap()])
-            .strategy(Strategy::Race)
-            .send_broadcast_block(&test_block)
-            .await;
-
-        server_handle.abort();
-
-        // assert the response
-        assert!(result.is_ok(), "Communication should complete");
     }
 
     #[tokio::test]
@@ -189,34 +80,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_network_error_handling_when_servers_unavailable() {
-        // create a test block
-        let test_block = create_test_block();
-
-        // Find an available port
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let addr = listener.local_addr().unwrap();
-        drop(listener);
-
-        let server_url = format!("http://{addr}");
-
-        // create mojave client and test block broadcast
-        let private_key = std::env::var("PRIVATE_KEY").unwrap();
-        let client = MojaveClient::builder()
-            .private_key(private_key)
-            .build()
-            .unwrap();
-        let result = client
-            .request()
-            .urls(&[Url::parse(&server_url).unwrap()])
-            .send_broadcast_block(&test_block)
-            .await;
-
-        // assert the response
-        assert!(result.is_err(), "Should fail when server is unavailable");
-    }
-
-    #[tokio::test]
     async fn test_forward_transaction() {
         let (_, sequencer_rx) = start_test_api_sequencer(None, None).await;
         let (full_node_client, full_node_rx) = start_test_api_node(None, None, None).await;
@@ -264,99 +127,5 @@ mod tests {
             .unwrap();
 
         assert_eq!(ret, expected_hash);
-    }
-
-    #[tokio::test]
-    async fn test_send_block() {
-        let sequencer_http_addr: SocketAddr = "127.0.0.1:8504".parse().unwrap();
-        let sequencer_auth_addr: SocketAddr = "127.0.0.1:8505".parse().unwrap();
-        let full_node_http_addr: SocketAddr = "127.0.0.1:8506".parse().unwrap();
-        let full_node_auth_addr: SocketAddr = "127.0.0.1:8507".parse().unwrap();
-
-        let (sequencer_client, sequencer_rx) =
-            start_test_api_sequencer(Some(sequencer_http_addr), Some(sequencer_auth_addr)).await;
-
-        let (_, full_node_rx) = start_test_api_node(
-            Some(sequencer_http_addr),
-            Some(full_node_http_addr),
-            Some(full_node_auth_addr),
-        )
-        .await;
-
-        sequencer_rx.await.unwrap();
-        full_node_rx.await.unwrap();
-
-        let eth_client = EthClient::new(&format!("http://{sequencer_http_addr}")).unwrap();
-
-        let last_block = eth_client
-            .get_block_by_number(BlockIdentifier::Tag(BlockTag::Latest))
-            .await
-            .unwrap();
-
-        let block = Block {
-            header: BlockHeader {
-                parent_hash: last_block.header.hash(),
-                ommers_hash: H256::from_str(
-                    "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
-                )
-                .unwrap(),
-                coinbase: Address::zero(),
-                state_root: H256::from_str(
-                    "0xccc9ba0b50722fdde2a64552663a9db63239d969a9957ebae5a60a98d4bf57d3",
-                )
-                .unwrap(),
-                transactions_root: H256::from_str(
-                    "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
-                )
-                .unwrap(),
-                receipts_root: H256::from_str(
-                    "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
-                )
-                .unwrap(),
-                logs_bloom: Bloom::from([0; 256]),
-                difficulty: U256::zero(),
-                number: last_block.header.number + 1,
-                gas_limit: 0x08F0D180,
-                gas_used: 0,
-                timestamp: SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap()
-                    .as_secs(),
-                extra_data: Bytes::new(),
-                prev_randao: H256::zero(),
-                nonce: 0x0000000000000000,
-                base_fee_per_gas: Some(0x342770C0),
-                withdrawals_root: Some(
-                    H256::from_str(
-                        "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
-                    )
-                    .unwrap(),
-                ),
-                blob_gas_used: Some(0x00),
-                excess_blob_gas: Some(0x00),
-                parent_beacon_block_root: Some(H256::zero()),
-                requests_hash: Some(
-                    H256::from_str(
-                        "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-                    )
-                    .unwrap(),
-                ),
-                ..Default::default()
-            },
-            body: BlockBody {
-                transactions: vec![],
-                ommers: vec![],
-                withdrawals: None,
-            },
-        };
-
-        tracing::info!("Sending block: {:?}", block);
-        sequencer_client
-            .request()
-            .urls(&[Url::parse(&format!("http://{full_node_http_addr}")).unwrap()])
-            .strategy(Strategy::Race)
-            .send_broadcast_block(&block)
-            .await
-            .unwrap();
     }
 }
