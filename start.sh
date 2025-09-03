@@ -7,8 +7,6 @@ SEQ_PORT="1739"
 NODE_HTTP="http://${NODE_HOST}:${NODE_PORT}"
 SEQ_HTTP="http://${SEQ_HOST}:${SEQ_PORT}"
 GENESIS="./data/testnet-genesis.json"
-NODE_DATA_DIR="$(pwd)/mojave-node"
-SEQ_DATA_DIR="$(pwd)/mojave-sequencer"
 SEQ_PRIVKEY="${SEQ_PRIVKEY:-0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}"
 NODE_READY_TIMEOUT=120
 SEQ_READY_TIMEOUT=60
@@ -244,7 +242,6 @@ echo -e "${BLUE}[SEQUENCER]${NC} Starting sequencer…"
     exec cargo run --bin mojave-sequencer -- init \
         --network "$GENESIS" \
         --http.port "$SEQ_PORT" \
-        --datadir "$SEQ_DATA_DIR" \
         --private_key "$SEQ_PRIVKEY"
 ) >"$SEQUENCER_PIPE" 2>&1 &
 SEQUENCER_PID=$!
@@ -269,7 +266,6 @@ echo -e "${GREEN}[NODE]${NC} Starting full node…"
 node_cmd=(
     cargo run --bin mojave-node -- init
     --network "$GENESIS"
-    --datadir "$NODE_DATA_DIR"
     --discovery.port "$NODE_P2P_PORT"
     --p2p.port "$NODE_P2P_PORT"
     --bootnodes "$SEQ_ENODE"
