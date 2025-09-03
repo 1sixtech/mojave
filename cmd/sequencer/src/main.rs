@@ -3,7 +3,8 @@ pub mod cli;
 use crate::cli::Command;
 use anyhow::Result;
 use mojave_block_producer::types::BlockProducerOptions;
-use mojave_node_lib::types::MojaveNode;
+use mojave_node_lib::{initializers::get_signer, types::MojaveNode};
+use mojave_utils::p2p::public_key_from_signing_key;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -36,6 +37,12 @@ async fn main() -> Result<()> {
                     tracing::info!("Shutting down the sequencer..");
                 }
             }
+        }
+        Command::GetPubKey { datadir } => {
+            let signer = get_signer(&datadir)?;
+            let public_key = public_key_from_signing_key(&signer);
+            let public_key = hex::encode(public_key);
+            println!("{public_key}");
         }
     }
     Ok(())

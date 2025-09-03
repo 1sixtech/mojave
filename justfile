@@ -45,7 +45,7 @@ fix flags="":
 	cargo shear --fix
 
 	# requires: cargo install cargo-sort
-	cargo sort --workspace
+	cargo sort --workspace -g
 
 	# requires: cargo install cargo-audit
 	# cargo audit
