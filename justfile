@@ -30,7 +30,7 @@ sequencer:
         --network {{current-dir}}/data/testnet-genesis.json
 
 # Run bitcoin regtest in docker
-bitcoin-regtest:
+bitcoin-start:
 	docker run -d --name bitcoin-regtest \
 	 --restart unless-stopped \
 	 -p 18443:18443 \
@@ -42,10 +42,11 @@ bitcoin-regtest:
 	 ruimarinho/bitcoin-core \
 	 /usr/local/bin/bitcoin-regtest.sh
 
-stop-bitcoin-regtest:
-	docker rm -f bitcoin-regtest
+bitcoin-stop:
+	docker stop bitcoin-regtest
 
-clean-bitcoin-regtest:
+bitcoin-clean:
+	docker rm -f bitcoin-regtest
 	rm -rf bitcoin/regtest
 
 generate-key-pair:
