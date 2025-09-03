@@ -2,8 +2,6 @@ mod api;
 pub mod context;
 pub mod requests;
 mod tasks;
-#[cfg(test)]
-mod tests;
 mod types;
 
 use crate::rpc::context::RpcApiContext;
