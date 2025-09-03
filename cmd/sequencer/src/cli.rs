@@ -239,6 +239,7 @@ impl Cli {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Subcommand)]
 pub enum Command {
     #[command(name = "init", about = "Run the sequencer")]
@@ -247,6 +248,19 @@ pub enum Command {
         options: Options,
         #[command(flatten)]
         sequencer_options: SequencerOptions,
+    },
+    #[command(name = "get-pub-key", about = "Display the public key of the node")]
+    GetPubKey {
+        #[arg(
+            long = "datadir",
+            value_name = "DATABASE_DIRECTORY",
+            default_value = "mojave-sequencer",
+            help = "Receives the name of the directory where the Database is located.",
+            long_help = "If the datadir is the word `memory`, ethrex will use the `InMemory Engine`.",
+            help_heading = "Node options",
+            env = "ETHREX_DATADIR"
+        )]
+        datadir: String,
     },
 }
 
