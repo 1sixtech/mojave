@@ -1,5 +1,6 @@
 #!/usr/bin/env just --justfile
 
+home-dir := env_var('HOME')
 current-dir := `pwd`
 
 # List all of the available commands.
@@ -10,7 +11,7 @@ build-mojave:
 	cargo build --release
 
 clean:
-	rm -rf mojave-node mojave-sequencer bitcoin/regtest
+	rm -rf {{home-dir}}/.mojave/
 
 # Run both node and sequencer in parallel, with sequencer waiting for node
 full: clean
@@ -19,15 +20,12 @@ full: clean
 node:
     export $(cat .env | xargs) && \
     cargo run --release --bin mojave-node init \
-        --datadir {{current-dir}}/mojave-node \
         --network {{current-dir}}/data/testnet-genesis.json
 
 sequencer:
     export $(cat .env | xargs) && \
     cargo run --release --bin mojave-sequencer init \
         --http.port 1739 \
-        --full_node.addresses http://0.0.0.0:8545 \
-        --datadir {{current-dir}}/mojave-sequencer \
         --private_key 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
         --network {{current-dir}}/data/testnet-genesis.json
 
