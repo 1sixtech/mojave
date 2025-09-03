@@ -1,0 +1,28 @@
+---
+name: Workflow - Release
+on:
+  workflow_dispatch:
+  release:
+    types: [created]
+
+concurrency:
+  group: release-checks-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  build-release:
+    name: Build & Release Binaries
+    uses: ./.github/workflows/task.release-binaries.yml
+    permissions:
+      contents: write
+    with:
+      release_tag_name: ${{ github.event.release.tag_name }}
+
+  docker:
+    name: Build & Push Docker Image
+    uses: ./.github/workflows/task.docker.yml
+    permissions:
+      contents: read
+      packages: write
+    with:
+      release_tag_name: ${{ github.event.release.tag_name }}
