@@ -29,6 +29,16 @@ sequencer:
         --private_key 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
         --network {{current-dir}}/data/testnet-genesis.json
 
+# Run bitcoin regtest in docker
+bitcoin-regtest:
+	docker compose up -d bitcoin-regtest
+
+stop-bitcoin-regtest:
+	docker compose down bitcoin-regtest
+
+clean-bitcoin-regtest:
+	rm -rf bitcoin/regtest
+
 generate-key-pair:
 	cargo build --bin mojave
 	export $(cat .env | xargs) && \

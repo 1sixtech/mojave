@@ -19,29 +19,30 @@ while ! $BTC getblockchaininfo > /dev/null 2>&1; do
 done
 
 
-if [ -d "$BITCOIN_DATA_DIR/wallets" ]; then
+if $BTC listwallets | grep -q "$WALLETNAME"; then
     $BTC loadwallet "$WALLETNAME"
 else
     $BTC createwallet "$WALLETNAME"
 fi
 
-BITCOIN_ADDRESS=$($BTC getnewaddress "mojave-address")
+MOJAVE_ADDRESS=$($BTC getnewaddress "mojave-address")
 
 # Generate 101 blocks and pay block rewards of 50 bitcoins
-$BTC generatetoaddress 101 "$BITCOIN_ADDRESS"
+$BTC generatetoaddress 101 "$MOJAVE_ADDRESS"
 
 # Verify balance
-BITCOIN_BALANCE=$($BTC getbalance)
-if [ "$BITCOIN_BALANCE" != "50.00000000" ]; then
-    echo -e "${RED}[ERROR]${NC} Bitcoin balance is not 50.00000000, got: $BITCOIN_BALANCE"
+MOJAVE_BALANCE=$($BTC getbalance)
+if [ "$MOJAVE_BALANCE" != "50.00000000" ]; then
+    echo -e "${RED}[ERROR]${NC} Bitcoin balance is not 50.00000000, got: $MOJAVE_BALANCE"
     exit 1
 fi
 
-echo "Bitcoin setup complete! Balance: $BITCOIN_BALANCE BTC"
+echo "Bitcoin setup complete! Balance: $MOJAVE_BALANCE BTC"
 
 # Install watch
 apt-get update
 apt-get install -y procps
 # A terminal-based program (like watch, top, less, etc.) runs in an environment, TERM environment variable should be set
 export TERM=xterm
-watch -n 2 "$BTC generatetoaddress 1 $BITCOIN_ADDRESS"
+# generate blocks every 2 seconds
+watch -n 2 "$BTC generatetoaddress 1 $MOJAVE_ADDRESS" 

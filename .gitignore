@@ -26,3 +26,4 @@ Cargo.toml.bak
 
 .rules
 
+bitcoin/regtest
