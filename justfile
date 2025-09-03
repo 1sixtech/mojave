@@ -14,7 +14,7 @@ clean:
 
 # Run both node and sequencer in parallel, with sequencer waiting for node
 full: clean
-	./start.sh
+	./scripts/start.sh
 
 node:
     export $(cat .env | xargs) && \
@@ -58,7 +58,7 @@ fix flags="":
 	taplo fmt
 
 upgrade-ethrex:
-	./cmd/update_ethrex_rev.sh
+	./scripts/update_ethrex_rev.sh
 
 # Upgrade any tooling
 upgrade:

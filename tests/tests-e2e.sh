@@ -31,7 +31,7 @@ cleanup() {
 
 echo "Starting all services"
 
-bash start.sh &
+bash scripts/start.sh &
 sleep 10
 
 echo "All services started. Testing connection..."
