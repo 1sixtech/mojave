@@ -15,7 +15,7 @@ clean:
 
 # Run both node and sequencer in parallel, with sequencer waiting for node
 full: clean
-	./start.sh
+	./scripts/start.sh
 
 node:
     export $(cat .env | xargs) && \
@@ -28,6 +28,26 @@ sequencer:
         --http.port 1739 \
         --private_key 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
         --network {{current-dir}}/data/testnet-genesis.json
+
+# Run bitcoin regtest in docker
+bitcoin-start:
+	docker run -d --name bitcoin-regtest \
+	 --restart unless-stopped \
+	 -p 18443:18443 \
+	 -p 18444:18444 \
+	 -v {{current-dir}}/bitcoin/:/bitcoin \
+	 -v {{current-dir}}/bitcoin/bitcoin.conf:/bitcoin/bitcoin.conf \
+	 -v {{current-dir}}/scripts/bitcoin-regtest.sh:/usr/local/bin/bitcoin-regtest.sh \
+	 --entrypoint /bin/bash \
+	 ruimarinho/bitcoin-core \
+	 /usr/local/bin/bitcoin-regtest.sh
+
+bitcoin-stop:
+	docker stop bitcoin-regtest
+
+bitcoin-clean:
+	docker rm -f bitcoin-regtest
+	rm -rf bitcoin/regtest
 
 generate-key-pair:
 	cargo build --bin mojave
@@ -56,7 +76,7 @@ fix flags="":
 	taplo fmt
 
 upgrade-ethrex:
-	./cmd/update_ethrex_rev.sh
+	./scripts/update_ethrex_rev.sh
 
 # Upgrade any tooling
 upgrade:
