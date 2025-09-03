@@ -239,6 +239,7 @@ impl Cli {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Subcommand)]
 pub enum Command {
     #[command(name = "init", about = "Run the sequencer")]
@@ -248,19 +249,24 @@ pub enum Command {
         #[command(flatten)]
         sequencer_options: SequencerOptions,
     },
+    #[command(name = "get-pub-key", about = "Display the public key of the node")]
+    GetPubKey {
+        #[arg(
+            long = "datadir",
+            value_name = "DATABASE_DIRECTORY",
+            default_value = "mojave-sequencer",
+            help = "Receives the name of the directory where the Database is located.",
+            long_help = "If the datadir is the word `memory`, ethrex will use the `InMemory Engine`.",
+            help_heading = "Node options",
+            env = "ETHREX_DATADIR"
+        )]
+        datadir: String,
+    },
 }
 
-#[derive(Debug, Parser)]
+#[derive(Parser)]
 #[clap(group(ArgGroup::new("mojave::SequencerOptions")))]
 pub struct SequencerOptions {
-    #[arg(
-        long = "full_node.addresses",
-        help = "Allowed domain(s) and port(s) for the sequencer in the form 'domain:port', can be specified multiple times",
-        help_heading = "Full Node Options",
-        default_value = "http://0.0.0.0:8545",
-        value_delimiter = ','
-    )]
-    pub full_node_addresses: Vec<String>,
     #[arg(
         long = "prover.address",
         help = "Allowed domain(s) and port(s) for the prover in the form 'domain:port'",
@@ -278,10 +284,17 @@ pub struct SequencerOptions {
     pub private_key: String,
 }
 
+impl std::fmt::Debug for SequencerOptions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SequencerOptions")
+            .field("block_time", &self.block_time)
+            .finish()
+    }
+}
+
 impl From<&SequencerOptions> for BlockProducerOptions {
     fn from(value: &SequencerOptions) -> Self {
         Self {
-            full_node_addresses: value.full_node_addresses.clone(),
             prover_address: value.prover_address.clone(),
             block_time: value.block_time,
             private_key: value.private_key.clone(),

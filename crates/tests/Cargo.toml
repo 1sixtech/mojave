@@ -8,9 +8,6 @@ homepage = { workspace = true }
 repository = { workspace = true }
 documentation = { workspace = true }
 
-[dev-dependencies]
-ctor = "0.4.2"
-
 [dependencies]
 mojave-block-producer = { workspace = true }
 mojave-client = { workspace = true }
@@ -36,3 +33,6 @@ tokio = { workspace = true }
 tokio-util = { workspace = true }
 tower-http = { workspace = true }
 tracing = { workspace = true }
+
+[dev-dependencies]
+ctor = "0.4.2"

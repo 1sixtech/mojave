@@ -1,28 +1,20 @@
+---
+name: Task - Tests
 on:
-  push:
-    branches: [main]
-  pull_request:
+  workflow_dispatch:
+  workflow_call:
 
-env:
-  CARGO_TERM_COLOR: always
-
-name: Rust
 jobs:
   test:
-    name: Test
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
       - name: Install nightly toolchain
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly
-
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
-
       - name: Run cargo test
         run: cargo test --workspace
 
@@ -32,16 +24,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Install nightly toolchain
         uses: dtolnay/rust-toolchain@nightly
         with:
           toolchain: nightly
           components: rustfmt
-
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
-
       - name: Run cargo clippy
         run: cargo fmt --all --check
 
@@ -51,15 +40,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Install nightly toolchain
         uses: dtolnay/rust-toolchain@nightly
         with:
           toolchain: nightly
           components: clippy
-
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
-
       - name: Run cargo clippy
         run: cargo clippy --all-targets --all-features --workspace -- -D warnings

@@ -7,11 +7,8 @@
   <a href="https://github.com/1sixtech/mojave/blob/main/LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"/>
   </a>
-  <a href="https://github.com/1sixtech/mojave/actions/workflows/rust.yml">
-    <img src="https://github.com/1sixtech/mojave/actions/workflows/rust.yml/badge.svg" alt="CI"/>
-  </a>
-  <a href="https://github.com/1sixtech/mojave/actions/workflows/lint-toml.yml">
-    <img src="https://github.com/1sixtech/mojave/actions/workflows/lint-toml.yml/badge.svg" alt="TOML Lint"/>
+  <a href="https://github.com/1sixtech/mojave/actions/workflows/workflow.push.yml">
+    <img src="https://github.com/1sixtech/mojave/actions/workflows/workflow.push.yml/badge.svg" alt="Workflow - Push"/>
   </a>
   <br/><br/>
   <a href="https://github.com/1sixtech/mojave">

@@ -1,8 +1,7 @@
 use crate::{
     error::{Error, Result},
-    types::{JobId, ProofResponse, ProverData, SignedBlock, SignedProofResponse, Strategy},
+    types::{JobId, ProofResponse, ProverData, SignedProofResponse, Strategy},
 };
-use ethrex_common::types::Block;
 use ethrex_rpc::{
     clients::eth::RpcResponse,
     utils::{RpcRequest, RpcRequestId},
@@ -69,18 +68,11 @@ impl MojaveClientBuilder {
 
     pub fn build(mut self) -> Result<MojaveClient> {
         let sequencer_urls = self.sequencer_urls.take();
-        let full_node_urls = self.full_node_urls.take();
         let prover_urls = self.prover_urls.take();
         let private_key = self.private_key.take();
         let timeout = self.timeout.take();
 
-        MojaveClient::new(
-            sequencer_urls,
-            full_node_urls,
-            prover_urls,
-            private_key,
-            timeout,
-        )
+        MojaveClient::new(sequencer_urls, prover_urls, private_key, timeout)
     }
 }
 
@@ -92,7 +84,6 @@ pub struct MojaveClient {
 struct MojaveClientInner {
     client: reqwest::Client,
     sequencer_urls: Option<Vec<Url>>,
-    full_node_urls: Option<Vec<Url>>,
     prover_urls: Option<Vec<Url>>,
     signing_key: Option<SigningKey>,
 }
@@ -118,7 +109,6 @@ impl MojaveClient {
 
     pub fn new(
         sequencer_urls: Option<Vec<String>>,
-        full_node_urls: Option<Vec<String>>,
         prover_urls: Option<Vec<String>>,
         private_key: Option<String>,
         timeout: Option<Duration>,
@@ -131,7 +121,6 @@ impl MojaveClient {
             inner: Arc::new(MojaveClientInner {
                 client: http_client,
                 sequencer_urls: Self::parse_urls(sequencer_urls)?,
-                full_node_urls: Self::parse_urls(full_node_urls)?,
                 prover_urls: Self::parse_urls(prover_urls)?,
                 signing_key: match private_key {
                     Some(private_key) => Some(
@@ -304,46 +293,6 @@ impl<'a> Request<'a> {
         self.strategy = strategy;
         self
     }
-
-    pub async fn send_broadcast_block(&self, block: &Block) -> Result<()> {
-        let hash = block.hash();
-        let signing_key = self
-            .client
-            .inner
-            .signing_key
-            .as_ref()
-            .ok_or(Error::MissingPrivateKey)?;
-        let signature: Signature = signing_key.sign(&hash)?;
-        let verifying_key = signing_key.verifying_key();
-
-        let params = SignedBlock {
-            block: block.clone(),
-            signature,
-            verifying_key,
-        };
-
-        let request = RpcRequest {
-            id: RpcRequestId::Number(1),
-            jsonrpc: "2.0".to_string(),
-            method: to_string(&MojaveRequestMethods::SendBroadcastBlock)?,
-            params: Some(vec![json!(params)]),
-        };
-
-        let urls = match self.urls {
-            Some(urls) => urls,
-            None => self
-                .client
-                .inner
-                .full_node_urls
-                .as_ref()
-                .ok_or(Error::MissingFullNodeUrls)?,
-        };
-
-        self.client
-            .send_request(&request, urls, self.max_retry.unwrap_or(1), self.strategy)
-            .await
-    }
-
     pub async fn send_proof_input(
         &self,
         proof_input: &ProverData,

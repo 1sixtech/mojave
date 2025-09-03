@@ -1,0 +1,40 @@
+---
+name: Task - PR Title
+on:
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            chore
+            ci
+            deps
+            docs
+            feat
+            fix
+            perf
+            refactor
+            test
+          # Configure which scopes are allowed (newline-delimited).
+          # These are regex patterns auto-wrapped in `^ $`.
+          scopes: |
+            batch-submitter
+            block-producer
+            btc-watcher
+            node
+            proof-coordinator
+            prover
+          requireScope: false
+          # subject doesn't start with an uppercase character.
+          subjectPattern: ^(?![A-Z]).+$
+          subjectPatternError: |
+            The subject "{subject}" found in the pull request title "{title}"
+            didn't match the configured pattern. Please ensure that the subject
+            doesn't start with an uppercase character.

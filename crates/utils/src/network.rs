@@ -71,6 +71,11 @@ impl Network {
         }
         Genesis::try_from(self.get_genesis_path())
     }
+
+    pub fn get_bootnodes(&self) -> Vec<Node> {
+        // TODO: add testnet and mainnet bootnodes
+        vec![]
+    }
 }
 
 impl fmt::Display for Network {
