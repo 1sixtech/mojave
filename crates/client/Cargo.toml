@@ -8,9 +8,6 @@ homepage = { workspace = true }
 repository = { workspace = true }
 documentation = { workspace = true }
 
-[dev-dependencies]
-mockito = "0.31"
-
 [dependencies]
 mojave-signature = { workspace = true }
 mojave-utils = { workspace = true }
@@ -21,10 +18,11 @@ ethrex-rpc = { workspace = true }
 zkvm_interface = { workspace = true }
 
 futures = { workspace = true }
-hex = { workspace = true }
 reqwest = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
-tracing = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
+tracing = { workspace = true }
+
+[dev-dependencies]

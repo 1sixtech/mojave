@@ -37,3 +37,10 @@ jobs:
     name: Build Production
     uses: ./.github/workflows/task.build-prod.yml
     needs: [linters, cargo-linters]
+
+  unlock-pr:
+    name: Unlock PR
+    needs: [build-prod]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3

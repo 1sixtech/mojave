@@ -3,21 +3,21 @@ use zeromq::{Socket, SubSocket};
 
 use crate::{
     error::Result,
-    watch::{Topic, Watcher, WatcherHandle},
+    watch::{Decodable, Topics, Watcher, WatcherHandle},
 };
 
 /// Builder used for configuring and spawning watchers.
 pub struct WatcherBuilder<T> {
     socket_url: String,
     max_channel_capacity: usize,
-    subscription_topic: String,
+    subscription_topics: Vec<String>,
     shutdown: CancellationToken,
     _marker: core::marker::PhantomData<T>,
 }
 
 impl<T> WatcherBuilder<T>
 where
-    T: Topic + bitcoin::consensus::Decodable + Send + Clone + 'static + core::fmt::Debug,
+    T: Topics + Decodable + Send + Clone + 'static + core::fmt::Debug,
 {
     pub fn new(socket_url: &str, shutdown: CancellationToken) -> Self {
         const MAX_CHANNEL_CAPACITY: usize = 1000;
@@ -25,7 +25,7 @@ where
         Self {
             socket_url: socket_url.to_string(),
             max_channel_capacity: MAX_CHANNEL_CAPACITY,
-            subscription_topic: T::TOPIC.to_string(),
+            subscription_topics: T::TOPICS.iter().map(|s| s.to_string()).collect(),
             shutdown,
             _marker: core::marker::PhantomData,
         }
@@ -37,14 +37,25 @@ where
     }
 
     pub fn with_topic(mut self, topic: &str) -> Self {
-        self.subscription_topic = topic.to_string();
+        self.subscription_topics = vec![topic.to_string()];
+        self
+    }
+
+    pub fn with_topics<I, S>(mut self, topics: I) -> Self
+    where
+        I: IntoIterator<Item = S>,
+        S: AsRef<str>,
+    {
+        self.subscription_topics = topics.into_iter().map(|s| s.as_ref().to_string()).collect();
         self
     }
 
     pub async fn spawn(self) -> Result<WatcherHandle<T>, T> {
         let mut socket = SubSocket::new();
         socket.connect(&self.socket_url).await?;
-        socket.subscribe(&self.subscription_topic).await?;
+        for topic in &self.subscription_topics {
+            socket.subscribe(topic).await?;
+        }
 
         let (sender, _) = tokio::sync::broadcast::channel(self.max_channel_capacity);
 
@@ -78,7 +89,7 @@ mod tests {
 
         assert_eq!(builder.socket_url, "tcp://localhost:28332");
         assert_eq!(builder.max_channel_capacity, 1000);
-        assert_eq!(builder.subscription_topic, Block::TOPIC);
+        assert_eq!(builder.subscription_topics, Block::TOPICS);
         assert!(!builder.shutdown.is_cancelled());
         assert!(!shutdown.is_cancelled());
     }
@@ -89,8 +100,8 @@ mod tests {
         let builder = WatcherBuilder::<Transaction>::new("tcp://localhost:28332", shutdown);
 
         assert_eq!(builder.socket_url, "tcp://localhost:28332");
-        assert_eq!(builder.subscription_topic, Transaction::TOPIC);
-        assert_eq!(builder.subscription_topic, "rawtx");
+        assert_eq!(builder.subscription_topics, Transaction::TOPICS);
+        assert_eq!(builder.subscription_topics, vec!["rawtx"]);
     }
 
     #[test]
@@ -99,8 +110,8 @@ mod tests {
         let builder = WatcherBuilder::<Sequence>::new("tcp://localhost:28332", shutdown);
 
         assert_eq!(builder.socket_url, "tcp://localhost:28332");
-        assert_eq!(builder.subscription_topic, Sequence::TOPIC);
-        assert_eq!(builder.subscription_topic, "sequence");
+        assert_eq!(builder.subscription_topics, Sequence::TOPICS);
+        assert_eq!(builder.subscription_topics, vec!["sequence"]);
     }
 
     #[test]
@@ -118,7 +129,7 @@ mod tests {
         let builder =
             WatcherBuilder::<Block>::new("tcp://localhost:28332", shutdown).with_topic("hashtx");
 
-        assert_eq!(builder.subscription_topic, "hashtx");
+        assert_eq!(builder.subscription_topics, vec!["hashtx"]);
     }
 
     #[test]
@@ -129,7 +140,7 @@ mod tests {
             .with_topic("rawtx");
 
         assert_eq!(builder.max_channel_capacity, 200);
-        assert_eq!(builder.subscription_topic, "rawtx");
+        assert_eq!(builder.subscription_topics, vec!["rawtx"]);
     }
 
     #[tokio::test]
@@ -165,7 +176,7 @@ mod tests {
         let builder =
             WatcherBuilder::<Block>::new("tcp://localhost:28332", shutdown).with_topic("");
 
-        assert_eq!(builder.subscription_topic, "");
+        assert_eq!(builder.subscription_topics, vec![""]);
     }
 
     #[test]
@@ -206,9 +217,9 @@ mod tests {
             WatcherBuilder::<Transaction>::new("tcp://localhost:28332", shutdown.clone());
         let seq_builder = WatcherBuilder::<Sequence>::new("tcp://localhost:28332", shutdown);
 
-        assert_eq!(block_builder.subscription_topic, "rawblock");
-        assert_eq!(tx_builder.subscription_topic, "rawtx");
-        assert_eq!(seq_builder.subscription_topic, "sequence");
+        assert_eq!(block_builder.subscription_topics, vec!["rawblock"]);
+        assert_eq!(tx_builder.subscription_topics, vec!["rawtx"]);
+        assert_eq!(seq_builder.subscription_topics, vec!["sequence"]);
     }
 
     #[test]
@@ -224,9 +235,9 @@ mod tests {
             .with_capacity(200);
 
         assert_eq!(builder1.max_channel_capacity, 100);
-        assert_eq!(builder1.subscription_topic, "test1");
+        assert_eq!(builder1.subscription_topics, vec!["test1"]);
         assert_eq!(builder2.max_channel_capacity, 200);
-        assert_eq!(builder2.subscription_topic, "test2");
+        assert_eq!(builder2.subscription_topics, vec!["test2"]);
     }
 
     #[test]
@@ -235,8 +246,8 @@ mod tests {
         let builder = WatcherBuilder::<Block>::new("tcp://localhost:28332", shutdown)
             .with_topic("custom_topic");
 
-        assert_ne!(builder.subscription_topic, Block::TOPIC);
-        assert_eq!(builder.subscription_topic, "custom_topic");
+        assert_ne!(builder.subscription_topics, Block::TOPICS);
+        assert_eq!(builder.subscription_topics, vec!["custom_topic"]);
     }
 
     #[test]
@@ -271,7 +282,7 @@ mod tests {
             .with_topic("topic2")
             .with_topic("final_topic");
 
-        assert_eq!(builder.subscription_topic, "final_topic");
+        assert_eq!(builder.subscription_topics, vec!["final_topic"]);
     }
 
     #[test]
