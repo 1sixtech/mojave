@@ -31,10 +31,19 @@ sequencer:
 
 # Run bitcoin regtest in docker
 bitcoin-regtest:
-	docker compose up -d bitcoin-regtest
+	docker run -d --name bitcoin-regtest \
+	 --restart unless-stopped \
+	 -p 18443:18443 \
+	 -p 18444:18444 \
+	 -v {{current-dir}}/bitcoin/:/bitcoin \
+	 -v {{current-dir}}/bitcoin/bitcoin.conf:/bitcoin/bitcoin.conf \
+	 -v {{current-dir}}/scripts/bitcoin-regtest.sh:/usr/local/bin/bitcoin-regtest.sh \
+	 --entrypoint /bin/bash \
+	 ruimarinho/bitcoin-core \
+	 /usr/local/bin/bitcoin-regtest.sh
 
 stop-bitcoin-regtest:
-	docker compose down bitcoin-regtest
+	docker rm -f bitcoin-regtest
 
 clean-bitcoin-regtest:
 	rm -rf bitcoin/regtest
