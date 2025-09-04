@@ -10,6 +10,9 @@ documentation = { workspace = true }
 
 [dependencies]
 mojave-client = { workspace = true }
+mojave-rpc-core = { workspace = true }
+mojave-rpc-macros = { workspace = true }
+mojave-rpc-server = { workspace = true }
 mojave-signature = { workspace = true }
 mojave-utils = { workspace = true }
 

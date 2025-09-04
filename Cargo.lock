@@ -4454,8 +4454,12 @@ dependencies = [
 name = "mojave-rpc-macros"
 version = "0.1.0"
 dependencies = [
+ "mojave-rpc-core",
+ "mojave-rpc-server",
  "proc-macro2",
  "quote",
+ "serde",
+ "serde_json",
  "syn 2.0.106",
 ]
 
@@ -4465,8 +4469,8 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "ethrex-rpc",
+ "futures",
  "mojave-rpc-core",
- "serde",
  "serde_json",
  "tokio",
  "tracing",
@@ -4537,7 +4541,6 @@ dependencies = [
  "daemonize",
  "ethrex-common",
  "ethrex-p2p",
- "ethrex-rpc",
  "lazy_static",
  "mojave-rpc-core",
  "serde",

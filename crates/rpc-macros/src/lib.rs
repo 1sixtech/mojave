@@ -11,23 +11,30 @@
 //! use mojave_rpc_core::RpcErr;
 //! use serde_json::Value;
 //!
+//! #[derive(Clone)]
+//! struct Ctx;
+//!
 //! #[mojave_rpc_macros::rpc(namespace = "moj", method = "getJobId")]
 //! pub async fn get_job_id(
-//!     ctx: std::sync::Arc<crate::rpc::ProverRpcContext>,
+//!     _ctx: Ctx,
 //!     _params: (),
 //! ) -> Result<Value, RpcErr> {
-//!     let ids = crate::services::jobs::get_pending_jobs(&ctx).await
-//!         .map_err(|e| RpcErr::Internal(e.to_string()))?;
-//!     Ok(serde_json::to_value(ids).unwrap())
+//!     Ok(serde_json::json!(["id-1", "id-2"]))
 //! }
 //! ```
 //!
 //! 2) Register it when building your server:
 //!
 //! ```rust
-//! let mut registry: mojave_rpc_server::RpcRegistry<crate::rpc::ProverRpcContext> =
+//! # use mojave_rpc_macros as _macro_dep_only;
+//! # use mojave_rpc_core::RpcErr;
+//! # use serde_json::Value;
+//! # #[derive(Clone)] struct Ctx;
+//! # #[mojave_rpc_macros::rpc(namespace = "moj", method = "getJobId")]
+//! # async fn get_job_id(_ctx: Ctx, _params: ()) -> Result<Value, RpcErr> { Ok(serde_json::json!([])) }
+//! let mut registry: mojave_rpc_server::RpcRegistry<Ctx> =
 //!     mojave_rpc_server::RpcRegistry::new();
-//! crate::rpc::handlers::register_moj_getJobId(&mut registry);
+//! register_moj_getJobId(&mut registry);
 //! ```
 //!
 //! Parameter extraction rules

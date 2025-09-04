@@ -11,12 +11,11 @@ documentation = { workspace = true }
 [dependencies]
 axum = { workspace = true }
 ethrex-rpc = { workspace = true }
+futures = { workspace = true }
 mojave-rpc-core = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
-futures = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }

@@ -1,7 +1,6 @@
 mod api;
 pub mod context;
-pub mod requests;
+mod handlers;
 
 pub use api::start_api;
 pub use context::RpcApiContext;
-pub use requests::SendBatchProofRequest;
