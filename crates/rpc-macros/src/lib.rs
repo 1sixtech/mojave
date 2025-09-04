@@ -1,7 +1,7 @@
 //! Mojave RPC Macros
 //! ==================
 //!
-//! Attribute macro to register typed JSON‑RPC handlers with the Mojave RPC server.
+//! Attribute macro to register typed JSON-RPC handlers with the Mojave RPC server.
 //!
 //! Quick start
 //! -----------
@@ -41,9 +41,9 @@
 //! --------------------------
 //! The macro deserializes parameters into your handler type `P` using the
 //! following rules applied to `req.params`:
-//! - `None` or empty array `[]` → `serde_json::from_value::<P>(Null)`
-//! - Single element array `[x]` → `serde_json::from_value::<P>(x)`
-//! - Multiple elements array `[x, y, ...]` → `serde_json::from_value::<P>(Array)`
+//! - `None` or empty array `[]` -> `serde_json::from_value::<P>(Null)`
+//! - Single element array `[x]` -> `serde_json::from_value::<P>(x)`
+//! - Multiple elements array `[x, y, ...]` -> `serde_json::from_value::<P>(Array)`
 //!
 //! This enables three common patterns:
 //! - Zero parameters: use `()`.
@@ -67,7 +67,7 @@
 //! Error handling
 //! --------------
 //! - Any deserialization failure returns `RpcErr::BadParams("Invalid params: …")`.
-//! - Handlers return `Result<Value, RpcErr>`; errors propagate to the JSON‑RPC error
+//! - Handlers return `Result<Value, RpcErr>`; errors propagate to the JSON-RPC error
 //!   object via the server glue.
 //!
 //! Generated symbols
