@@ -113,33 +113,6 @@ impl fmt::Debug for ProverOptions {
 
 #[derive(Clone, Subcommand)]
 
-pub enum ProofCommand {
-    #[command(name = "get", about = "Get proof of specific job id")]
-    Get {
-        #[arg(
-            long = "rpc.url",
-            default_value = "http://127.0.0.1:3900",
-            help = "RPC URL of prover"
-        )]
-        rpc_url: String,
-
-        #[arg(long = "job.id", help = "Job id to query proof")]
-        job_id: String,
-    },
-
-    #[command(name = "pending", about = "List pending jobs")]
-    Pending {
-        #[arg(
-            long = "rpc.url",
-            default_value = "http://127.0.0.1:3900",
-            help = "RPC URL of prover"
-        )]
-        rpc_url: String,
-    },
-}
-
-#[derive(Clone, Subcommand)]
-
 pub enum Command {
     #[command(name = "init", about = "Run the prover")]
     Start {
@@ -157,21 +130,4 @@ pub enum Command {
         )]
         pid_file: std::path::PathBuf,
     },
-
-    #[command(name = "status", about = "Check prover status")]
-    Status {
-        #[arg(
-            long = "rpc.url",
-            default_value = "http://127.0.0.1:3900",
-            help = "RPC URL of prover"
-        )]
-        rpc_url: String,
-    },
-
-    #[command(
-        subcommand,
-        name = "proof",
-        about = "Proof command to interact with prover"
-    )]
-    Proof(ProofCommand),
 }

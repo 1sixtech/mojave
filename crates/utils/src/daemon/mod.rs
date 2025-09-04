@@ -23,7 +23,7 @@ where
     Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
 {
     if opts.no_daemon {
-        run_main_task(proc);
+        run_main_task(proc, None::<PathBuf>);
         return Ok(());
     }
 
@@ -62,20 +62,20 @@ where
         .stderr(log_file_err);
     daemon.start()?;
 
-    run_main_task(proc);
-    let _ = std::fs::remove_file(pid_path);
+    run_main_task(proc, Some(pid_path));
 
     Ok(())
 }
 
 pub fn stop_daemonized<P: AsRef<Path>>(pid_file: P) -> Result<(), DaemonError> {
     let pid_file = resolve_path(pid_file)?;
-    let pid = read_pid_from_file(pid_file)?;
+    let pid = read_pid_from_file(&pid_file)?;
 
     let system = System::new_all();
     match system.process(pid) {
         Some(process) => {
             process.kill();
+            let _ = std::fs::remove_file(pid_file);
             Ok(())
         }
         None => Err(DaemonError::NoSuchProcess(pid)),
@@ -116,10 +116,11 @@ fn is_pid_running(pid: Pid) -> bool {
     System::new_all().process(pid).is_some()
 }
 
-fn run_main_task<F, Fut>(proc: F)
+fn run_main_task<F, Fut, P>(proc: F, pid_file: Option<P>)
 where
     F: FnOnce() -> Fut,
     Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
+    P: AsRef<Path>,
 {
     let rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
@@ -136,6 +137,9 @@ where
             _ = tokio::signal::ctrl_c() => {
                 tracing::info!("Shutting down...");
             }
+        }
+        if let Some(pid_file) = pid_file {
+            let _ = std::fs::remove_file(pid_file);
         }
     });
 }
