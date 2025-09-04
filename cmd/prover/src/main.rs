@@ -2,10 +2,8 @@ pub mod cli;
 use crate::cli::Command;
 
 use anyhow::Result;
-use mojave_client::MojaveClient;
 use mojave_prover_lib::start_api;
 use mojave_utils::daemon::{DaemonOptions, run_daemonized, stop_daemonized};
-use serde_json::json;
 
 #[tokio::main]
 async fn main() -> Result<()> {

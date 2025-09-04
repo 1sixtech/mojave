@@ -10,7 +10,6 @@ use tracing::Level;
     about = "Mojave Prover service for the Mojave network",
     arg_required_else_help = true
 )]
-#[derive(Clone)]
 pub struct Cli {
     #[arg(
         long = "log.level",
@@ -31,7 +30,7 @@ impl Cli {
     }
 }
 
-#[derive(Clone, Parser)]
+#[derive(Parser)]
 pub struct ProverOptions {
     #[arg(
         long = "prover.port",
@@ -111,7 +110,7 @@ impl fmt::Debug for ProverOptions {
     }
 }
 
-#[derive(Clone, Subcommand)]
+#[derive(Subcommand)]
 
 pub enum Command {
     #[command(name = "init", about = "Run the prover")]
