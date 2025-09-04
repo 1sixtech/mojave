@@ -4300,6 +4300,9 @@ dependencies = [
  "ethrex-vm",
  "mojave-client",
  "mojave-node-lib",
+ "mojave-rpc-core",
+ "mojave-rpc-macros",
+ "mojave-rpc-server",
  "mojave-signature",
  "mojave-utils",
  "serde_json",
@@ -4371,6 +4374,9 @@ dependencies = [
  "hex",
  "local-ip-address",
  "mojave-client",
+ "mojave-rpc-core",
+ "mojave-rpc-macros",
+ "mojave-rpc-server",
  "mojave-signature",
  "mojave-utils",
  "rand 0.8.5",
@@ -4422,12 +4428,47 @@ dependencies = [
  "guest_program",
  "hex",
  "mojave-client",
+ "mojave-rpc-core",
+ "mojave-rpc-macros",
+ "mojave-rpc-server",
  "mojave-utils",
  "reqwest 0.12.23",
+ "serde",
  "serde_json",
  "tiny-keccak",
  "tokio",
  "tower-http",
+ "tracing",
+]
+
+[[package]]
+name = "mojave-rpc-core"
+version = "0.1.0"
+dependencies = [
+ "ethrex-rpc",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "mojave-rpc-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.106",
+]
+
+[[package]]
+name = "mojave-rpc-server"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "ethrex-rpc",
+ "mojave-rpc-core",
+ "serde",
+ "serde_json",
+ "tokio",
  "tracing",
 ]
 
@@ -4498,6 +4539,7 @@ dependencies = [
  "ethrex-p2p",
  "ethrex-rpc",
  "lazy_static",
+ "mojave-rpc-core",
  "serde",
  "serde_json",
  "sysinfo",
