@@ -178,7 +178,7 @@ where
     }
 
     Err(ParseError::InvalidFormat(
-        "Expected '=' after attrbute key".to_string(),
+        "Expected '=' after attribute key".to_string(),
     ))
 }
 
