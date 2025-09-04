@@ -1,4 +1,3 @@
-pub mod block_on;
 pub mod constants;
 pub mod convert;
 pub mod daemon;
