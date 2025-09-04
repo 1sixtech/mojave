@@ -50,11 +50,11 @@ fn calculate_job_id(prover_input: &ProgramInput) -> Result<String> {
         .map(|b| b.hash().to_string())
         .collect();
     block_hashes.sort_unstable();
-    let serialized_block_hashest = bincode::serialize(&block_hashes)
+    let serialized_block_hashes = bincode::serialize(&block_hashes)
         .map_err(|err| Error::Internal(format!("Error to serialize program input: {err}")))?;
 
     let mut hasher = Keccak::v256();
-    hasher.update(&serialized_block_hashest);
+    hasher.update(&serialized_block_hashes);
     let mut hash = [0_u8; 32];
     hasher.finalize(&mut hash);
     tracing::trace!(job_id = %hex::encode(hash), "Calculated job_id");
