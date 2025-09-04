@@ -1,13 +1,9 @@
 pub mod cli;
-use crate::cli::{Command, ProofCommand};
+use crate::cli::Command;
 
-use mojave_client::MojaveClient;
 use mojave_prover_lib::start_api;
-use mojave_utils::{
-    block_on::block_on_current_thread,
-    daemon::{DaemonOptions, run_daemonized, stop_daemonized},
-};
-use serde_json::json;
+use mojave_utils::daemon::{DaemonOptions, run_daemonized, stop_daemonized};
+
 use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -44,50 +40,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             .unwrap_or_else(|err| tracing::error!("Failed to start daemonized node: {}", err));
         }
         Command::Stop { pid_file } => stop_daemonized(pid_file)?,
-        Command::Status { rpc_url } => {
-            let client = MojaveClient::builder()
-                .prover_urls(&[rpc_url.clone()])
-                .build()?;
-
-            let reachable =
-                block_on_current_thread(|| async move { client.request().get_job_id().await })
-                    .is_ok();
-
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&json!({
-                    "rpc": {
-                        "url": rpc_url,
-                        "reachable": reachable
-                    }
-                }))?
-            );
-        }
-        Command::Proof(job_command) => match job_command {
-            ProofCommand::Get { rpc_url, job_id } => {
-                let client = MojaveClient::builder()
-                    .prover_urls(&[rpc_url.clone()])
-                    .build()?;
-                let job_id_obj: mojave_client::types::JobId =
-                    serde_json::from_value(json!(job_id))?;
-
-                let proof = block_on_current_thread(|| async move {
-                    client.request().get_proof(job_id_obj).await
-                })?;
-                println!("{}", serde_json::to_string_pretty(&proof)?);
-            }
-            ProofCommand::Pending { rpc_url } => {
-                let client = MojaveClient::builder()
-                    .prover_urls(&[rpc_url.clone()])
-                    .build()?;
-                let jobs =
-                    block_on_current_thread(|| async move { client.request().get_job_id().await })?;
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&json!({ "pending": jobs }))?
-                );
-            }
-        },
     }
 
     Ok(())
