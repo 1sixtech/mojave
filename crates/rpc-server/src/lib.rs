@@ -1,16 +1,16 @@
 //! Mojave RPC Server
 //! ==================
 //!
-//! Transport and routing glue for JSON‑RPC 2.0 over HTTP using Axum.
+//! Transport and routing glue for JSON-RPC 2.0 over HTTP using Axum.
 //!
 //! What it provides
-//! - A dynamic method registry (`RpcRegistry<C>`) that maps JSON‑RPC method
+//! - A dynamic method registry (`RpcRegistry<C>`) that maps JSON-RPC method
 //!   names (e.g. `"eth_chainId"`, `"moj_getJobId"`) to async handlers.
 //! - Optional per‑namespace fallbacks (e.g. forward all `eth_*` calls to an L1
 //!   implementation) via `register_fallback`.
 //! - A small service wrapper (`RpcService<C>`) that binds a context `C` and a
 //!   registry into an Axum `Router` and HTTP server.
-//! - Batch request support and JSON‑RPC error shaping.
+//! - Batch request support and JSON-RPC error shaping.
 //!
 //! Quick start
 //! -----------
@@ -30,7 +30,7 @@
 //!
 //! Error shape
 //! -----------
-//! Errors returned by handlers are converted into standard JSON‑RPC error
+//! Errors returned by handlers are converted into standard JSON-RPC error
 //! objects using `ethrex_rpc::utils::RpcErr` → `RpcErrorResponse` mapping.
 //! Bad request bodies or malformed batches return a `BadParams` error payload.
 //!
@@ -142,7 +142,7 @@ impl<C: Clone + Send + Sync + 'static> RpcRegistry<C> {
 
 /// Service that binds a context and registry into an Axum router.
 ///
-/// The router exposes a single POST `/` endpoint that accepts JSON‑RPC 2.0
+/// The router exposes a single POST `/` endpoint that accepts JSON-RPC 2.0
 /// single or batch requests. Attach your own layers (CORS, limits, tracing)
 /// on the returned `Router`.
 #[derive(Clone)]
@@ -156,7 +156,7 @@ impl<C: Clone + Send + Sync + 'static> RpcService<C> {
         Self { context, registry }
     }
 
-    /// Build an Axum router mounted at `/` with JSON‑RPC 2.0 handler.
+    /// Build an Axum router mounted at `/` with JSON-RPC 2.0 handler.
     pub fn router(self) -> Router {
         Router::new().route("/", post(handle::<C>)).with_state(self)
     }
