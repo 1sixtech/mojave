@@ -35,12 +35,20 @@ impl fmt::Display for SequenceEvent {
     }
 }
 
-/// ZMQ `-zmqpubsequence` BODY (2nd frame) decoded via `Decodable`.
-/// Layout (as sent by bitcoind):
-///   [0..32) hash (RPC/ZMQ byte order)
-///   [32]    kind byte: 'C','D','A','R'
-///   [33..41) u64 mempool sequence (LE) — present only for A/R
-/// cf: https://github.com/bitcoin/bitcoin/blob/master/src/zmq/zmqpublishnotifier.cpp#L264-L265
+/// ZMQ `-zmqpubsequence` BODY (2nd frame), decoded via `Decodable`.
+///
+/// Layout as sent by `bitcoind` (byte indices are 0-based, end-exclusive):
+///
+/// - `[0..32)`   — 32-byte object hash in **RPC/ZMQ (display) byte order**
+/// - `[32]`      — 1 byte **kind**: `'C' | 'D' | 'A' | 'R'`
+/// - `[33..41)`  — optional 8-byte **mempool sequence** (little-endian `u64`);
+///   present **only** when kind is `'A'` or `'R'`
+///
+/// Therefore:
+/// - Kinds `C`/`D`: body length = 33 bytes
+/// - Kinds `A`/`R`: body length = 41 bytes
+///
+/// Reference: <https://github.com/bitcoin/bitcoin/blob/master/src/zmq/zmqpublishnotifier.cpp>
 #[derive(Debug, Clone)]
 pub struct Sequence {
     pub hash_bytes: [u8; 32], // raw payload bytes

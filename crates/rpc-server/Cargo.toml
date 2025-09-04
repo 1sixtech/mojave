@@ -1,5 +1,5 @@
 [package]
-name = "mojave-utils"
+name = "mojave-rpc-server"
 version = { workspace = true }
 edition = { workspace = true }
 authors = { workspace = true }
@@ -9,21 +9,13 @@ repository = { workspace = true }
 documentation = { workspace = true }
 
 [dependencies]
-ethrex-common = { workspace = true }
-ethrex-p2p = { workspace = true }
+axum = { workspace = true }
+ethrex-rpc = { workspace = true }
+futures = { workspace = true }
 mojave-rpc-core = { workspace = true }
-
-lazy_static = { workspace = true }
-serde = { workspace = true }
 serde_json = { workspace = true }
-tokio = { workspace = true, features = ["signal", "sync"] }
+tokio = { workspace = true }
 tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
 
 [dev-dependencies]
-tokio = { workspace = true, features = [
-  "macros",
-  "rt",
-  "rt-multi-thread",
-  "time",
-] }
+tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }

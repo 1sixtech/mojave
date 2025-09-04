@@ -1,2 +1,3 @@
+pub use mojave_rpc_core::RpcErr as Error;
+
 pub type Result<T> = core::result::Result<T, Error>;
-pub use ethrex_rpc::utils::RpcErr as Error;

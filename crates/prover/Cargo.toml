@@ -10,6 +10,9 @@ documentation = { workspace = true }
 
 [dependencies]
 mojave-client = { workspace = true }
+mojave-rpc-core = { workspace = true }
+mojave-rpc-macros = { workspace = true }
+mojave-rpc-server = { workspace = true }
 mojave-utils = { workspace = true }
 
 ethrex-prover = { workspace = true }
@@ -20,8 +23,12 @@ axum = { workspace = true }
 bincode = { workspace = true }
 hex = { workspace = true }
 reqwest = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 tiny-keccak = { workspace = true }
 tokio = { workspace = true }
 tower-http = { workspace = true, features = ["cors"] }
 tracing = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }

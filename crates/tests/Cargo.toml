@@ -26,13 +26,11 @@ ethrex-storage-rollup = { workspace = true }
 axum = { workspace = true }
 k256 = { workspace = true }
 rand = { workspace = true }
-reqwest = { workspace = true }
 secp256k1 = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }
 tokio-util = { workspace = true }
 tower-http = { workspace = true }
-tracing = { workspace = true }
 
 [dev-dependencies]
 ctor = "0.4.2"
