@@ -1,4 +1,4 @@
-use crate::rpc::types::{OrderedBlock, PendingHeap};
+use crate::block_queue::{OrderedBlock, PendingHeap};
 use ethrex_rpc::{EthClient, RpcApiContext as L1Context};
 use ethrex_storage_rollup::StoreRollup;
 use mojave_utils::unique_heap::AsyncUniqueHeap;

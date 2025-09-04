@@ -1,6 +1,6 @@
 use tokio::sync::mpsc;
 
-use crate::rpc::types::{JobRecord, JobStore};
+use crate::{job::JobStore, rpc::types::JobRecord};
 
 pub struct ProverRpcContext {
     pub aligned_mode: bool,
