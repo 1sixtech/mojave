@@ -130,10 +130,6 @@ fn build_reveal_script(
         .push_x_only_key(taproot_public_key)
         .push_opcode(OP_CHECKSIG)
         .push_opcode(bitcoin::opcodes::OP_IF)
-        .push_slice(b"ord")
-        .push_opcode(bitcoin::opcodes::OP_1)
-        .push_slice(b"text/plain") // Assuming text/plain for now, can be made dynamic
-        .push_opcode(bitcoin::opcodes::OP_0)
         .push_slice(payload)
         .push_opcode(bitcoin::opcodes::OP_ENDIF);
 
