@@ -16,5 +16,4 @@ mojave-utils = { workspace = true }
 anyhow = { workspace = true }
 clap = { workspace = true }
 hex = { workspace = true }
-tokio = { workspace = true }
 tracing = { workspace = true }
