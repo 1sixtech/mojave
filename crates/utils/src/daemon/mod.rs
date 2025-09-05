@@ -17,7 +17,7 @@ pub struct DaemonOptions {
     pub log_file_path: PathBuf,
 }
 
-pub async fn run_daemonized<F, Fut>(opts: DaemonOptions, proc: F) -> Result<()>
+pub fn run_daemonized<F, Fut>(opts: DaemonOptions, proc: F) -> Result<()>
 where
     F: FnOnce() -> Fut,
     Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,

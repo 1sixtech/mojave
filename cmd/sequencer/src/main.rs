@@ -9,8 +9,7 @@ use mojave_utils::{
     p2p::public_key_from_signing_key,
 };
 
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
     mojave_utils::logging::init();
     let cli = cli::Cli::run();
 
@@ -41,7 +40,6 @@ async fn main() -> Result<()> {
                     .await
                     .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
             })
-            .await
             .unwrap_or_else(|err| {
                 tracing::error!("Failed to start daemonized node: {}", err);
             });
