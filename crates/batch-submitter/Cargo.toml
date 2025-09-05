@@ -7,3 +7,12 @@ license = { workspace = true }
 homepage = { workspace = true }
 repository = { workspace = true }
 documentation = { workspace = true }
+
+[dependencies]
+bitcoincore-rpc = "0.1.0"
+tokio = { version = "1.36.0", features = ["full"] }
+anyhow = "1.0.80"
+thiserror = "1.0.57"
+bitcoin = { workspace = true, features = ["serde"] }
+rand = "0.8.5"
+serde = { version = "1.0", features = ["derive"] }
