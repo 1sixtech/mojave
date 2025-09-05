@@ -60,7 +60,7 @@ impl MojaveNode {
             &signer,
         )?));
 
-        let peer_table = peer_table(local_p2p_node.node_id());
+        let peer_table = peer_table();
         let peer_handler = PeerHandler::new(peer_table.clone());
 
         let based_context = Some(P2PBasedContext {
@@ -93,6 +93,7 @@ impl MojaveNode {
             cancel_token.clone(),
             blockchain.clone(),
             store.clone(),
+            data_dir.clone(),
         )
         .await;
 

@@ -2,6 +2,7 @@ use crate::rpc::{
     ProverRpcContext,
     types::{JobRecord, SendProofInputRequest},
 };
+use guest_program::input::ProgramInput;
 use mojave_client::types::ProverData;
 use mojave_utils::rpc::{
     error::{Error, Result},
@@ -12,7 +13,6 @@ use serde_json::{Value, json};
 use std::sync::Arc;
 use tiny_keccak::{Hasher, Keccak};
 use tracing::info;
-use zkvm_interface::io::ProgramInput;
 
 impl SendProofInputRequest {
     fn get_proof_input(req: &Option<Vec<Value>>) -> Result<Self> {

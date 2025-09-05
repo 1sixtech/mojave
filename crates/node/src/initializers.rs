@@ -50,7 +50,7 @@ pub fn init_blockchain(
     blockchain_type: BlockchainType,
 ) -> Arc<Blockchain> {
     info!("Initiating blockchain with EVM: {}", evm_engine);
-    Blockchain::new(evm_engine, store, blockchain_type).into()
+    Blockchain::new(evm_engine, store, blockchain_type, false).into()
 }
 
 pub fn get_signer(data_dir: &str) -> Result<SecretKey> {
