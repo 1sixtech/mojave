@@ -36,7 +36,10 @@ fn main() -> Result<()> {
                 tracing::error!("Failed to start daemonized node: {}", err);
             });
         }
-        Command::Stop { pid_file } => stop_daemonized(pid_file)?,
+        Command::Stop {
+            pid_file,
+            kill_timeout,
+        } => stop_daemonized(pid_file, kill_timeout)?,
         Command::GetPubKey { datadir } => {
             let signer = get_signer(&datadir)?;
             let public_key = public_key_from_signing_key(&signer);

@@ -1,15 +1,14 @@
-pub mod error;
-pub use error::DaemonError;
-
 use std::{
-    fs::OpenOptions,
+    fs::{File, OpenOptions},
     path::{Path, PathBuf},
     str::FromStr,
+    time::Duration,
 };
 
-use anyhow::Result;
+use anyhow::{Ok, Result};
 use daemonize::Daemonize;
 use sysinfo::{Pid, System};
+use thiserror::Error;
 
 pub struct DaemonOptions {
     pub no_daemon: bool,
@@ -17,21 +16,48 @@ pub struct DaemonOptions {
     pub log_file_path: PathBuf,
 }
 
+#[derive(Debug, Error)]
+pub enum DaemonError {
+    #[error("pid in pid file is already running. pid: {0}")]
+    AlreadyRunning(Pid),
+
+    #[error("daemonize failed: {0}")]
+    Daemonize(#[from] daemonize::Error),
+
+    #[error("I/O error at {path}: {source}")]
+    IoWithPath {
+        path: PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
+
+    #[error("I/O error: {0}")]
+    Io(#[from] std::io::Error),
+
+    #[error("no such process with pid: {0}")]
+    NoSuchProcess(Pid),
+
+    #[error("failed to parse pid from '{0}': expected integer")]
+    ParsePid(String),
+}
+
+#[cfg(unix)]
 pub fn run_daemonized<F, Fut>(opts: DaemonOptions, proc: F) -> Result<()>
 where
     F: FnOnce() -> Fut,
     Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
 {
     if opts.no_daemon {
-        run_main_task(proc, None::<PathBuf>);
-        return Ok(());
+        return run_main_task(proc, None::<PathBuf>);
     }
 
     let log_path = resolve_path(&opts.log_file_path)?;
     let pid_path = resolve_path(&opts.pid_file_path)?;
 
     match read_pid_from_file(&pid_path) {
-        Ok(pid) if is_pid_running(pid) => return Err(DaemonError::AlreadyRunning(pid).into()),
+        std::result::Result::Ok(pid) if is_pid_running(pid) => {
+            return Err(DaemonError::AlreadyRunning(pid).into());
+        }
         _ => {
             let _ = std::fs::remove_file(&pid_path);
         }
@@ -57,32 +83,55 @@ where
     let daemon = Daemonize::new()
         .pid_file(pid_path.clone())
         .chown_pid_file(true)
+        .umask(0o600)
         .working_directory(working_dir)
         .stdout(log_file)
         .stderr(log_file_err);
     daemon.start()?;
 
-    run_main_task(proc, Some(pid_path));
+    let _ = run_main_task(proc, Some(pid_path));
 
     Ok(())
 }
 
-pub fn stop_daemonized<P: AsRef<Path>>(pid_file: P) -> Result<(), DaemonError> {
+#[cfg(not(unix))]
+pub fn run_daemonized<F, Fut>(opts: DaemonOptions, proc: F) -> Result<()>
+where
+    F: FnOnce() -> Fut,
+    Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
+{
+    unimplemented!()
+}
+
+pub fn stop_daemonized<P: AsRef<Path>>(pid_file: P, kill_time_out_sec: u64) -> Result<()> {
     let pid_file = resolve_path(pid_file)?;
     let pid = read_pid_from_file(&pid_file)?;
 
     let system = System::new_all();
     match system.process(pid) {
         Some(process) => {
-            process.kill();
+            process.kill_with(sysinfo::Signal::Interrupt);
+            let start_time = std::time::Instant::now();
+            let time_out = Duration::from_secs(kill_time_out_sec);
+            while start_time.elapsed() > time_out {
+                if !is_pid_running(pid) {
+                    break;
+                }
+                std::thread::sleep(Duration::from_millis(100));
+            }
+
+            if is_pid_running(pid) {
+                process.kill();
+            }
+
             let _ = std::fs::remove_file(pid_file);
             Ok(())
         }
-        None => Err(DaemonError::NoSuchProcess(pid)),
+        None => Err(DaemonError::NoSuchProcess(pid).into()),
     }
 }
 
-fn resolve_path<P: AsRef<Path>>(path: P) -> Result<PathBuf, DaemonError> {
+fn resolve_path<P: AsRef<Path>>(path: P) -> Result<PathBuf> {
     if path.as_ref().is_absolute() {
         return Ok(path.as_ref().to_path_buf());
     }
@@ -101,7 +150,7 @@ fn resolve_path<P: AsRef<Path>>(path: P) -> Result<PathBuf, DaemonError> {
     Ok(path_buf)
 }
 
-fn read_pid_from_file<P: AsRef<Path>>(path: P) -> Result<Pid, DaemonError> {
+fn read_pid_from_file<P: AsRef<Path>>(path: P) -> Result<Pid> {
     let content =
         std::fs::read_to_string(path.as_ref()).map_err(|source| DaemonError::IoWithPath {
             path: path.as_ref().to_path_buf(),
@@ -116,12 +165,16 @@ fn is_pid_running(pid: Pid) -> bool {
     System::new_all().process(pid).is_some()
 }
 
-fn run_main_task<F, Fut, P>(proc: F, pid_file: Option<P>)
+fn run_main_task<F, Fut, P>(proc: F, pid_file: Option<P>) -> Result<()>
 where
     F: FnOnce() -> Fut,
     Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
     P: AsRef<Path>,
 {
+    if let Some(ref pid_file) = pid_file {
+        File::open(pid_file)?.lock()?;
+    }
+
     let rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
@@ -142,4 +195,5 @@ where
             let _ = std::fs::remove_file(pid_file);
         }
     });
+    Ok(())
 }
