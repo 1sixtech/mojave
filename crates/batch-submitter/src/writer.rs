@@ -129,9 +129,13 @@ fn build_reveal_script(
     let mut script_builder = script::Builder::new()
         .push_x_only_key(taproot_public_key)
         .push_opcode(OP_CHECKSIG)
-        .push_opcode(bitcoin::opcodes::OP_IF)
-        .push_slice(payload)
-        .push_opcode(bitcoin::opcodes::OP_ENDIF);
+        .push_opcode(bitcoin::opcodes::OP_IF);
+
+    const MAX_PUSH_SIZR: usize = 520;
+    for chunk in payload.chunks(MAX_PUSH_SIZR) {
+        script_builder = script_builder.push_slice(chunk);
+    }
+    script_builder = script_builder.push_opcode(bitcoin::opcodes::OP_ENDIF);
 
     Ok(script_builder.into_script())
 }
