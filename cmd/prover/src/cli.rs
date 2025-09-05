@@ -128,5 +128,12 @@ pub enum Command {
             help = "Path to the file where the prover's process ID (PID) has written. (Default: inside the data directory)"
         )]
         pid_file: std::path::PathBuf,
+        #[arg(
+            long = "kill.timeout",
+            value_name = "KILL_TIMEOUT_SEC",
+            default_value_t = 3,
+            help = "Timeout in seconds to wait for the process to terminate gracefully before force killing it."
+        )]
+        kill_timeout: u64,
     },
 }
