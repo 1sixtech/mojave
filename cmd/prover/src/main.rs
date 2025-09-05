@@ -5,8 +5,7 @@ use anyhow::Result;
 use mojave_prover_lib::start_api;
 use mojave_utils::daemon::{DaemonOptions, run_daemonized, stop_daemonized};
 
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
     mojave_utils::logging::init();
 
     let cli = cli::Cli::run();
@@ -38,7 +37,6 @@ async fn main() -> Result<()> {
                 .await
                 .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
             })
-            .await
             .unwrap_or_else(|err| tracing::error!("Failed to start daemonized node: {}", err));
         }
         Command::Stop { pid_file } => stop_daemonized(pid_file)?,

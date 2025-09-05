@@ -10,12 +10,10 @@ documentation = { workspace = true }
 
 [dependencies]
 mojave-block-producer = { workspace = true }
-mojave-client = { workspace = true }
 mojave-node-lib = { workspace = true }
 mojave-utils = { workspace = true }
 
 anyhow = { workspace = true }
 clap = { workspace = true }
 hex = { workspace = true }
-tokio = { workspace = true }
 tracing = { workspace = true }

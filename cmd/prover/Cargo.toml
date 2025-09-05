@@ -11,10 +11,7 @@ documentation = { workspace = true }
 [dependencies]
 mojave-prover-lib = { workspace = true }
 mojave-utils = { workspace = true }
-mojave-client = { workspace = true }
 
 anyhow = { workspace = true }
 clap = { workspace = true }
-tokio = { workspace = true }
 tracing = { workspace = true }
-serde_json = { workspace = true }
