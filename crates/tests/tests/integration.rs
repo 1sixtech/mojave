@@ -9,6 +9,7 @@ mod tests {
     use ethrex_rlp::encode::RLPEncode;
     use ethrex_rpc::EthClient;
     use mojave_tests::{start_test_api_node, start_test_api_sequencer};
+    use once_cell::sync::OnceCell;
     use secp256k1::SecretKey;
     use serde_json::{Value, json};
     use std::str::FromStr;
@@ -100,6 +101,7 @@ mod tests {
             signature_y_parity: false,
             signature_r: U256::from_dec_str("0").unwrap(),
             signature_s: U256::from_dec_str("0").unwrap(),
+            inner_hash: OnceCell::new(),
         };
 
         let priv_key_bytes: [u8; 32] = [

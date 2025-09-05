@@ -45,19 +45,19 @@ mojave-signature = { path = "crates/signature" }
 mojave-tests = { path = "crates/tests" }
 mojave-utils = { path = "crates/utils" }
 
-ethrex-blockchain = { git = "https://github.com/1sixtech/ethrex", rev = "9a771ea8f3b895153a5f122caab87a1e7e6f7967", default-features = false }
-ethrex-common = { git = "https://github.com/1sixtech/ethrex", rev = "9a771ea8f3b895153a5f122caab87a1e7e6f7967" }
-ethrex-l2 = { git = "https://github.com/1sixtech/ethrex", rev = "9a771ea8f3b895153a5f122caab87a1e7e6f7967", default-features = false }
-ethrex-l2-common = { git = "https://github.com/1sixtech/ethrex", rev = "9a771ea8f3b895153a5f122caab87a1e7e6f7967", default-features = false }
-ethrex-l2-rpc = { git = "https://github.com/1sixtech/ethrex", rev = "9a771ea8f3b895153a5f122caab87a1e7e6f7967", default-features = false }
-ethrex-p2p = { git = "https://github.com/1sixtech/ethrex", rev = "9a771ea8f3b895153a5f122caab87a1e7e6f7967" }
-ethrex-prover = { git = "https://github.com/1sixtech/ethrex", rev = "9a771ea8f3b895153a5f122caab87a1e7e6f7967" }
-ethrex-rlp = { git = "https://github.com/1sixtech/ethrex", rev = "9a771ea8f3b895153a5f122caab87a1e7e6f7967" }
-ethrex-rpc = { git = "https://github.com/1sixtech/ethrex", rev = "9a771ea8f3b895153a5f122caab87a1e7e6f7967", default-features = false }
-ethrex-storage = { git = "https://github.com/1sixtech/ethrex", rev = "9a771ea8f3b895153a5f122caab87a1e7e6f7967" }
-ethrex-storage-rollup = { git = "https://github.com/1sixtech/ethrex", rev = "9a771ea8f3b895153a5f122caab87a1e7e6f7967", default-features = false }
-ethrex-vm = { git = "https://github.com/1sixtech/ethrex", rev = "9a771ea8f3b895153a5f122caab87a1e7e6f7967", default-features = false }
-zkvm_interface = { git = "https://github.com/1sixtech/ethrex", rev = "9a771ea8f3b895153a5f122caab87a1e7e6f7967", default-features = false }
+ethrex-blockchain = { git = "https://github.com/1sixtech/ethrex", rev = "34627b89752faf652f3b60cfb75fdc22a112c2e1", default-features = false }
+ethrex-common = { git = "https://github.com/1sixtech/ethrex", rev = "34627b89752faf652f3b60cfb75fdc22a112c2e1" }
+ethrex-l2 = { git = "https://github.com/1sixtech/ethrex", rev = "34627b89752faf652f3b60cfb75fdc22a112c2e1", default-features = false }
+ethrex-l2-common = { git = "https://github.com/1sixtech/ethrex", rev = "34627b89752faf652f3b60cfb75fdc22a112c2e1", default-features = false }
+ethrex-l2-rpc = { git = "https://github.com/1sixtech/ethrex", rev = "34627b89752faf652f3b60cfb75fdc22a112c2e1", default-features = false }
+ethrex-p2p = { git = "https://github.com/1sixtech/ethrex", rev = "34627b89752faf652f3b60cfb75fdc22a112c2e1" }
+ethrex-prover = { git = "https://github.com/1sixtech/ethrex", rev = "34627b89752faf652f3b60cfb75fdc22a112c2e1" }
+ethrex-rlp = { git = "https://github.com/1sixtech/ethrex", rev = "34627b89752faf652f3b60cfb75fdc22a112c2e1" }
+ethrex-rpc = { git = "https://github.com/1sixtech/ethrex", rev = "34627b89752faf652f3b60cfb75fdc22a112c2e1", default-features = false }
+ethrex-storage = { git = "https://github.com/1sixtech/ethrex", rev = "34627b89752faf652f3b60cfb75fdc22a112c2e1" }
+ethrex-storage-rollup = { git = "https://github.com/1sixtech/ethrex", rev = "34627b89752faf652f3b60cfb75fdc22a112c2e1", default-features = false }
+ethrex-vm = { git = "https://github.com/1sixtech/ethrex", rev = "34627b89752faf652f3b60cfb75fdc22a112c2e1", default-features = false }
+guest_program = { git = "https://github.com/1sixtech/ethrex", rev = "34627b89752faf652f3b60cfb75fdc22a112c2e1", default-features = false }
 
 anyhow = { version = "1.0" }
 axum = "0.8.1"
@@ -71,6 +71,7 @@ hex = "0.4.3"
 k256 = { version = "0.13.3", features = ["ecdh"] }
 lazy_static = "1.5.0"
 local-ip-address = { version = "0.6" }
+once_cell = "1.20"
 rand = { version = "0.8.5", default-features = false }
 reqwest = { version = "0.12.7", features = ["json"] }
 secp256k1 = { version = "0.29.1", default-features = false, features = [

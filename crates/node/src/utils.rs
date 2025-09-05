@@ -4,9 +4,9 @@ use crate::{
 };
 use bytes::Bytes;
 use ethrex_p2p::{
-    kademlia::KademliaTable,
-    network::public_key_from_signing_key,
+    kademlia::Kademlia,
     types::{Node, NodeRecord},
+    utils::public_key_from_signing_key,
 };
 use mojave_utils::network::{MAINNET_BOOTNODES, Network, TESTNET_BOOTNODES};
 use secp256k1::SecretKey;
@@ -15,19 +15,15 @@ use std::{
     io::Read as _,
     net::{Ipv4Addr, SocketAddr, ToSocketAddrs},
     path::PathBuf,
-    sync::Arc,
 };
-use tokio::sync::Mutex;
 use tracing::{error, info};
 
 impl NodeConfigFile {
-    pub async fn new(table: Arc<Mutex<KademliaTable>>, node_record: NodeRecord) -> Self {
+    pub async fn new(table: Kademlia, node_record: NodeRecord) -> Self {
         let mut connected_peers = vec![];
 
-        for peer in table.lock().await.iter_peers() {
-            if peer.is_connected {
-                connected_peers.push(peer.node.clone());
-            }
+        for (_, peer) in table.peers.lock().await.iter() {
+            connected_peers.push(peer.node.clone());
         }
         NodeConfigFile {
             known_peers: connected_peers,

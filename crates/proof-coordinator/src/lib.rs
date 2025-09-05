@@ -5,13 +5,13 @@ use ethrex_blockchain::Blockchain;
 use ethrex_common::types::{BlobsBundle, Block};
 use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
+use guest_program::input::ProgramInput;
 use mojave_client::{
     MojaveClient,
     types::{ProofResponse, ProofResult, ProverData, Strategy},
 };
 use std::sync::Arc;
 use tokio::sync::mpsc::Receiver;
-use zkvm_interface::io::ProgramInput;
 
 pub struct ProofCoordinator {
     client: MojaveClient,
