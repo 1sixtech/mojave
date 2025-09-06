@@ -44,7 +44,7 @@ pub async fn run(
 
     let local_node_record = node.local_node_record.lock().await.clone();
 
-    start_api(
+    let api_task = tokio::spawn(start_api(
         get_http_socket_addr(&node_options.http_addr, &node_options.http_port),
         get_authrpc_socket_addr(&node_options.authrpc_addr, &node_options.authrpc_port),
         node.store,
@@ -56,18 +56,22 @@ pub async fn run(
         node.peer_handler,
         get_client_version(),
         node.rollup_store,
-    )
-    .await?;
+    ));
     tokio::select! {
+        res = api_task => {
+            if let Err(err) = res {
+                tracing::error!("API task failed: {}", err);
+            }
+        }
         _ = tokio::signal::ctrl_c() => {
-            tracing::info!("Shutting down the full node..");
+            tracing::info!("Shutting down the block producer..");
             let node_config_path = PathBuf::from(node.data_dir.clone()).join("node_config.json");
             tracing::info!("Storing config at {:?}...", node_config_path);
             node.cancel_token.cancel();
             let node_config = NodeConfigFile::new(node.peer_table.clone(), node.local_node_record.lock().await.clone()).await;
             store_node_config_file(node_config, node_config_path).await;
             tokio::time::sleep(Duration::from_secs(1)).await;
-            tracing::info!("Successfully shut down the full node.");
+            tracing::info!("Successfully shut down the block producer.");
         }
     }
 
