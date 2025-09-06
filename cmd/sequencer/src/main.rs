@@ -27,16 +27,9 @@ async fn main() -> Result<()> {
                     std::process::exit(1);
                 });
             let block_producer_options: BlockProducerOptions = (&sequencer_options).into();
-            tokio::select! {
-                res = mojave_block_producer::run(node, &node_options, &block_producer_options) => {
-                    if let Err(err) = res {
-                        tracing::error!("Sequencer stopped unexpectedly: {}", err);
-                    }
-                }
-                _ = tokio::signal::ctrl_c() => {
-                    tracing::info!("Shutting down the sequencer..");
-                }
-            }
+            if let Err(err) = mojave_block_producer::run(node, &node_options, &block_producer_options).await {
+                tracing::info!("Sequencer stopped unexpectedly: {}", err);
+            }   
         }
         Command::GetPubKey { datadir } => {
             let signer = get_signer(&datadir)?;

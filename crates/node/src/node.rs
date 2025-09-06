@@ -115,7 +115,7 @@ impl MojaveNode {
         let rpc_shutdown = CancellationToken::new();
         let eth_client = EthClient::new("http://127.0.0.1")?;
         let jwt_secret = read_jwtsecret_file(&options.authrpc_jwtsecret)?;
-        start_api(
+        let api_task = tokio::spawn(start_api(
             get_http_socket_addr(&options.http_addr, &options.http_port),
             get_authrpc_socket_addr(&options.authrpc_addr, &options.authrpc_port),
             self.store,
@@ -130,9 +130,13 @@ impl MojaveNode {
             eth_client,
             AsyncUniqueHeap::new(),
             rpc_shutdown.clone(),
-        )
-        .await?;
+        ));
         tokio::select! {
+            res = api_task => {
+                if let Err(err) = res {
+                    tracing::error!("API task failed: {}", err);
+                }
+            }
             _ = tokio::signal::ctrl_c() => {
                 tracing::info!("Shutting down the full node..");
                 rpc_shutdown.cancel();
