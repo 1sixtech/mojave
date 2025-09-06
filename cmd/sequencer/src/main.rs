@@ -27,9 +27,11 @@ async fn main() -> Result<()> {
                     std::process::exit(1);
                 });
             let block_producer_options: BlockProducerOptions = (&sequencer_options).into();
-            if let Err(err) = mojave_block_producer::run(node, &node_options, &block_producer_options).await {
-                tracing::info!("Sequencer stopped unexpectedly: {}", err);
-            }   
+            if let Err(err) =
+                mojave_block_producer::run(node, &node_options, &block_producer_options).await
+            {
+                tracing::error!("Sequencer stopped unexpectedly: {}", err);
+            }
         }
         Command::GetPubKey { datadir } => {
             let signer = get_signer(&datadir)?;
