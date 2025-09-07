@@ -20,15 +20,8 @@ async fn main() -> Result<()> {
                 tracing::error!("Failed to initialize the node: {}", error);
                 std::process::exit(1);
             })?;
-            tokio::select! {
-                res = node.run(&node_options) => {
-                    if let Err(err) = res {
-                        tracing::error!("Node stopped unexpectedly: {}", err);
-                    }
-                }
-                _ = tokio::signal::ctrl_c() => {
-                    tracing::info!("Shutting down the full node..");
-                }
+            if let Err(err) = node.run(&node_options).await {
+                tracing::error!("Node stopped unexpectedly: {}", err);
             }
         }
         Command::GetPubKey { datadir } => {
