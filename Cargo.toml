@@ -29,9 +29,9 @@ members = [
   "crates/node",
   "crates/proof-coordinator",
   "crates/prover",
-  "crates/rpc-core",
-  "crates/rpc-macros",
-  "crates/rpc-server",
+  "crates/rpc/core",
+  "crates/rpc/macros",
+  "crates/rpc/server",
   "crates/signature",
   "crates/tests",
   "crates/utils",
@@ -44,9 +44,9 @@ mojave-block-producer = { path = "crates/block-producer" }
 mojave-client = { path = "crates/client" }
 mojave-node-lib = { path = "crates/node" }
 mojave-prover-lib = { path = "crates/prover" }
-mojave-rpc-core = { path = "crates/rpc-core" }
-mojave-rpc-macros = { path = "crates/rpc-macros" }
-mojave-rpc-server = { path = "crates/rpc-server" }
+mojave-rpc-core = { path = "crates/rpc/core" }
+mojave-rpc-macros = { path = "crates/rpc/macros" }
+mojave-rpc-server = { path = "crates/rpc/server" }
 mojave-signature = { path = "crates/signature" }
 mojave-tests = { path = "crates/tests" }
 mojave-utils = { path = "crates/utils" }
