@@ -10,7 +10,7 @@ use daemonize::Daemonize;
 use sysinfo::{Pid, System};
 use thiserror::Error;
 
-const PROCESS_KILL_TIMEOUT_SEC: u64 = 1;
+const PROCESS_KILL_TIMEOUT_SEC: u64 = 5;
 
 pub struct DaemonOptions {
     pub no_daemon: bool,
