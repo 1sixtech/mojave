@@ -15,15 +15,25 @@ const TESTNET_BOOTNODES_PATH: &str = "cmd/mojave/networks/testnet/bootnodes.json
 pub const MAINNET_GENESIS_PATH: &str = "cmd/mojave/networks/mainnet/genesis.json";
 const MAINNET_BOOTNODES_PATH: &str = "cmd/mojave/networks/mainnet/bootnodes.json";
 
+fn read_bootnodes(path: &str) -> Vec<Node> {
+    match std::fs::File::open(path) {
+        Ok(file) => match serde_json::from_reader::<_, Vec<Node>>(file) {
+            Ok(nodes) => nodes,
+            Err(e) => {
+                tracing::warn!(path, error = %e, "Failed to parse bootnodes file; using empty list");
+                vec![]
+            }
+        },
+        Err(e) => {
+            tracing::warn!(path, error = %e, "Failed to open bootnodes file; using empty list");
+            vec![]
+        }
+    }
+}
+
 lazy_static! {
-    pub static ref MAINNET_BOOTNODES: Vec<Node> = serde_json::from_reader(
-        std::fs::File::open(MAINNET_BOOTNODES_PATH).expect("Failed to open mainnet bootnodes file")
-    )
-    .expect("Failed to parse mainnet bootnodes file");
-    pub static ref TESTNET_BOOTNODES: Vec<Node> = serde_json::from_reader(
-        std::fs::File::open(TESTNET_BOOTNODES_PATH).expect("Failed to open testnet bootnodes file")
-    )
-    .expect("Failed to parse testnet bootnodes file");
+    pub static ref MAINNET_BOOTNODES: Vec<Node> = read_bootnodes(MAINNET_BOOTNODES_PATH);
+    pub static ref TESTNET_BOOTNODES: Vec<Node> = read_bootnodes(TESTNET_BOOTNODES_PATH);
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

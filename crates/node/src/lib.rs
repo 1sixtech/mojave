@@ -7,3 +7,8 @@ pub mod rpc;
 pub mod services;
 pub mod types;
 pub mod utils;
+
+pub mod prelude {
+    pub use crate::error::{Error, Result};
+    pub use crate::types::*;
+}

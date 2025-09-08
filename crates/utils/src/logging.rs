@@ -15,9 +15,13 @@ pub fn init() {
 
     let subscriber = Registry::default().with(filter_layer).with(fmt::layer());
 
-    RELOAD_HANDLE.set(handle).ok();
+    if let Err(e) = RELOAD_HANDLE.set(handle) {
+        eprintln!("Logger reload handle was already set; error: {e}, continuing");
+    }
 
-    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
+    if let Err(e) = tracing::subscriber::set_global_default(subscriber) {
+        eprintln!("Failed to set global tracing subscriber: {e}");
+    }
 }
 
 pub fn change_level(log_level: Level) {

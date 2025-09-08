@@ -4,10 +4,7 @@ use crate::{
     p2p::network::start_network,
     rpc::start_api,
     types::{MojaveNode, NodeConfigFile, NodeOptions},
-    utils::{
-        get_authrpc_socket_addr, get_http_socket_addr, get_local_p2p_node, read_jwtsecret_file,
-        resolve_data_dir, store_node_config_file,
-    },
+    utils::{get_local_p2p_node, parse_socket_addr, read_jwtsecret_file, resolve_data_dir, store_node_config_file},
 };
 use ethrex_blockchain::BlockchainType;
 use ethrex_p2p::{
@@ -22,7 +19,7 @@ use tokio_util::{sync::CancellationToken, task::TaskTracker};
 
 impl MojaveNode {
     pub async fn init(options: &NodeOptions) -> Result<Self, Box<dyn std::error::Error>> {
-        let data_dir = resolve_data_dir(&options.datadir);
+        let data_dir = resolve_data_dir(&options.datadir)?;
         tracing::info!("Data directory resolved to: {:?}", data_dir);
 
         if options.force {
@@ -51,7 +48,8 @@ impl MojaveNode {
             &options.p2p_addr,
             &options.p2p_port,
             &signer,
-        );
+        )
+        .map_err(|e| -> Box<dyn std::error::Error> { Box::new(e) })?;
         let local_node_record = Arc::new(Mutex::new(get_local_node_record(
             &data_dir,
             &local_p2p_node,
@@ -82,7 +80,8 @@ impl MojaveNode {
             blockchain.clone(),
             based_context,
         )
-        .await;
+        .await
+        .map_err(|e| -> Box<dyn std::error::Error> { Box::new(e) })?;
 
         // Create SyncManager
         let syncer = SyncManager::new(
@@ -113,9 +112,13 @@ impl MojaveNode {
     pub async fn run(self, options: &NodeOptions) -> Result<(), Box<dyn std::error::Error>> {
         let rpc_shutdown = CancellationToken::new();
         let jwt_secret = read_jwtsecret_file(&options.authrpc_jwtsecret)?;
+        let http_addr = parse_socket_addr(&options.http_addr, &options.http_port)
+            .map_err(|e| -> Box<dyn std::error::Error> { Box::new(e) })?;
+        let authrpc_addr = parse_socket_addr(&options.authrpc_addr, &options.authrpc_port)
+            .map_err(|e| -> Box<dyn std::error::Error> { Box::new(e) })?;
         let api_task = tokio::spawn(start_api(
-            get_http_socket_addr(&options.http_addr, &options.http_port),
-            get_authrpc_socket_addr(&options.authrpc_addr, &options.authrpc_port),
+            http_addr,
+            authrpc_addr,
             self.store,
             self.blockchain,
             jwt_secret,

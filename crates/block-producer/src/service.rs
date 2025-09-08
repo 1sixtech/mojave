@@ -44,9 +44,11 @@ pub async fn run(
 
     let local_node_record = node.local_node_record.lock().await.clone();
 
+    let http_addr = mojave_node_lib::utils::parse_socket_addr(&node_options.http_addr, &node_options.http_port)?;
+    let authrpc_addr = mojave_node_lib::utils::parse_socket_addr(&node_options.authrpc_addr, &node_options.authrpc_port)?;
     let api_task = tokio::spawn(start_api(
-        get_http_socket_addr(&node_options.http_addr, &node_options.http_port),
-        get_authrpc_socket_addr(&node_options.authrpc_addr, &node_options.authrpc_port),
+        http_addr,
+        authrpc_addr,
         node.store,
         node.blockchain,
         read_jwtsecret_file(&node_options.authrpc_jwtsecret)?,
@@ -113,7 +115,9 @@ impl BlockProducer {
 async fn handle_message(context: &BlockProducerContext, message: Message) {
     match message {
         Message::BuildBlock(sender) => {
-            let _ = sender.send(context.build_block().await);
+            if let Err(e) = sender.send(context.build_block().await) {
+                tracing::warn!(error = ?e, "Failed to send built block over channel");
+            }
         }
     }
 }

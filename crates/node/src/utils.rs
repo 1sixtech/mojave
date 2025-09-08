@@ -66,17 +66,15 @@ pub fn jwtsecret_file(file: &mut File) -> Result<Bytes> {
 pub fn read_jwtsecret_file(jwt_secret_path: &str) -> Result<Bytes> {
     match File::open(jwt_secret_path) {
         Ok(mut file) => Ok(jwtsecret_file(&mut file)?),
-        Err(_) => Ok(write_jwtsecret_file(jwt_secret_path)),
+        Err(_) => write_jwtsecret_file(jwt_secret_path),
     }
 }
 
-pub fn write_jwtsecret_file(jwt_secret_path: &str) -> Bytes {
+pub fn write_jwtsecret_file(jwt_secret_path: &str) -> Result<Bytes> {
     info!("JWT secret not found in the provided path, generating JWT secret");
     let secret = generate_jwt_secret();
-    std::fs::write(jwt_secret_path, &secret).expect("Unable to write JWT secret file");
-    hex::decode(secret)
-        .map(Bytes::from)
-        .expect("Failed to decode generated JWT secret")
+    std::fs::write(jwt_secret_path, &secret)?;
+    Ok(Bytes::from(hex::decode(secret)?))
 }
 
 pub fn generate_jwt_secret() -> String {
@@ -87,7 +85,7 @@ pub fn generate_jwt_secret() -> String {
     hex::encode(secret)
 }
 
-pub fn resolve_data_dir(data_dir: &str) -> String {
+pub fn resolve_data_dir(data_dir: &str) -> Result<String> {
     let path = match std::env::home_dir() {
         Some(home) => home.join(data_dir),
         None => PathBuf::from(".").join(data_dir),
@@ -95,12 +93,13 @@ pub fn resolve_data_dir(data_dir: &str) -> String {
 
     // Create the directory in full recursion.
     if !path.exists() {
-        std::fs::create_dir_all(&path).expect("Failed to create the data directory.");
+        std::fs::create_dir_all(&path)?;
     }
 
-    path.to_str()
-        .expect("Invalid UTF-8 in data directory")
-        .to_owned()
+    let s = path
+        .to_str()
+        .ok_or_else(|| Error::Custom("Invalid UTF-8 in data directory".to_string()))?;
+    Ok(s.to_owned())
 }
 
 pub fn get_bootnodes(bootnodes: Vec<Node>, network: &Network, data_dir: &str) -> Vec<Node> {
@@ -146,12 +145,12 @@ pub fn parse_socket_addr(addr: &str, port: &str) -> Result<SocketAddr> {
         )))
 }
 
-pub fn get_http_socket_addr(http_addr: &str, http_port: &str) -> SocketAddr {
-    parse_socket_addr(http_addr, http_port).expect("Failed to parse http address and port")
+pub fn get_http_socket_addr(http_addr: &str, http_port: &str) -> Result<SocketAddr> {
+    parse_socket_addr(http_addr, http_port)
 }
 
-pub fn get_authrpc_socket_addr(authrpc_addr: &str, authrpc_port: &str) -> SocketAddr {
-    parse_socket_addr(authrpc_addr, authrpc_port).expect("Failed to parse authrpc address and port")
+pub fn get_authrpc_socket_addr(authrpc_addr: &str, authrpc_port: &str) -> Result<SocketAddr> {
+    parse_socket_addr(authrpc_addr, authrpc_port)
 }
 
 pub fn get_local_p2p_node(
@@ -160,16 +159,14 @@ pub fn get_local_p2p_node(
     p2p_addr: &str,
     p2p_port: &str,
     signer: &SecretKey,
-) -> Node {
-    let udp_socket_addr = parse_socket_addr(discovery_addr, discovery_port)
-        .expect("Failed to parse discovery address and port");
-    let tcp_socket_addr =
-        parse_socket_addr(p2p_addr, p2p_port).expect("Failed to parse addr and port");
+) -> Result<Node> {
+    let udp_socket_addr = parse_socket_addr(discovery_addr, discovery_port)?;
+    let tcp_socket_addr = parse_socket_addr(p2p_addr, p2p_port)?;
 
     // TODO: If hhtp.addr is 0.0.0.0 we get the local ip as the one of the node, otherwise we use the provided one.
     // This is fine for now, but we might need to support more options in the future.
     let p2p_node_ip = if udp_socket_addr.ip() == Ipv4Addr::new(0, 0, 0, 0) {
-        local_ip_address::local_ip().expect("Failed to get local ip")
+        local_ip_address::local_ip().map_err(|e| Error::Custom(format!("Failed to get local ip: {e}")))?
     } else {
         udp_socket_addr.ip()
     };
@@ -188,5 +185,5 @@ pub fn get_local_p2p_node(
     let enode = node.enode_url();
     tracing::info!("Node: {enode}");
 
-    node
+    Ok(node)
 }

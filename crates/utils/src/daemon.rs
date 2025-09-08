@@ -5,7 +5,7 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{Ok, Result};
+use anyhow::{Context, Result};
 use daemonize::Daemonize;
 use sysinfo::{Pid, System};
 use thiserror::Error;
@@ -60,7 +60,13 @@ where
             return Err(DaemonError::AlreadyRunning(pid).into());
         }
         _ => {
-            let _ = std::fs::remove_file(&pid_path);
+            if let Err(e) = std::fs::remove_file(&pid_path) {
+                tracing::warn!(
+                    ?pid_path,
+                    error = %e,
+                    "Failed to remove stale pid file while preparing daemon"
+                );
+            }
         }
     }
 
@@ -119,7 +125,9 @@ pub fn stop_daemonized<P: AsRef<Path>>(pid_file: P) -> Result<()> {
                 process.kill();
             }
 
-            let _ = std::fs::remove_file(pid_file);
+            if let Err(e) = std::fs::remove_file(pid_file) {
+                tracing::warn!(error = %e, "Failed to remove pid file after stopping process");
+            }
             Ok(())
         }
         None => Err(DaemonError::NoSuchProcess(pid).into()),
@@ -169,22 +177,33 @@ where
     let rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
-        .unwrap();
+        .context("failed to build Tokio runtime")?;
 
-    rt.block_on(async move {
-        tokio::select! {
+    let result: Result<()> = rt.block_on(async move {
+        let res: Result<()> = tokio::select! {
             res = proc() => {
-                if let Err(err) = res {
-                    tracing::error!("Process stopped unexpectedly: {}", err);
+                match res {
+                    Ok(()) => Ok(()),
+                    Err(err) => {
+                        tracing::error!("Process stopped unexpectedly: {}", err);
+                        Err(anyhow::anyhow!("{}", err))
+                    }
                 }
             },
             _ = tokio::signal::ctrl_c() => {
                 tracing::info!("Shutting down...");
+                Ok(())
+            }
+        };
+
+        if let Some(pid_file) = pid_file {
+            if let Err(e) = std::fs::remove_file(pid_file) {
+                tracing::warn!(error = %e, "Failed to remove pid file during shutdown");
             }
         }
-        if let Some(pid_file) = pid_file {
-            let _ = std::fs::remove_file(pid_file);
-        }
+
+        res
     });
-    Ok(())
+
+    result
 }

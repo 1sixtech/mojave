@@ -8,3 +8,8 @@ pub mod types;
 
 pub use context::BlockProducerContext;
 pub use service::{BlockProducer, run};
+
+pub mod prelude {
+    pub use crate::error::{Error, Result};
+    pub use crate::types::*;
+}

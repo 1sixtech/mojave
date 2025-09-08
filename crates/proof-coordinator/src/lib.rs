@@ -20,6 +20,10 @@ pub struct ProofCoordinator {
     sequencer_address: String,
 }
 
+pub mod prelude {
+    pub use crate::errors::{Error, Result};
+}
+
 impl ProofCoordinator {
     pub fn new(
         proof_data_receiver: Receiver<u64>,
