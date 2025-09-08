@@ -1,8 +1,8 @@
 use ethrex_common::types::Block;
 use ethrex_l2_common::prover::BatchProof;
+use guest_program::input::ProgramInput;
 use mojave_signature::{VerifyingKey, types::Signature};
 use serde::{Deserialize, Serialize};
-use zkvm_interface::io::ProgramInput;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Strategy {
