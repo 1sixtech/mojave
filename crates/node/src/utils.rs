@@ -77,8 +77,7 @@ pub fn read_jwtsecret_file(jwt_secret_path: &str) -> Result<Bytes> {
 pub fn write_jwtsecret_file(jwt_secret_path: &str) -> Bytes {
     info!("JWT secret not found in the provided path, generating JWT secret");
     let secret = generate_jwt_secret();
-    std::fs::write(jwt_secret_path, &secret)
-        .expect(format!("Unable to write JWT secret file: {}", jwt_secret_path).as_str());
+    std::fs::write(jwt_secret_path, &secret).expect("Unable to write JWT secret file");
     hex::decode(secret)
         .map(Bytes::from)
         .expect("Failed to decode generated JWT secret")
