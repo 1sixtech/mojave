@@ -29,7 +29,7 @@ pub async fn start_network(
     blockchain: Arc<Blockchain>,
     based_context: Option<P2PBasedContext>,
 ) -> Result<()> {
-    let bootnodes = get_bootnodes(bootnodes, network, data_dir);
+    let bootnodes = get_bootnodes(bootnodes, network, data_dir).await;
 
     let context = P2PContext::new(
         local_p2p_node,

@@ -22,7 +22,7 @@ use tokio_util::{sync::CancellationToken, task::TaskTracker};
 
 impl MojaveNode {
     pub async fn init(options: &NodeOptions) -> Result<Self> {
-        let data_dir = resolve_data_dir(&options.datadir)?;
+        let data_dir = resolve_data_dir(&options.datadir).await?;
         tracing::info!("Data directory resolved to: {:?}", data_dir);
 
         if options.force {
@@ -45,7 +45,7 @@ impl MojaveNode {
 
         let cancel_token = tokio_util::sync::CancellationToken::new();
 
-        let signer = get_signer(&data_dir)?;
+        let signer = get_signer(&data_dir).await?;
 
         let local_p2p_node = get_local_p2p_node(
             &options.discovery_addr,
@@ -53,12 +53,11 @@ impl MojaveNode {
             &options.p2p_addr,
             &options.p2p_port,
             &signer,
-        )?;
-        let local_node_record = Arc::new(Mutex::new(get_local_node_record(
-            &data_dir,
-            &local_p2p_node,
-            &signer,
-        )?));
+        )
+        .await?;
+        let local_node_record = Arc::new(Mutex::new(
+            get_local_node_record(&data_dir, &local_p2p_node, &signer).await?,
+        ));
 
         let peer_table = peer_table();
         let peer_handler = PeerHandler::new(peer_table.clone());
@@ -114,9 +113,9 @@ impl MojaveNode {
 
     pub async fn run(self, options: &NodeOptions) -> Result<()> {
         let rpc_shutdown = CancellationToken::new();
-        let jwt_secret = read_jwtsecret_file(&options.authrpc_jwtsecret)?;
-        let http_addr = parse_socket_addr(&options.http_addr, &options.http_port)?;
-        let authrpc_addr = parse_socket_addr(&options.authrpc_addr, &options.authrpc_port)?;
+        let jwt_secret = read_jwtsecret_file(&options.authrpc_jwtsecret).await?;
+        let http_addr = parse_socket_addr(&options.http_addr, &options.http_port).await?;
+        let authrpc_addr = parse_socket_addr(&options.authrpc_addr, &options.authrpc_port).await?;
         let api_task = tokio::spawn(start_api(
             http_addr,
             authrpc_addr,

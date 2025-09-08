@@ -14,7 +14,8 @@ use std::path::PathBuf;
 const PID_FILE_NAME: &str = "sequencer.pid";
 const LOG_FILE_NAME: &str = "sequencer.log";
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     mojave_utils::logging::init();
     let cli = cli::Cli::run();
 
@@ -46,7 +47,7 @@ fn main() -> Result<()> {
         }
         Command::Stop => stop_daemonized(PathBuf::from(cli.datadir.clone()).join(PID_FILE_NAME))?,
         Command::GetPubKey => {
-            let signer = get_signer(&cli.datadir)?;
+            let signer = get_signer(&cli.datadir).await?;
             let public_key = public_key_from_signing_key(&signer);
             let public_key = hex::encode(public_key);
             println!("{public_key}");

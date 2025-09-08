@@ -42,20 +42,20 @@ pub async fn run(
 
     let local_node_record = node.local_node_record.lock().await.clone();
 
-    let http_addr = mojave_node_lib::utils::parse_socket_addr(
-        &node_options.http_addr,
-        &node_options.http_port,
-    )?;
+    let http_addr =
+        mojave_node_lib::utils::parse_socket_addr(&node_options.http_addr, &node_options.http_port)
+            .await?;
     let authrpc_addr = mojave_node_lib::utils::parse_socket_addr(
         &node_options.authrpc_addr,
         &node_options.authrpc_port,
-    )?;
+    )
+    .await?;
     let api_task = tokio::spawn(start_api(
         http_addr,
         authrpc_addr,
         node.store,
         node.blockchain,
-        read_jwtsecret_file(&node_options.authrpc_jwtsecret)?,
+        read_jwtsecret_file(&node_options.authrpc_jwtsecret).await?,
         node.local_p2p_node,
         local_node_record,
         node.syncer,

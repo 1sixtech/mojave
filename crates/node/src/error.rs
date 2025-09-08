@@ -2,6 +2,7 @@ use ethrex_common::types::GenesisError;
 use ethrex_p2p::network::NetworkError;
 use ethrex_rpc::clients::EthClientError;
 use ethrex_storage_rollup::RollupStoreError;
+use local_ip_address::Error as LocalIPError;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
@@ -26,6 +27,8 @@ pub enum Error {
     Rpc(#[from] mojave_utils::rpc::error::Error),
     #[error("EthrexNextwork error: {0}")]
     EthrexNextwork(#[from] NetworkError),
+    #[error(transparent)]
+    LocalIP(#[from] LocalIPError),
     #[error(transparent)]
     Secp256k1(#[from] secp256k1::Error),
     #[error(transparent)]
