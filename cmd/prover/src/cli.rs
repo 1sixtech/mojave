@@ -22,7 +22,7 @@ pub struct Cli {
     #[arg(
         long = "datadir",
         value_name = "DATA_DIRECTORY",
-        default_value = ".mojave/mojave-prover",
+        default_value = ".mojave/prover",
         help = "Directory for storing prover data.",
         long_help = "Specifies the directory where the prover will store its data.",
         help_heading = "Prover options",
