@@ -14,8 +14,8 @@ const PROCESS_KILL_TIMEOUT_SEC: u64 = 1;
 
 pub struct DaemonOptions {
     pub no_daemon: bool,
-    pub pid_file_path: String,
-    pub log_file_path: String,
+    pub pid_file_path: PathBuf,
+    pub log_file_path: PathBuf,
 }
 
 #[derive(Debug, Error)]

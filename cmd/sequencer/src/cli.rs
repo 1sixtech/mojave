@@ -1,5 +1,3 @@
-use std::default;
-
 use clap::{ArgAction, ArgGroup, Parser, Subcommand};
 use mojave_block_producer::types::BlockProducerOptions;
 use mojave_node_lib::types::{Node, SyncMode};

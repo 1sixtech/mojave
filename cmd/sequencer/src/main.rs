@@ -2,15 +2,17 @@ pub mod cli;
 
 use crate::cli::Command;
 use anyhow::Result;
+
 use mojave_block_producer::types::BlockProducerOptions;
 use mojave_node_lib::{initializers::get_signer, types::MojaveNode};
 use mojave_utils::{
     daemon::{DaemonOptions, run_daemonized, stop_daemonized},
     p2p::public_key_from_signing_key,
 };
+use std::path::PathBuf;
 
 const PID_FILE_NAME: &str = "sequencer.pid";
-const LOG_FILE_NAME: &str = "sequencer.pid";
+const LOG_FILE_NAME: &str = "sequencer.log";
 
 fn main() -> Result<()> {
     mojave_utils::logging::init();
@@ -29,8 +31,8 @@ fn main() -> Result<()> {
             let block_producer_options: BlockProducerOptions = (&sequencer_options).into();
             let daemon_opts = DaemonOptions {
                 no_daemon: options.no_daemon,
-                pid_file_path: format!("{}/{}", cli.datadir, PID_FILE_NAME),
-                log_file_path: format!("{}/{}", cli.datadir, LOG_FILE_NAME),
+                pid_file_path: PathBuf::from(format!("{}/{}", cli.datadir, PID_FILE_NAME)),
+                log_file_path: PathBuf::from(format!("{}/{}", cli.datadir, LOG_FILE_NAME)),
             };
 
             run_daemonized(daemon_opts, || async move {

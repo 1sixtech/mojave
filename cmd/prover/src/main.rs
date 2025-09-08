@@ -4,9 +4,10 @@ use crate::cli::Command;
 use anyhow::Result;
 use mojave_prover_lib::start_api;
 use mojave_utils::daemon::{DaemonOptions, run_daemonized, stop_daemonized};
+use std::path::PathBuf;
 
 const PID_FILE_NAME: &str = "prover.pid";
-const LOG_FILE_NAME: &str = "prover.pid";
+const LOG_FILE_NAME: &str = "prover.log";
 
 fn main() -> Result<()> {
     mojave_utils::logging::init();
@@ -26,8 +27,8 @@ fn main() -> Result<()> {
 
             let daemon_opts = DaemonOptions {
                 no_daemon: prover_options.no_daemon,
-                pid_file_path: format!("{}/{}", cli.datadir, PID_FILE_NAME),
-                log_file_path: format!("{}/{}", cli.datadir, LOG_FILE_NAME),
+                pid_file_path: PathBuf::from(format!("{}/{}", cli.datadir, PID_FILE_NAME)),
+                log_file_path: PathBuf::from(format!("{}/{}", cli.datadir, LOG_FILE_NAME)),
             };
 
             run_daemonized(daemon_opts, || async move {
