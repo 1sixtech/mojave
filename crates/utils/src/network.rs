@@ -16,19 +16,16 @@ pub const MAINNET_GENESIS_PATH: &str = "cmd/mojave/networks/mainnet/genesis.json
 const MAINNET_BOOTNODES_PATH: &str = "cmd/mojave/networks/mainnet/bootnodes.json";
 
 fn read_bootnodes(path: &str) -> Vec<Node> {
-    match std::fs::File::open(path) {
-        Ok(file) => match serde_json::from_reader::<_, Vec<Node>>(file) {
-            Ok(nodes) => nodes,
-            Err(e) => {
-                tracing::warn!(path, error = %e, "Failed to parse bootnodes file; using empty list");
-                vec![]
-            }
-        },
-        Err(e) => {
+    std::fs::File::open(path)
+        .map_err(|e| {
             tracing::warn!(path, error = %e, "Failed to open bootnodes file; using empty list");
-            vec![]
-        }
-    }
+        })
+        .and_then(|file| {
+            serde_json::from_reader(file).map_err(|e| {
+                tracing::warn!(path, error = %e, "Failed to parse bootnodes file; using empty list");
+            })
+        })
+        .unwrap_or_default()
 }
 
 lazy_static! {

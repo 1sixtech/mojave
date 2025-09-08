@@ -43,11 +43,7 @@ pub async fn start_network(
         based_context,
     );
 
-    if let Err(e) = ethrex_p2p::start_network(context, bootnodes).await {
-        return Err(crate::error::Error::Custom(format!(
-            "Failed to start P2P network: {e}"
-        )));
-    }
+    ethrex_p2p::start_network(context, bootnodes).await?;
 
     tracker.spawn(ethrex_p2p::periodically_show_peer_stats(
         blockchain,

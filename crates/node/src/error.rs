@@ -1,4 +1,5 @@
 use ethrex_common::types::GenesisError;
+use ethrex_p2p::network::NetworkError;
 use ethrex_rpc::clients::EthClientError;
 use ethrex_storage_rollup::RollupStoreError;
 
@@ -23,6 +24,8 @@ pub enum Error {
     NodeInit(std::io::Error),
     #[error(transparent)]
     Rpc(#[from] mojave_utils::rpc::error::Error),
+    #[error("EthrexNextwork error: {0}")]
+    EthrexNextwork(#[from] NetworkError),
     #[error(transparent)]
     Secp256k1(#[from] secp256k1::Error),
     #[error(transparent)]

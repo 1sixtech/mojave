@@ -166,7 +166,8 @@ pub fn get_local_p2p_node(
     // TODO: If hhtp.addr is 0.0.0.0 we get the local ip as the one of the node, otherwise we use the provided one.
     // This is fine for now, but we might need to support more options in the future.
     let p2p_node_ip = if udp_socket_addr.ip() == Ipv4Addr::new(0, 0, 0, 0) {
-        local_ip_address::local_ip().map_err(|e| Error::Custom(format!("Failed to get local ip: {e}")))?
+        local_ip_address::local_ip()
+            .map_err(|e| Error::Custom(format!("Failed to get local ip: {e}")))?
     } else {
         udp_socket_addr.ip()
     };

@@ -16,7 +16,7 @@ pub fn init() {
     let subscriber = Registry::default().with(filter_layer).with(fmt::layer());
 
     if let Err(e) = RELOAD_HANDLE.set(handle) {
-        eprintln!("Logger reload handle was already set; error: {e}, continuing");
+        eprintln!("Logger reload handle was already set; error: {e:?}, continuing");
     }
 
     if let Err(e) = tracing::subscriber::set_global_default(subscriber) {

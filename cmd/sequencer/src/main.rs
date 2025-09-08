@@ -38,17 +38,11 @@ fn main() -> Result<()> {
             run_daemonized(daemon_opts, || async move {
                 let node = MojaveNode::init(&node_options)
                     .await
-                    .unwrap_or_else(|error| {
-                        tracing::error!("Failed to initialize the node: {}", error);
-                        std::process::exit(1);
-                    });
+                    .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
                 mojave_block_producer::run(node, &node_options, &block_producer_options)
                     .await
                     .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
-            })
-            .unwrap_or_else(|err| {
-                tracing::error!("Failed to start daemonized node: {}", err);
-            });
+            })?;
         }
         Command::Stop => stop_daemonized(PathBuf::from(cli.datadir.clone()).join(PID_FILE_NAME))?,
         Command::GetPubKey => {

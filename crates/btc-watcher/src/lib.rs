@@ -7,6 +7,8 @@ pub mod types;
 pub mod watch;
 
 pub mod prelude {
-    pub use crate::error::{Error, Result};
-    pub use crate::types::*;
+    pub use crate::{
+        error::{Error, Result},
+        types::*,
+    };
 }

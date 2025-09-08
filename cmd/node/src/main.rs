@@ -35,10 +35,13 @@ fn main() -> Result<()> {
                         tracing::error!("Failed to initialize the node: {}", error);
                         std::process::exit(1);
                     });
-                node.run(&node_options).await
+
+                node.run(&node_options)
+                    .await
+                    .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
             })
             .unwrap_or_else(|err| {
-                tracing::error!("Failed to start daemonized node: {}", err);
+                tracing::error!(error = %err, "Failed to start daemonized node");
             });
         }
         Command::Stop => stop_daemonized(PathBuf::from(cli.datadir.clone()).join(PID_FILE_NAME))?,

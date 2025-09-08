@@ -196,10 +196,10 @@ where
             }
         };
 
-        if let Some(pid_file) = pid_file {
-            if let Err(e) = std::fs::remove_file(pid_file) {
-                tracing::warn!(error = %e, "Failed to remove pid file during shutdown");
-            }
+        if let Some(pid_file) = pid_file
+            && let Err(e) = std::fs::remove_file(pid_file)
+        {
+            tracing::warn!(error = %e, "Failed to remove pid file during shutdown");
         }
 
         res

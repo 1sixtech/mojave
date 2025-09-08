@@ -1,10 +1,13 @@
 use crate::{
-    error::Error,
+    error::{Error, Result},
     initializers::{get_local_node_record, get_signer, init_blockchain, init_store},
     p2p::network::start_network,
     rpc::start_api,
     types::{MojaveNode, NodeConfigFile, NodeOptions},
-    utils::{get_local_p2p_node, parse_socket_addr, read_jwtsecret_file, resolve_data_dir, store_node_config_file},
+    utils::{
+        get_local_p2p_node, parse_socket_addr, read_jwtsecret_file, resolve_data_dir,
+        store_node_config_file,
+    },
 };
 use ethrex_blockchain::BlockchainType;
 use ethrex_p2p::{
@@ -18,13 +21,15 @@ use tokio::sync::Mutex;
 use tokio_util::{sync::CancellationToken, task::TaskTracker};
 
 impl MojaveNode {
-    pub async fn init(options: &NodeOptions) -> Result<Self, Box<dyn std::error::Error>> {
+    pub async fn init(options: &NodeOptions) -> Result<Self> {
         let data_dir = resolve_data_dir(&options.datadir)?;
         tracing::info!("Data directory resolved to: {:?}", data_dir);
 
         if options.force {
             tracing::info!("Force removing the database at {:?}", data_dir);
-            std::fs::remove_dir_all(&data_dir).map_err(Error::ForceRemoveDatabase)?;
+            tokio::fs::remove_dir_all(&data_dir)
+                .await
+                .map_err(Error::ForceRemoveDatabase)?;
         }
 
         let genesis = options.network.get_genesis()?;
@@ -48,8 +53,7 @@ impl MojaveNode {
             &options.p2p_addr,
             &options.p2p_port,
             &signer,
-        )
-        .map_err(|e| -> Box<dyn std::error::Error> { Box::new(e) })?;
+        )?;
         let local_node_record = Arc::new(Mutex::new(get_local_node_record(
             &data_dir,
             &local_p2p_node,
@@ -80,8 +84,7 @@ impl MojaveNode {
             blockchain.clone(),
             based_context,
         )
-        .await
-        .map_err(|e| -> Box<dyn std::error::Error> { Box::new(e) })?;
+        .await?;
 
         // Create SyncManager
         let syncer = SyncManager::new(
@@ -109,13 +112,11 @@ impl MojaveNode {
         })
     }
 
-    pub async fn run(self, options: &NodeOptions) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn run(self, options: &NodeOptions) -> Result<()> {
         let rpc_shutdown = CancellationToken::new();
         let jwt_secret = read_jwtsecret_file(&options.authrpc_jwtsecret)?;
-        let http_addr = parse_socket_addr(&options.http_addr, &options.http_port)
-            .map_err(|e| -> Box<dyn std::error::Error> { Box::new(e) })?;
-        let authrpc_addr = parse_socket_addr(&options.authrpc_addr, &options.authrpc_port)
-            .map_err(|e| -> Box<dyn std::error::Error> { Box::new(e) })?;
+        let http_addr = parse_socket_addr(&options.http_addr, &options.http_port)?;
+        let authrpc_addr = parse_socket_addr(&options.authrpc_addr, &options.authrpc_port)?;
         let api_task = tokio::spawn(start_api(
             http_addr,
             authrpc_addr,
@@ -133,8 +134,14 @@ impl MojaveNode {
         ));
         tokio::select! {
             res = api_task => {
-                if let Err(err) = res {
-                    tracing::error!("API task failed: {}", err);
+                match res {
+                    Ok(Ok(_)) => {}
+                    Ok(Err(e)) => {
+                        tracing::error!("API task returned error: {}", e);
+                    }
+                    Err(err) => {
+                        tracing::error!("API task failed to join: {}", err);
+                    }
                 }
             }
             _ = tokio::signal::ctrl_c() => {

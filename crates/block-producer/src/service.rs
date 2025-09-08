@@ -8,9 +8,7 @@ use ethrex_common::types::Block;
 use mojave_node_lib::{
     node::get_client_version,
     types::{MojaveNode, NodeConfigFile, NodeOptions},
-    utils::{
-        get_authrpc_socket_addr, get_http_socket_addr, read_jwtsecret_file, store_node_config_file,
-    },
+    utils::{read_jwtsecret_file, store_node_config_file},
 };
 use std::{path::PathBuf, time::Duration};
 use tokio::sync::{
@@ -44,8 +42,14 @@ pub async fn run(
 
     let local_node_record = node.local_node_record.lock().await.clone();
 
-    let http_addr = mojave_node_lib::utils::parse_socket_addr(&node_options.http_addr, &node_options.http_port)?;
-    let authrpc_addr = mojave_node_lib::utils::parse_socket_addr(&node_options.authrpc_addr, &node_options.authrpc_port)?;
+    let http_addr = mojave_node_lib::utils::parse_socket_addr(
+        &node_options.http_addr,
+        &node_options.http_port,
+    )?;
+    let authrpc_addr = mojave_node_lib::utils::parse_socket_addr(
+        &node_options.authrpc_addr,
+        &node_options.authrpc_port,
+    )?;
     let api_task = tokio::spawn(start_api(
         http_addr,
         authrpc_addr,
@@ -61,8 +65,14 @@ pub async fn run(
     ));
     tokio::select! {
         res = api_task => {
-            if let Err(err) = res {
-                tracing::error!("API task failed: {}", err);
+            match res {
+                Ok(Ok(_)) => {}
+                Ok(Err(e)) => {
+                    tracing::error!("API task returned error: {}", e);
+                }
+                Err(err) => {
+                    tracing::error!("API task failed to join: {}", err);
+                }
             }
         }
         _ = tokio::signal::ctrl_c() => {
