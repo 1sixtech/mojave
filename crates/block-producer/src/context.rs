@@ -270,7 +270,7 @@ impl BlockProducerContext {
     /// stays within the blob size limit after processing each transaction.
     async fn fill_transactions(&self, context: &mut PayloadBuildContext) -> Result<()> {
         // version (u8) + header fields (struct) + messages_len (u16) + deposits_len (u16) + accounts_diffs_len (u16)
-        let mut acc_size_without_accounts = 1 + *BLOCK_HEADER_LEN + 2 + 2 + 2;
+        let mut acc_size_without_accounts = 1 + BLOCK_HEADER_LEN + 2 + 2 + 2;
         let mut size_accounts_diffs = 0;
         let mut account_diffs = HashMap::new();
 
@@ -290,7 +290,7 @@ impl BlockProducerContext {
 
             // Check if we have enough space for the StateDiff to run more transactions
             if acc_size_without_accounts + size_accounts_diffs + SIMPLE_TX_STATE_DIFF_SIZE
-                > SAFE_BYTES_PER_BLOB
+                > SAFE_BYTES_PER_BLOB as u64
             {
                 debug!("No more StateDiff space to run transactions");
                 break;
@@ -303,17 +303,14 @@ impl BlockProducerContext {
 
             // Check if we have enough gas to run the transaction
             if context.remaining_gas < head_tx.tx.gas_limit() {
-                debug!(
-                    "Skipping transaction: {}, no gas left",
-                    head_tx.tx.compute_hash()
-                );
+                debug!("Skipping transaction: {}, no gas left", head_tx.tx.hash());
                 // We don't have enough gas left for the transaction, so we skip all txs from this account
                 txs.pop();
                 continue;
             }
 
             // TODO: maybe fetch hash too when filtering mempool so we don't have to compute it here (we can do this in the same refactor as adding timestamp)
-            let tx_hash = head_tx.tx.compute_hash();
+            let tx_hash = head_tx.tx.hash();
 
             // Check whether the tx is replay-protected
             if head_tx.tx.protected() && !chain_config.is_eip155_activated(context.block_number()) {
@@ -360,12 +357,12 @@ impl BlockProducerContext {
                 &merged_diffs,
                 &head_tx,
                 &receipt,
-                *PRIVILEGED_TX_LOG_LEN,
-                *L1MESSAGE_LOG_LEN,
+                PRIVILEGED_TX_LOG_LEN,
+                L1MESSAGE_LOG_LEN,
             )?;
 
             if acc_size_without_accounts + tx_size_without_accounts + new_accounts_diff_size
-                > SAFE_BYTES_PER_BLOB
+                > SAFE_BYTES_PER_BLOB as u64
             {
                 debug!(
                     "No more StateDiff space to run this transactions. Skipping transaction: {:?}",
@@ -382,7 +379,7 @@ impl BlockProducerContext {
             txs.shift()?;
             // Pull transaction from the mempool
             self.blockchain
-                .remove_transaction_from_pool(&head_tx.tx.compute_hash())?;
+                .remove_transaction_from_pool(&head_tx.tx.hash())?;
 
             // We only add the messages and deposits length because the accounts diffs may change
             acc_size_without_accounts += tx_size_without_accounts;
@@ -415,7 +412,7 @@ impl BlockProducerContext {
     ) -> Result<TransactionQueue> {
         let (plain_txs, mut blob_txs) = self.blockchain.fetch_mempool_transactions(context)?;
         while let Some(blob_tx) = blob_txs.peek() {
-            let tx_hash = blob_tx.compute_hash();
+            let tx_hash = blob_tx.hash();
             self.blockchain.remove_transaction_from_pool(&tx_hash)?;
             blob_txs.pop();
         }
@@ -554,9 +551,9 @@ impl BlockProducerContext {
         merged_diffs: &HashMap<Address, AccountStateDiff>,
         head_tx: &HeadTransaction,
         receipt: &Receipt,
-        deposits_log_len: usize,
-        messages_log_len: usize,
-    ) -> Result<(usize, usize)> {
+        deposits_log_len: u64,
+        messages_log_len: u64,
+    ) -> Result<(u64, u64)> {
         let mut tx_state_diff_size = 0;
         let mut new_accounts_diff_size = 0;
 
@@ -572,14 +569,14 @@ impl BlockProducerContext {
                     return Err(Error::FailedToEncodeAccountStateDiff(e));
                 }
             };
-            new_accounts_diff_size += encoded.len();
+            new_accounts_diff_size += encoded.len() as u64;
         }
 
         if self.is_deposit_l2(head_tx) {
             tx_state_diff_size += deposits_log_len;
         }
         tx_state_diff_size +=
-            get_block_l1_messages(std::slice::from_ref(receipt)).len() * messages_log_len;
+            get_block_l1_messages(std::slice::from_ref(receipt)).len() as u64 * messages_log_len;
 
         Ok((tx_state_diff_size, new_accounts_diff_size))
     }

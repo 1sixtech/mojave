@@ -34,3 +34,4 @@ tower-http = { workspace = true }
 
 [dev-dependencies]
 ctor = "0.4.2"
+once_cell = { workspace = true }
