@@ -1,3 +1,5 @@
+use std::default;
+
 use clap::{ArgAction, ArgGroup, Parser, Subcommand};
 use mojave_block_producer::types::BlockProducerOptions;
 use mojave_node_lib::types::{Node, SyncMode};
@@ -47,18 +49,6 @@ pub struct Options {
         help_heading = "L2 options"
     )]
     pub sponsorable_addresses_file_path: Option<String>,
-
-    #[arg(
-        long = "datadir",
-        value_name = "DATABASE_DIRECTORY",
-        help = "If the datadir is the word `memory`, ethrex will use the InMemory Engine",
-        default_value = ".mojave/mojave-sequencer",
-        help = "Receives the name of the directory where the Database is located.",
-        long_help = "If the datadir is the word `memory`, ethrex will use the `InMemory Engine`.",
-        help_heading = "Node options",
-        env = "ETHREX_DATADIR"
-    )]
-    pub datadir: String,
 
     #[arg(
         long = "force",
@@ -207,7 +197,7 @@ impl From<&Options> for mojave_node_lib::types::NodeOptions {
             discovery_port: options.discovery_port.clone(),
             network: options.network.clone(),
             bootnodes: options.bootnodes.clone(),
-            datadir: options.datadir.clone(),
+            datadir: Default::default(),
             syncmode: options.syncmode.unwrap_or(SyncMode::Full),
             sponsorable_addresses_file_path: options.sponsorable_addresses_file_path.clone(),
             metrics_addr: options.metrics_addr.clone(),
@@ -236,6 +226,17 @@ pub struct Cli {
         help_heading = "Node options"
     )]
     pub log_level: Option<Level>,
+    #[arg(
+        long = "datadir",
+        value_name = "DATABASE_DIRECTORY",
+        help = "If the datadir is the word `memory`, ethrex will use the InMemory Engine",
+        default_value = ".mojave/mojave-sequencer",
+        help = "Receives the name of the directory where the Database is located.",
+        long_help = "If the datadir is the word `memory`, ethrex will use the `InMemory Engine`.",
+        help_heading = "Node options",
+        env = "ETHREX_DATADIR"
+    )]
+    pub datadir: String,
     #[command(subcommand)]
     pub command: Command,
 }
@@ -257,28 +258,9 @@ pub enum Command {
         sequencer_options: SequencerOptions,
     },
     #[command(name = "stop", about = "Stop the sequencer")]
-    Stop {
-        #[arg(
-            long = "pid.file",
-            default_value = ".mojave/mojave-sequencer/sequencer.pid",
-            value_name = "PID_FILE",
-            help = "Path to the file where the sequencer's process ID (PID) has written. (Default: inside the data directory)"
-        )]
-        pid_file: std::path::PathBuf,
-    },
+    Stop,
     #[command(name = "get-pub-key", about = "Display the public key of the node")]
-    GetPubKey {
-        #[arg(
-            long = "datadir",
-            value_name = "DATABASE_DIRECTORY",
-            default_value = "mojave-sequencer",
-            help = "Receives the name of the directory where the Database is located.",
-            long_help = "If the datadir is the word `memory`, ethrex will use the `InMemory Engine`.",
-            help_heading = "Node options",
-            env = "ETHREX_DATADIR"
-        )]
-        datadir: String,
-    },
+    GetPubKey,
 }
 
 #[derive(Parser)]

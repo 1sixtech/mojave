@@ -19,7 +19,16 @@ pub struct Cli {
         help_heading = "Prover options"
     )]
     pub log_level: Option<Level>,
-
+    #[arg(
+        long = "datadir",
+        value_name = "DATA_DIRECTORY",
+        default_value = ".mojave/mojave-prover",
+        help = "Directory for storing prover data.",
+        long_help = "Specifies the directory where the prover will store its data.",
+        help_heading = "Prover options",
+        env = "ETHREX_DATADIR"
+    )]
+    pub datadir: String,
     #[command(subcommand)]
     pub command: Command,
 }
@@ -70,6 +79,7 @@ pub struct ProverOptions {
         help_heading = "Prover Options"
     )]
     pub private_key: String,
+
     #[arg(
         long = "no-daemon",
         help = "If set, the prover will run in the foreground (not as a daemon). By default, the prover runs as a daemon.",
@@ -77,24 +87,6 @@ pub struct ProverOptions {
         action = clap::ArgAction::SetTrue
     )]
     pub no_daemon: bool,
-
-    #[arg(
-        long = "pid.file",
-        default_value = ".mojave/prover.pid",
-        value_name = "PID_FILE",
-        help = "Path to the file where the prover's process ID (PID) will be written.",
-        help_heading = "Daemon Options"
-    )]
-    pub pid_file: String,
-
-    #[arg(
-        long = "log.file",
-        default_value = ".mojave/mojave-prover/prover.log",
-        value_name = "LOG_FILE",
-        help = "Path to the file where logs will be written.",
-        help_heading = "Daemon Options"
-    )]
-    pub log_file: String,
 }
 
 impl fmt::Debug for ProverOptions {
@@ -120,13 +112,5 @@ pub enum Command {
     },
 
     #[command(name = "stop", about = "Stop the prover")]
-    Stop {
-        #[arg(
-            long = "pid.file",
-            default_value = ".mojave/mojave-prover/prover.pid",
-            value_name = "PID_FILE",
-            help = "Path to the file where the prover's process ID (PID) has written. (Default: inside the data directory)"
-        )]
-        pid_file: std::path::PathBuf,
-    },
+    Stop,
 }

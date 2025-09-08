@@ -1,5 +1,5 @@
 use std::{
-    fs::{File, OpenOptions},
+    fs::OpenOptions,
     path::{Path, PathBuf},
     str::FromStr,
     time::Duration,
@@ -43,7 +43,6 @@ pub enum DaemonError {
     ParsePid(String),
 }
 
-#[cfg(unix)]
 pub fn run_daemonized<F, Fut>(opts: DaemonOptions, proc: F) -> Result<()>
 where
     F: FnOnce() -> Fut,
@@ -85,24 +84,18 @@ where
     let daemon = Daemonize::new()
         .pid_file(pid_path.clone())
         .chown_pid_file(true)
-        .umask(0o600)
+        .umask(0o027)
         .working_directory(working_dir)
         .stdout(log_file)
         .stderr(log_file_err);
     daemon.start()?;
 
-    let _ = run_main_task(proc, Some(pid_path));
+    if let Err(e) = run_main_task(proc, Some(pid_path)) {
+        tracing::error!("run_main_task failed: {e}");
+        return Err(e);
+    }
 
     Ok(())
-}
-
-#[cfg(not(unix))]
-pub fn run_daemonized<F, Fut>(opts: DaemonOptions, proc: F) -> Result<()>
-where
-    F: FnOnce() -> Fut,
-    Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
-{
-    unimplemented!()
 }
 
 pub fn stop_daemonized<P: AsRef<Path>>(pid_file: P) -> Result<()> {
@@ -115,7 +108,7 @@ pub fn stop_daemonized<P: AsRef<Path>>(pid_file: P) -> Result<()> {
             process.kill_with(sysinfo::Signal::Interrupt);
             let start_time = std::time::Instant::now();
             let time_out = Duration::from_secs(PROCESS_KILL_TIMEOUT_SEC);
-            while start_time.elapsed() > time_out {
+            while start_time.elapsed() < time_out {
                 if !is_pid_running(pid) {
                     break;
                 }
@@ -173,10 +166,6 @@ where
     Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
     P: AsRef<Path>,
 {
-    if let Some(ref pid_file) = pid_file {
-        File::open(pid_file)?.lock()?;
-    }
-
     let rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
