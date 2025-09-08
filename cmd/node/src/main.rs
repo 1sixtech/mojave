@@ -20,8 +20,8 @@ fn main() -> Result<()> {
             let node_options: mojave_node_lib::types::NodeOptions = (&options).into();
             let daemon_opts = DaemonOptions {
                 no_daemon: options.no_daemon,
-                pid_file_path: options.pid_file,
-                log_file_path: options.log_file,
+                pid_file_path: format!("{}/{}", options.datadir, "node.pid"),
+                log_file_path: format!("{}/{}", options.datadir, "node.log"),
             };
             run_daemonized(daemon_opts, || async move {
                 let node = MojaveNode::init(&node_options)
@@ -36,10 +36,7 @@ fn main() -> Result<()> {
                 tracing::error!("Failed to start daemonized node: {}", err);
             });
         }
-        Command::Stop {
-            pid_file,
-            kill_timeout,
-        } => stop_daemonized(pid_file, kill_timeout)?,
+        Command::Stop { pid_file } => stop_daemonized(pid_file)?,
         Command::GetPubKey { datadir } => {
             let signer = get_signer(&datadir)?;
             let public_key = public_key_from_signing_key(&signer);

@@ -190,24 +190,6 @@ pub struct Options {
         action = clap::ArgAction::SetTrue
     )]
     pub no_daemon: bool,
-
-    #[arg(
-        long = "pid.file",
-        default_value = ".mojave/mojave-sequencer/sequencer.pid",
-        value_name = "PID_FILE",
-        help = "Path to the file where the sequencer's process ID (PID) will be written. (Default: inside the data directory)",
-        help_heading = "Daemon Options"
-    )]
-    pub pid_file: std::path::PathBuf,
-
-    #[arg(
-        long = "log.file",
-        default_value = ".mojave/mojave-sequencer/sequencer.log",
-        value_name = "LOG_FILE",
-        help = "Path to the file where logs will be written. (Default: inside the data directory)",
-        help_heading = "Daemon Options"
-    )]
-    pub log_file: std::path::PathBuf,
 }
 
 impl From<&Options> for mojave_node_lib::types::NodeOptions {
@@ -278,18 +260,11 @@ pub enum Command {
     Stop {
         #[arg(
             long = "pid.file",
-            default_value = "mojave/sequencer.pid",
+            default_value = ".mojave/mojave-sequencer/sequencer.pid",
             value_name = "PID_FILE",
             help = "Path to the file where the sequencer's process ID (PID) has written. (Default: inside the data directory)"
         )]
         pid_file: std::path::PathBuf,
-        #[arg(
-            long = "kill.timeout",
-            value_name = "KILL_TIMEOUT_SEC",
-            default_value_t = 3,
-            help = "Timeout in seconds to wait for the process to terminate gracefully before force killing it."
-        )]
-        kill_timeout: u64,
     },
     #[command(name = "get-pub-key", about = "Display the public key of the node")]
     GetPubKey {

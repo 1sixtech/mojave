@@ -39,10 +39,7 @@ fn main() -> Result<()> {
             })
             .unwrap_or_else(|err| tracing::error!("Failed to start daemonized node: {}", err));
         }
-        Command::Stop {
-            pid_file,
-            kill_timeout,
-        } => stop_daemonized(pid_file, kill_timeout)?,
+        Command::Stop { pid_file } => stop_daemonized(pid_file)?,
     }
 
     Ok(())

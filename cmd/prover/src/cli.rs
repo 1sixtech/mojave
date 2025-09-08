@@ -80,21 +80,21 @@ pub struct ProverOptions {
 
     #[arg(
         long = "pid.file",
-        default_value = "mojave/prover.pid",
+        default_value = ".mojave/prover.pid",
         value_name = "PID_FILE",
         help = "Path to the file where the prover's process ID (PID) will be written.",
         help_heading = "Daemon Options"
     )]
-    pub pid_file: std::path::PathBuf,
+    pub pid_file: String,
 
     #[arg(
         long = "log.file",
-        default_value = "mojave/prover.log",
+        default_value = ".mojave/mojave-prover/prover.log",
         value_name = "LOG_FILE",
         help = "Path to the file where logs will be written.",
         help_heading = "Daemon Options"
     )]
-    pub log_file: std::path::PathBuf,
+    pub log_file: String,
 }
 
 impl fmt::Debug for ProverOptions {
@@ -123,17 +123,10 @@ pub enum Command {
     Stop {
         #[arg(
             long = "pid.file",
-            default_value = "mojave/prover.pid",
+            default_value = ".mojave/mojave-prover/prover.pid",
             value_name = "PID_FILE",
             help = "Path to the file where the prover's process ID (PID) has written. (Default: inside the data directory)"
         )]
         pid_file: std::path::PathBuf,
-        #[arg(
-            long = "kill.timeout",
-            value_name = "KILL_TIMEOUT_SEC",
-            default_value_t = 3,
-            help = "Timeout in seconds to wait for the process to terminate gracefully before force killing it."
-        )]
-        kill_timeout: u64,
     },
 }

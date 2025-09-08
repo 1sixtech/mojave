@@ -10,10 +10,12 @@ use daemonize::Daemonize;
 use sysinfo::{Pid, System};
 use thiserror::Error;
 
+const PROCESS_KILL_TIMEOUT_SEC: u64 = 1;
+
 pub struct DaemonOptions {
     pub no_daemon: bool,
-    pub pid_file_path: PathBuf,
-    pub log_file_path: PathBuf,
+    pub pid_file_path: String,
+    pub log_file_path: String,
 }
 
 #[derive(Debug, Error)]
@@ -103,7 +105,7 @@ where
     unimplemented!()
 }
 
-pub fn stop_daemonized<P: AsRef<Path>>(pid_file: P, kill_time_out_sec: u64) -> Result<()> {
+pub fn stop_daemonized<P: AsRef<Path>>(pid_file: P) -> Result<()> {
     let pid_file = resolve_path(pid_file)?;
     let pid = read_pid_from_file(&pid_file)?;
 
@@ -112,7 +114,7 @@ pub fn stop_daemonized<P: AsRef<Path>>(pid_file: P, kill_time_out_sec: u64) -> R
         Some(process) => {
             process.kill_with(sysinfo::Signal::Interrupt);
             let start_time = std::time::Instant::now();
-            let time_out = Duration::from_secs(kill_time_out_sec);
+            let time_out = Duration::from_secs(PROCESS_KILL_TIMEOUT_SEC);
             while start_time.elapsed() > time_out {
                 if !is_pid_running(pid) {
                     break;

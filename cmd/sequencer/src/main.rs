@@ -25,8 +25,8 @@ fn main() -> Result<()> {
             let block_producer_options: BlockProducerOptions = (&sequencer_options).into();
             let daemon_opts = DaemonOptions {
                 no_daemon: options.no_daemon,
-                pid_file_path: options.pid_file,
-                log_file_path: options.log_file,
+                pid_file_path: format!("{}/{}", options.datadir, "sequencer.pid"),
+                log_file_path: format!("{}/{}", options.datadir, "sequencer.log"),
             };
 
             run_daemonized(daemon_opts, || async move {
@@ -44,10 +44,7 @@ fn main() -> Result<()> {
                 tracing::error!("Failed to start daemonized node: {}", err);
             });
         }
-        Command::Stop {
-            pid_file,
-            kill_timeout,
-        } => stop_daemonized(pid_file, kill_timeout)?,
+        Command::Stop { pid_file } => stop_daemonized(pid_file)?,
         Command::GetPubKey { datadir } => {
             let signer = get_signer(&datadir)?;
             let public_key = public_key_from_signing_key(&signer);
