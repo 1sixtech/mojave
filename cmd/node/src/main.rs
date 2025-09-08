@@ -25,8 +25,8 @@ fn main() -> Result<()> {
             node_options.datadir = cli.datadir.clone();
             let daemon_opts = DaemonOptions {
                 no_daemon: options.no_daemon,
-                pid_file_path: PathBuf::from(format!("{}/{}", cli.datadir, PID_FILE_NAME)),
-                log_file_path: PathBuf::from(format!("{}/{}", cli.datadir, LOG_FILE_NAME)),
+                pid_file_path: PathBuf::from(cli.datadir.clone()).join(PID_FILE_NAME),
+                log_file_path: PathBuf::from(cli.datadir).join(LOG_FILE_NAME),
             };
             run_daemonized(daemon_opts, || async move {
                 let node = MojaveNode::init(&node_options)
@@ -41,9 +41,7 @@ fn main() -> Result<()> {
                 tracing::error!("Failed to start daemonized node: {}", err);
             });
         }
-        Command::Stop => {
-            stop_daemonized(PathBuf::from(format!("{}/{}", cli.datadir, PID_FILE_NAME)))?
-        }
+        Command::Stop => stop_daemonized(PathBuf::from(cli.datadir.clone()).join(PID_FILE_NAME))?,
         Command::GetPubKey => {
             let signer = get_signer(&cli.datadir)?;
             let public_key = public_key_from_signing_key(&signer);

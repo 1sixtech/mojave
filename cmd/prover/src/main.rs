@@ -27,8 +27,8 @@ fn main() -> Result<()> {
 
             let daemon_opts = DaemonOptions {
                 no_daemon: prover_options.no_daemon,
-                pid_file_path: PathBuf::from(format!("{}/{}", cli.datadir, PID_FILE_NAME)),
-                log_file_path: PathBuf::from(format!("{}/{}", cli.datadir, LOG_FILE_NAME)),
+                pid_file_path: PathBuf::from(cli.datadir.clone()).join(PID_FILE_NAME),
+                log_file_path: PathBuf::from(cli.datadir).join(LOG_FILE_NAME),
             };
 
             run_daemonized(daemon_opts, || async move {
@@ -43,9 +43,7 @@ fn main() -> Result<()> {
             })
             .unwrap_or_else(|err| tracing::error!("Failed to start daemonized node: {}", err));
         }
-        Command::Stop => {
-            stop_daemonized(PathBuf::from(format!("{}/{}", cli.datadir, PID_FILE_NAME)))?
-        }
+        Command::Stop => stop_daemonized(PathBuf::from(cli.datadir.clone()).join(PID_FILE_NAME))?,
     }
 
     Ok(())
