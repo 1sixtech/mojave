@@ -43,7 +43,9 @@ fn main() -> Result<()> {
             })
             .unwrap_or_else(|err| tracing::error!("Failed to start daemonized node: {}", err));
         }
-        Command::Stop => stop_daemonized(format!("{}/{}", cli.datadir, PID_FILE_NAME))?,
+        Command::Stop => {
+            stop_daemonized(PathBuf::from(format!("{}/{}", cli.datadir, PID_FILE_NAME)))?
+        }
     }
 
     Ok(())
