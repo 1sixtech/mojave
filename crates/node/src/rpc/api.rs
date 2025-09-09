@@ -1,6 +1,6 @@
 use crate::rpc::{
     context::RpcApiContext,
-    requests::{SendBroadcastBlockRequest, SendRawTransactionRequest},
+    requests::{SendBroadcastBlockRequest},
     tasks::spawn_filter_cleanup_task,
     types::{OrderedBlock, PendingHeap},
 };
@@ -13,7 +13,8 @@ use ethrex_p2p::{
     types::{Node, NodeRecord},
 };
 use ethrex_rpc::{
-    EthClient, GasTipEstimator, NodeData, RpcApiContext as L1Context, RpcErr, RpcRequestWrapper,
+    GasTipEstimator, NodeData, RpcApiContext as L1Context, RpcErr, RpcRequestWrapper,
+    map_eth_requests,
     utils::{RpcRequest, RpcRequestId},
 };
 use ethrex_storage::Store;
@@ -50,7 +51,6 @@ pub async fn start_api(
     peer_handler: PeerHandler,
     client_version: String,
     rollup_store: StoreRollup,
-    eth_client: EthClient,
     block_queue: AsyncUniqueHeap<OrderedBlock, u64>,
     shutdown_token: CancellationToken,
 ) -> Result<()> {
@@ -71,7 +71,6 @@ pub async fn start_api(
             gas_tip_estimator: Arc::new(TokioMutex::new(GasTipEstimator::new())),
         },
         rollup_store,
-        eth_client,
         block_queue,
         pending_signed_blocks: PendingHeap::new(),
     };
@@ -144,17 +143,10 @@ async fn handle_http_request(
 
 async fn map_http_requests(req: &RpcRequest, context: RpcApiContext) -> Result<Value> {
     match resolve_namespace(req) {
-        Ok(Namespace::Eth) => map_eth_requests(req, context).await,
+        Ok(Namespace::Eth) => map_eth_requests(req, context.l1_context).await,
         Ok(Namespace::Mojave) => map_mojave_requests(req, context).await,
         Ok(_) => Err(Error::MethodNotFound(req.method.clone())),
         Err(error) => Err(error),
-    }
-}
-
-async fn map_eth_requests(req: &RpcRequest, context: RpcApiContext) -> Result<Value> {
-    match req.method.as_str() {
-        "eth_sendRawTransaction" => SendRawTransactionRequest::call(req, context).await,
-        _others => ethrex_rpc::map_eth_requests(req, context.l1_context).await,
     }
 }
 

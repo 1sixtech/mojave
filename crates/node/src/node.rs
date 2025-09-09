@@ -14,7 +14,6 @@ use ethrex_p2p::{
     network::peer_table, peer_handler::PeerHandler, rlpx::l2::l2_connection::P2PBasedContext,
     sync_manager::SyncManager,
 };
-use ethrex_rpc::EthClient;
 use ethrex_storage_rollup::{EngineTypeRollup, StoreRollup};
 use ethrex_vm::EvmEngine;
 use mojave_utils::unique_heap::AsyncUniqueHeap;
@@ -74,7 +73,7 @@ impl MojaveNode {
         start_network(
             options.bootnodes.clone(),
             &options.network,
-            &options.datadir,
+            &data_dir,
             local_p2p_node.clone(),
             local_node_record.clone(),
             signer,
@@ -114,7 +113,6 @@ impl MojaveNode {
 
     pub async fn run(self, options: &NodeOptions) -> Result<(), Box<dyn std::error::Error>> {
         let rpc_shutdown = CancellationToken::new();
-        let eth_client = EthClient::new("http://127.0.0.1")?;
         let jwt_secret = read_jwtsecret_file(&options.authrpc_jwtsecret)?;
         let api_task = tokio::spawn(start_api(
             get_http_socket_addr(&options.http_addr, &options.http_port),
@@ -128,7 +126,6 @@ impl MojaveNode {
             self.peer_handler,
             get_client_version(),
             self.rollup_store.clone(),
-            eth_client,
             AsyncUniqueHeap::new(),
             rpc_shutdown.clone(),
         ));
