@@ -14,6 +14,7 @@ pub enum Strategy {
 
 // need to check whether we will use Message and contain other data or not
 #[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SignedBlock {
     pub block: Block,
     pub signature: Signature,
@@ -21,6 +22,7 @@ pub struct SignedBlock {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct SignedProofResponse {
     pub proof_response: ProofResponse,
     pub signature: Signature,
@@ -31,12 +33,14 @@ pub struct SignedProofResponse {
 pub struct JobId(String);
 
 #[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ProverData {
     pub batch_number: u64,
     pub input: ProgramInput,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ProofResponse {
     pub job_id: String,
     pub batch_number: u64,

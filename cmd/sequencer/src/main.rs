@@ -43,7 +43,8 @@ async fn main() -> Result<()> {
                 mojave_block_producer::run(node, &node_options, &block_producer_options)
                     .await
                     .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
-            }).await?;
+            })
+            .await?;
         }
         Command::Stop => stop_daemonized(PathBuf::from(cli.datadir.clone()).join(PID_FILE_NAME))?,
         Command::GetPubKey => {
