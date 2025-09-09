@@ -1,6 +1,6 @@
 use crate::rpc::{
     context::RpcApiContext,
-    requests::{SendBroadcastBlockRequest},
+    requests::SendBroadcastBlockRequest,
     tasks::spawn_filter_cleanup_task,
     types::{OrderedBlock, PendingHeap},
 };
