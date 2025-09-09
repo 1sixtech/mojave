@@ -4,7 +4,7 @@ use crate::cli::Command;
 use anyhow::Result;
 use mojave_node_lib::{initializers::get_signer, types::MojaveNode};
 use mojave_utils::{
-    daemon::{DaemonOptions, run_daemonized, stop_daemonized},
+    daemon::{DaemonOptions, run_daemonized_async, stop_daemonized},
     p2p::public_key_from_signing_key,
 };
 use std::path::PathBuf;
@@ -29,7 +29,7 @@ async fn main() -> Result<()> {
                 pid_file_path: PathBuf::from(cli.datadir.clone()).join(PID_FILE_NAME),
                 log_file_path: PathBuf::from(cli.datadir).join(LOG_FILE_NAME),
             };
-            run_daemonized(daemon_opts, || async move {
+            run_daemonized_async(daemon_opts, || async move {
                 let node = MojaveNode::init(&node_options)
                     .await
                     .unwrap_or_else(|error| {
@@ -41,6 +41,7 @@ async fn main() -> Result<()> {
                     .await
                     .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
             })
+            .await
             .unwrap_or_else(|err| {
                 tracing::error!(error = %err, "Failed to start daemonized node");
             });

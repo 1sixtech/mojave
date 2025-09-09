@@ -6,7 +6,7 @@ use anyhow::Result;
 use mojave_block_producer::types::BlockProducerOptions;
 use mojave_node_lib::{initializers::get_signer, types::MojaveNode};
 use mojave_utils::{
-    daemon::{DaemonOptions, run_daemonized, stop_daemonized},
+    daemon::{DaemonOptions, run_daemonized_async, stop_daemonized},
     p2p::public_key_from_signing_key,
 };
 use std::path::PathBuf;
@@ -36,14 +36,14 @@ async fn main() -> Result<()> {
                 log_file_path: PathBuf::from(cli.datadir).join(LOG_FILE_NAME),
             };
 
-            run_daemonized(daemon_opts, || async move {
+            run_daemonized_async(daemon_opts, || async move {
                 let node = MojaveNode::init(&node_options)
                     .await
                     .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
                 mojave_block_producer::run(node, &node_options, &block_producer_options)
                     .await
                     .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
-            })?;
+            }).await?;
         }
         Command::Stop => stop_daemonized(PathBuf::from(cli.datadir.clone()).join(PID_FILE_NAME))?,
         Command::GetPubKey => {

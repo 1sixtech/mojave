@@ -48,8 +48,20 @@ where
     F: FnOnce() -> Fut,
     Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
 {
+    let rt = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .context("failed to build Tokio runtime")?;
+    rt.block_on(run_daemonized_async(opts, proc))
+}
+
+pub async fn run_daemonized_async<F, Fut>(opts: DaemonOptions, proc: F) -> Result<()>
+where
+    F: FnOnce() -> Fut,
+    Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
+{
     if opts.no_daemon {
-        return run_main_task(proc, None::<PathBuf>);
+        return run_main_task_async(proc, None::<PathBuf>).await;
     }
 
     let log_path = resolve_path(&opts.log_file_path)?;
@@ -96,7 +108,7 @@ where
         .stderr(log_file_err);
     daemon.start()?;
 
-    if let Err(e) = run_main_task(proc, Some(pid_path)) {
+    if let Err(e) = run_main_task_async(proc, Some(pid_path)).await {
         tracing::error!("run_main_task failed: {e}");
         return Err(e);
     }
@@ -168,42 +180,33 @@ fn is_pid_running(pid: Pid) -> bool {
     System::new_all().process(pid).is_some()
 }
 
-fn run_main_task<F, Fut, P>(proc: F, pid_file: Option<P>) -> Result<()>
+async fn run_main_task_async<F, Fut, P>(proc: F, pid_file: Option<P>) -> Result<()>
 where
     F: FnOnce() -> Fut,
     Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
     P: AsRef<Path>,
 {
-    let rt = tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()
-        .context("failed to build Tokio runtime")?;
-
-    let result: Result<()> = rt.block_on(async move {
-        let res: Result<()> = tokio::select! {
-            res = proc() => {
-                match res {
-                    Ok(()) => Ok(()),
-                    Err(err) => {
-                        tracing::error!("Process stopped unexpectedly: {}", err);
-                        Err(anyhow::anyhow!("{}", err))
-                    }
+    let result: Result<()> = tokio::select! {
+        res = proc() => {
+            match res {
+                Ok(()) => Ok(()),
+                Err(err) => {
+                    tracing::error!("Process stopped unexpectedly: {}", err);
+                    Err(anyhow::anyhow!("{}", err))
                 }
-            },
-            _ = tokio::signal::ctrl_c() => {
-                tracing::info!("Shutting down...");
-                Ok(())
             }
-        };
-
-        if let Some(pid_file) = pid_file
-            && let Err(e) = std::fs::remove_file(pid_file)
-        {
-            tracing::warn!(error = %e, "Failed to remove pid file during shutdown");
+        },
+        _ = tokio::signal::ctrl_c() => {
+            tracing::info!("Shutting down...");
+            Ok(())
         }
+    };
 
-        res
-    });
+    if let Some(pid_file) = pid_file
+        && let Err(e) = std::fs::remove_file(pid_file)
+    {
+        tracing::warn!(error = %e, "Failed to remove pid file during shutdown");
+    }
 
     result
 }
