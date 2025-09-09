@@ -16,7 +16,6 @@ use ethrex_p2p::{
 };
 use ethrex_rpc::EthClient;
 use ethrex_storage_rollup::{EngineTypeRollup, StoreRollup};
-use ethrex_vm::EvmEngine;
 use mojave_utils::unique_heap::AsyncUniqueHeap;
 use std::{path::PathBuf, sync::Arc, time::Duration};
 use tokio::sync::Mutex;
@@ -41,7 +40,7 @@ impl MojaveNode {
         rollup_store.init().await?;
         tracing::info!("Successfully initialized the rollup database.");
 
-        let blockchain = init_blockchain(EvmEngine::LEVM, store.clone(), BlockchainType::L2);
+        let blockchain = init_blockchain(store.clone(), BlockchainType::L2);
 
         let cancel_token = tokio_util::sync::CancellationToken::new();
 

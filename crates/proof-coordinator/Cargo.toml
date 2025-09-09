@@ -17,7 +17,7 @@ ethrex-l2 = { workspace = true, features = ["l2"] }
 ethrex-storage = { workspace = true }
 ethrex-storage-rollup = { workspace = true }
 
+guest_program = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["sync", "net"] }
 tracing = { workspace = true }
-guest_program = { workspace = true }
