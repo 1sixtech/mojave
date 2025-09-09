@@ -44,6 +44,7 @@ use mojave_rpc_core::{
     utils::{resolve_namespace, rpc_response},
 };
 use serde_json::Value;
+use tower_http::cors::CorsLayer;
 use tracing::info;
 
 pub type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
@@ -149,16 +150,39 @@ impl<C: Clone + Send + Sync + 'static> RpcRegistry<C> {
 pub struct RpcService<C> {
     context: C,
     registry: RpcRegistry<C>,
+    router: Router,
 }
 
 impl<C: Clone + Send + Sync + 'static> RpcService<C> {
     pub fn new(context: C, registry: RpcRegistry<C>) -> Self {
-        Self { context, registry }
+        let this = Self {
+            context,
+            registry,
+            router: Router::new(),
+        };
+
+        let router = Router::new()
+            .route("/", post(handle::<C>))
+            .with_state(this.clone());
+
+        Self { router, ..this }
     }
 
     /// Build an Axum router mounted at `/` with JSON-RPC 2.0 handler.
+    #[inline]
     pub fn router(self) -> Router {
-        Router::new().route("/", post(handle::<C>)).with_state(self)
+        self.router
+    }
+
+    #[inline]
+    pub fn with_cors(mut self, cors: CorsLayer) -> Self {
+        self.router = self.router.layer(cors);
+        self
+    }
+
+    #[inline]
+    pub fn with_permissive_cors(self) -> Self {
+        self.with_cors(CorsLayer::permissive())
     }
 
     pub async fn serve(self, addr: SocketAddr) -> Result<(), RpcErr> {
@@ -272,9 +296,9 @@ mod tests {
         });
         let service = RpcService::new((), reg);
         let body = r#"[
-          {"jsonrpc":"2.0","id":1,"method":"moj_echo","params":["a"]},
-          {"jsonrpc":"2.0","id":2,"method":"moj_echo","params":["b"]}
-        ]"#;
+            {"jsonrpc":"2.0","id":1,"method":"moj_echo","params":["a"]},
+            {"jsonrpc":"2.0","id":2,"method":"moj_echo","params":["b"]}
+            ]"#;
         let Json(val) = super::handle::<_>(axum::extract::State(service), body.into())
             .await
             .unwrap();

@@ -8,7 +8,6 @@ use mojave_utils::rpc::error::{Error, Result};
 
 use std::sync::Arc;
 use tokio::{net::TcpListener, sync::mpsc};
-use tower_http::cors::CorsLayer;
 use tracing::info;
 
 pub async fn start_api(
@@ -25,18 +24,12 @@ pub async fn start_api(
     });
     tracing::info!(aligned_mode = %aligned_mode, "Prover RPC context initialized");
 
-    // All request headers allowed.
-    // All methods allowed.
-    // All origins allowed.
-    // All headers exposed.
-    let cors = CorsLayer::permissive();
-
     let mut registry: RpcRegistry<Arc<ProverRpcContext>> = RpcRegistry::new();
     crate::rpc::handlers::register_moj_sendProofInput(&mut registry);
     crate::rpc::handlers::register_moj_getJobId(&mut registry);
     crate::rpc::handlers::register_moj_getProof(&mut registry);
-    let service = RpcService::new(context.clone(), registry);
-    let http_router = service.router().layer(cors);
+    let service = RpcService::new(context.clone(), registry).with_permissive_cors();
+    let http_router = service.router();
     let http_listener = TcpListener::bind(http_addr)
         .await
         .map_err(|error| Error::Internal(error.to_string()))?;

@@ -41,9 +41,9 @@ pub async fn get_proof(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use guest_program::input::ProgramInput;
     use mojave_client::types::ProverData;
     use reqwest::Url;
-    use zkvm_interface::io::ProgramInput;
 
     fn dummy_prover_data() -> ProverData {
         ProverData {

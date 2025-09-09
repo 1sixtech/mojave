@@ -22,7 +22,6 @@ use std::{
 };
 use tokio::{net::TcpListener, sync::Mutex as TokioMutex};
 use tokio_util::sync::CancellationToken;
-use tower_http::cors::CorsLayer;
 use tracing::info;
 
 #[expect(clippy::too_many_arguments)]
@@ -68,12 +67,6 @@ pub async fn start_api(
     // Periodically clean up the active filters for the filters endpoints.
     let filter_handle = spawn_filter_cleanup_task(active_filters.clone(), shutdown_token.clone());
 
-    // All request headers allowed.
-    // All methods allowed.
-    // All origins allowed.
-    // All headers exposed.
-    let cors = CorsLayer::permissive();
-
     // Build RPC registry and service
     let mut registry: RpcRegistry<RpcApiContext> = RpcRegistry::new()
         .with_fallback(Namespace::Eth, |req, ctx: RpcApiContext| {
@@ -82,8 +75,8 @@ pub async fn start_api(
     crate::rpc::handlers::register_moj_sendBroadcastBlock(&mut registry);
     crate::rpc::handlers::register_eth_sendRawTransaction(&mut registry);
 
-    let service = RpcService::new(context.clone(), registry);
-    let http_router = service.router().layer(cors);
+    let service = RpcService::new(context.clone(), registry).with_permissive_cors();
+    let http_router = service.router();
     let http_listener = TcpListener::bind(http_addr)
         .await
         .map_err(|error| RpcErr::Internal(error.to_string()))?;

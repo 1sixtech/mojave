@@ -1,9 +1,9 @@
 use crate::{job::JobRecord, rpc::ProverRpcContext};
+use guest_program::input::ProgramInput;
 use mojave_client::types::{ProofResponse, ProverData};
 use mojave_utils::rpc::error::{Error, Result};
 use reqwest::Url;
 use tiny_keccak::{Hasher, Keccak};
-use zkvm_interface::io::ProgramInput;
 
 pub async fn enqueue_proof_input(
     ctx: &ProverRpcContext,
