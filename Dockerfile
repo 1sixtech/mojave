@@ -10,10 +10,6 @@ WORKDIR /build
 
 # Target binary name (e.g., mojave-node, mojave-sequencer, mojave-prover)
 ARG TARGET_BIN
-RUN case "$TARGET_BIN" in \
-	mojave-node|mojave-sequencer|mojave-prover) ;; \
-	*) echo "Invalid TARGET_BIN=$TARGET_BIN"; exit 1 ;; \
-	esac
 
 # Optional build flags
 ARG BUILD_FLAGS=""
