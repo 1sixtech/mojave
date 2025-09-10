@@ -74,7 +74,7 @@ impl Default for NodeOptions {
             p2p_port: Default::default(),
             discovery_addr: Default::default(),
             discovery_port: Default::default(),
-            network: Network::Mainnet,
+            network: Network::DefaultNet,
             bootnodes: Default::default(),
             datadir: Default::default(),
             syncmode: Default::default(),
