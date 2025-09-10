@@ -1,5 +1,4 @@
 pub mod error;
 pub mod types;
-mod utils;
 
-pub use utils::*;
+pub use mojave_rpc_core::utils::{resolve_namespace, rpc_response};

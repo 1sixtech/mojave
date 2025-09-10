@@ -1,7 +1,7 @@
-use crate::rpc::types::{OrderedBlock, PendingHeap};
-use ethrex_rpc::RpcApiContext as L1Context;
+use crate::pending_heap::PendingHeap;
+use ethrex_rpc::{RpcApiContext as L1Context};
 use ethrex_storage_rollup::StoreRollup;
-use mojave_utils::unique_heap::AsyncUniqueHeap;
+use mojave_utils::{ordered_block::OrderedBlock, unique_heap::AsyncUniqueHeap};
 
 #[derive(Clone, Debug)]
 pub struct RpcApiContext {
