@@ -19,7 +19,6 @@ ethrex-p2p = { workspace = true }
 ethrex-rpc = { workspace = true }
 ethrex-storage = { workspace = true, features = ["libmdbx"] }
 ethrex-storage-rollup = { workspace = true }
-ethrex-vm = { workspace = true }
 
 axum = { workspace = true }
 bytes = { workspace = true, features = ["serde"] }

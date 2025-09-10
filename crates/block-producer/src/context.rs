@@ -19,6 +19,7 @@ use ethrex_common::{
         compute_transactions_root, compute_withdrawals_root,
     },
 };
+use ethrex_l2::sequencer::errors::BlockProducerError;
 use ethrex_l2_common::{
     l1_messages::get_block_l1_messages,
     state_diff::{
@@ -28,7 +29,7 @@ use ethrex_l2_common::{
 };
 use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
-use ethrex_vm::{BlockExecutionResult, Evm, EvmError};
+use ethrex_vm::BlockExecutionResult;
 use std::{
     collections::{BTreeMap, HashMap},
     ops::Div,
@@ -220,12 +221,8 @@ impl BlockProducerContext {
         let gas_limit = payload.header.gas_limit;
 
         debug!("Building payload");
-        let mut context = PayloadBuildContext::new(
-            payload,
-            self.blockchain.evm_engine,
-            &self.store,
-            self.blockchain.r#type.clone(),
-        )?;
+        let mut context =
+            PayloadBuildContext::new(payload, &self.store, self.blockchain.r#type.clone())?;
 
         self.fill_transactions(&mut context).await?;
         self.blockchain.finalize_payload(&mut context).await?;
@@ -427,82 +424,99 @@ impl BlockProducerContext {
         context: &PayloadBuildContext,
     ) -> Result<HashMap<Address, AccountStateDiff>> {
         let mut modified_accounts = HashMap::new();
-        match &context.vm {
-            Evm::REVM { .. } => {
-                return Err(Error::EvmError(EvmError::InvalidEVM(
-                    "REVM not supported for L2".to_string(),
-                )));
+
+        let db = &context.vm.db;
+        let transaction_backup = db.get_tx_backup().map_err(|e| {
+            Error::BlockProducerError(BlockProducerError::FailedToGetDataFrom(format!(
+                "TransactionBackup: {e}"
+            )))
+        })?;
+        // First we add the account info
+        for (address, original_account) in transaction_backup.original_accounts_info.iter() {
+            let new_account =
+                db.current_accounts_state
+                    .get(address)
+                    .ok_or(Error::BlockProducerError(
+                        BlockProducerError::FailedToGetDataFrom("DB Cache".to_owned()),
+                    ))?;
+
+            let nonce_diff: u16 = (new_account.info.nonce - original_account.info.nonce)
+                .try_into()
+                .map_err(BlockProducerError::TryIntoError)?;
+
+            let new_balance = if new_account.info.balance != original_account.info.balance {
+                Some(new_account.info.balance)
+            } else {
+                None
+            };
+
+            let bytecode = if new_account.info.code_hash != original_account.info.code_hash {
+                // After execution the code should be in db.codes
+                let code = db.codes.get(&new_account.info.code_hash).ok_or_else(|| {
+                    Error::BlockProducerError(BlockProducerError::FailedToGetDataFrom(
+                        "Code DB Cache".to_owned(),
+                    ))
+                })?;
+                Some(code.clone())
+            } else {
+                None
+            };
+
+            let account_state_diff = AccountStateDiff {
+                new_balance,
+                nonce_diff,
+                storage: BTreeMap::new(), // We add the storage later
+                bytecode,
+                bytecode_hash: None,
+            };
+
+            modified_accounts.insert(*address, account_state_diff);
+        }
+
+        // Then if there is any storage change, we add it to the account state diff
+        for (address, original_storage_slots) in
+            transaction_backup.original_account_storage_slots.iter()
+        {
+            let account_info =
+                db.current_accounts_state
+                    .get(address)
+                    .ok_or(Error::BlockProducerError(
+                        BlockProducerError::FailedToGetDataFrom("DB Cache".to_owned()),
+                    ))?;
+
+            let mut added_storage = BTreeMap::new();
+            for key in original_storage_slots.keys() {
+                added_storage.insert(
+                    *key,
+                    *account_info
+                        .storage
+                        .get(key)
+                        .ok_or(Error::BlockProducerError(
+                            BlockProducerError::FailedToGetDataFrom(
+                                "Account info Storage".to_owned(),
+                            ),
+                        ))?,
+                );
             }
-            Evm::LEVM { db, .. } => {
-                let transaction_backup = db
-                    .get_tx_backup()
-                    .map_err(|e| Error::FailedToGetDataFrom(format!("TransactionBackup: {e}")))?;
-                // First we add the account info
-                for (address, original_account) in transaction_backup.original_accounts_info.iter()
-                {
-                    let new_account = db
-                        .current_accounts_state
-                        .get(address)
-                        .ok_or(Error::FailedToGetDataFrom("DB Cache".to_owned()))?;
+            if let Some(account_state_diff) = modified_accounts.get_mut(address) {
+                account_state_diff.storage = added_storage;
+            } else {
+                // If the account is not in the modified accounts, we create a new one
+                let account_state_diff = AccountStateDiff {
+                    new_balance: None,
+                    nonce_diff: 0,
+                    storage: added_storage,
+                    bytecode: None,
+                    bytecode_hash: None,
+                };
 
-                    let nonce_diff: u16 = (new_account.info.nonce - original_account.info.nonce)
-                        .try_into()
-                        .map_err(Error::TryInto)?;
-
-                    let new_balance = if new_account.info.balance != original_account.info.balance {
-                        Some(new_account.info.balance)
-                    } else {
-                        None
-                    };
-
-                    let account_state_diff = AccountStateDiff {
-                        new_balance,
-                        nonce_diff,
-                        storage: BTreeMap::new(), // We add the storage later
-                        bytecode: None,
-                        bytecode_hash: Some(new_account.info.code_hash),
-                    };
-
+                // If account state diff is NOT empty
+                if account_state_diff != AccountStateDiff::default() {
                     modified_accounts.insert(*address, account_state_diff);
-                }
-
-                // Then if there is any storage change, we add it to the account state diff
-                for (address, original_storage_slots) in
-                    transaction_backup.original_account_storage_slots.iter()
-                {
-                    let account_info = db
-                        .current_accounts_state
-                        .get(address)
-                        .ok_or(Error::FailedToGetDataFrom("DB Cache".to_owned()))?;
-
-                    let mut added_storage = BTreeMap::new();
-                    for key in original_storage_slots.keys() {
-                        added_storage.insert(
-                            *key,
-                            *account_info
-                                .storage
-                                .get(key)
-                                .ok_or(Error::FailedToGetDataFrom(
-                                    "Account info Storage".to_owned(),
-                                ))?,
-                        );
-                    }
-                    if let Some(account_state_diff) = modified_accounts.get_mut(address) {
-                        account_state_diff.storage = added_storage;
-                    } else {
-                        // If the account is not in the modified accounts, we create a new one
-                        let account_state_diff = AccountStateDiff {
-                            new_balance: None,
-                            nonce_diff: 0,
-                            storage: added_storage,
-                            bytecode: None,
-                            bytecode_hash: None,
-                        };
-                        modified_accounts.insert(*address, account_state_diff);
-                    }
                 }
             }
         }
+
         Ok(modified_accounts)
     }
 
