@@ -100,12 +100,14 @@ doc-watch:
 
 image-prefix := "1sixtech/mojave"
 
-docker-build bin build_flags="":
-    docker build \
-      -t {{image-prefix}}/{{bin}} \
-      --build-arg TARGET_BIN={{bin}} \
-      --build-arg BUILD_FLAGS="{{build_flags}}" \
-      .
+docker-build bin:
+	role="{{bin}}"; \
+	role="${role#mojave-}"; \
+	docker build \
+	  -f "docker/Dockerfile.$role" \
+	  -t "{{image-prefix}}/{{bin}}" \
+	  --build-arg "TARGET_BIN={{bin}}" \
+	  .
 
 docker-build-sequencer:
     just docker-build mojave-sequencer
