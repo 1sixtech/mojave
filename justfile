@@ -105,4 +105,4 @@ docker-run:
 	docker run -p 8545:8545 1sixtech/mojave
 
 test: clean
-	bash test_data/tests-e2e.sh
+	bash tests/tests-e2e.sh
