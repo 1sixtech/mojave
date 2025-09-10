@@ -57,6 +57,7 @@ fn calculate_job_id(prover_input: &ProgramInput) -> Result<String> {
     hasher.update(&serialized_block_hashes);
     let mut hash = [0_u8; 32];
     hasher.finalize(&mut hash);
-    tracing::trace!(job_id = %hex::encode(hash), "Calculated job_id");
-    Ok(hex::encode(hash))
+    let job_id = hex::encode(hash);
+    tracing::trace!(%job_id, "Calculated job_id");
+    Ok(job_id)
 }
