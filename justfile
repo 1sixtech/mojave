@@ -102,46 +102,28 @@ image-prefix := "1sixtech/mojave"
 
 docker-build bin build_flags="":
     docker build \
-      -t {{image-prefix}}-{{bin}} \
+      -t {{image-prefix}}/{{bin}} \
       --build-arg TARGET_BIN={{bin}} \
       --build-arg BUILD_FLAGS="{{build_flags}}" \
       .
 
-docker-run bin:
-    if [ "{{bin}}" = "mojave-node" ]; then \
-      docker run --rm -it \
-        -p 8545:8545 -p 30304:30304 \
-        {{image-prefix}}-{{bin}} \
-        init --network /data/testnet-genesis.json --discovery.port 30304 ; \
-    elif [ "{{bin}}" = "mojave-sequencer" ]; then \
-      docker run --rm -it \
-        -p 1739:1739 \
-        {{image-prefix}}-{{bin}} \
-        init --http.port 1739 \
-             --private_key 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
-             --network /data/testnet-genesis.json ; \
-    else \
-      docker run --rm -it \
-        {{image-prefix}}-{{bin}} ; \
-    fi
+docker-build-sequencer:
+    just docker-build mojave-sequencer
 
 docker-build-node:
     just docker-build mojave-node
 
-docker-run-node:
-    just docker-run mojave-node
-
-docker-build-sequencer:
-    just docker-build mojave-sequencer
-
-docker-run-sequencer:
-    just docker-run mojave-sequencer
-
 docker-build-prover:
     just docker-build mojave-prover
 
-docker-run-prover:
-    just docker-run mojave-prover
+docker-run-sequencer *ARGS:
+	docker run -p 1739:1739 1sixtech/mojave/mojave-sequencer {{ARGS}}
+
+docker-run-node *ARGS:
+	docker run -p 8545:8545 -p 30304:30304 1sixtech/mojave/mojave-node {{ARGS}}
+
+docker-run-prover *ARGS:
+    docker run 1sixtech/mojave/mojave-prover {{ARGS}}
 
 test: clean
 	bash test_data/tests-e2e.sh
