@@ -1,6 +1,7 @@
 pub mod cli;
+pub mod config;
 
-use crate::cli::Command;
+use crate::{cli::Command, config::load_config};
 use anyhow::Result;
 use mojave_block_producer::types::BlockProducerOptions;
 use mojave_node_lib::{initializers::get_signer, types::MojaveNode};
@@ -19,7 +20,7 @@ async fn main() -> Result<()> {
             options,
             sequencer_options,
         } => {
-            let node_options: mojave_node_lib::types::NodeOptions = (&options).into();
+            let node_options: mojave_node_lib::types::NodeOptions = load_config(options)?;
             let node = MojaveNode::init(&node_options)
                 .await
                 .unwrap_or_else(|error| {

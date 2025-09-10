@@ -4896,10 +4896,12 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "figment",
  "hex",
  "mojave-block-producer",
  "mojave-node-lib",
  "mojave-utils",
+ "serde",
  "tokio",
  "tracing",
 ]

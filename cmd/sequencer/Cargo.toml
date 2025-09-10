@@ -18,3 +18,5 @@ clap = { workspace = true }
 hex = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
+figment = {version = "0.10.19", features = ["env", "json", "serde_json", "toml"]}
+serde.workspace = true
