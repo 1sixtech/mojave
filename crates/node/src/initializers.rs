@@ -7,7 +7,6 @@ use ethrex_blockchain::{Blockchain, BlockchainType};
 use ethrex_common::types::Genesis;
 use ethrex_p2p::types::{Node, NodeRecord};
 use ethrex_storage::{EngineType, Store};
-use ethrex_vm::EvmEngine;
 use rand::rngs::OsRng;
 use secp256k1::SecretKey;
 use std::{
@@ -44,13 +43,9 @@ pub fn open_store(data_dir: &str) -> Result<Store> {
     }
 }
 
-pub fn init_blockchain(
-    evm_engine: EvmEngine,
-    store: Store,
-    blockchain_type: BlockchainType,
-) -> Arc<Blockchain> {
-    info!("Initiating blockchain with EVM: {}", evm_engine);
-    Blockchain::new(evm_engine, store, blockchain_type, false).into()
+pub fn init_blockchain(store: Store, blockchain_type: BlockchainType) -> Arc<Blockchain> {
+    info!("Initiating blockchain");
+    Blockchain::new(store, blockchain_type, false).into()
 }
 
 pub fn get_signer(data_dir: &str) -> Result<SecretKey> {

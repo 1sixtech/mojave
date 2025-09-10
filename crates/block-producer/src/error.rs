@@ -1,4 +1,5 @@
 use ethrex_blockchain::error::{ChainError, InvalidForkChoice};
+use ethrex_l2::sequencer::errors::BlockProducerError;
 use ethrex_l2_common::state_diff::StateDiffError;
 use ethrex_storage::error::StoreError;
 use ethrex_storage_rollup::RollupStoreError;
@@ -16,6 +17,8 @@ pub enum Error {
     Dropped(#[from] RecvError),
     #[error("BlockProducer failed because of a EvmError error: {0}")]
     EvmError(#[from] EvmError),
+    #[error("BlockProducer failed because of a BlockProducerError error: {0}")]
+    BlockProducerError(#[from] BlockProducerError),
     #[error("Failed to encode AccountStateDiff: {0}")]
     FailedToEncodeAccountStateDiff(#[from] StateDiffError),
     #[error("BlockProducer failed because it failed to get data from: {0}")]

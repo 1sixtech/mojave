@@ -68,6 +68,7 @@ pub async fn start_api(
                 client_version,
             },
             gas_tip_estimator: Arc::new(TokioMutex::new(GasTipEstimator::new())),
+            log_filter_handler: None,
         },
         rollup_store,
     };
