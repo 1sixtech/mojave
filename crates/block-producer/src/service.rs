@@ -44,7 +44,7 @@ pub async fn run(
 
     let local_node_record = node.local_node_record.lock().await.clone();
 
-    let api_task = tokio::spawn(start_api(
+    let api_task = start_api(
         get_http_socket_addr(&node_options.http_addr, &node_options.http_port),
         get_authrpc_socket_addr(&node_options.authrpc_addr, &node_options.authrpc_port),
         node.store,
@@ -56,7 +56,7 @@ pub async fn run(
         node.peer_handler,
         get_client_version(),
         node.rollup_store,
-    ));
+    );
     tokio::select! {
         res = api_task => {
             if let Err(err) = res {
