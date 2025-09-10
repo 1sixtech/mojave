@@ -1,7 +1,10 @@
-use crate::{block_queue::OrderedBlock, rpc::context::RpcApiContext};
+use crate::rpc::context::RpcApiContext;
 use mojave_client::types::SignedBlock;
 use mojave_signature::types::Verifier;
-use mojave_utils::rpc::error::{Error, Result};
+use mojave_utils::{
+    ordered_block::OrderedBlock,
+    rpc::error::{Error, Result},
+};
 
 pub async fn ingest_signed_block(ctx: &RpcApiContext, signed: SignedBlock) -> Result<()> {
     signed

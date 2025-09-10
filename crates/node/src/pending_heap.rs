@@ -1,32 +1,4 @@
-use ethrex_common::types::Block;
-use mojave_utils::unique_heap::{AsyncUniqueHeap, UniqueHeapItem};
-
-#[derive(Debug, Clone, Eq)]
-pub struct OrderedBlock(pub Block);
-
-impl PartialEq for OrderedBlock {
-    fn eq(&self, other: &Self) -> bool {
-        self.0.header.number == other.0.header.number
-    }
-}
-
-impl PartialOrd for OrderedBlock {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for OrderedBlock {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        other.0.header.number.cmp(&self.0.header.number)
-    }
-}
-
-impl UniqueHeapItem<u64> for OrderedBlock {
-    fn key(&self) -> u64 {
-        self.0.header.number
-    }
-}
+use mojave_utils::{ordered_block::OrderedBlock, unique_heap::AsyncUniqueHeap};
 
 #[derive(Clone, Debug)]
 pub struct PendingHeap {
@@ -66,8 +38,8 @@ impl Default for PendingHeap {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ethrex_common::types::{BlockBody, BlockHeader};
-    use mojave_utils::unique_heap::AsyncUniqueHeap;
+    use ethrex_common::types::{Block, BlockBody, BlockHeader};
+    use mojave_utils::unique_heap::{AsyncUniqueHeap, UniqueHeapItem};
 
     fn create_test_block(number: u64) -> OrderedBlock {
         let header = BlockHeader {

@@ -1,5 +1,5 @@
 use crate::{
-    block_queue::{OrderedBlock, PendingHeap},
+    pending_heap::PendingHeap,
     rpc::{context::RpcApiContext, tasks::spawn_filter_cleanup_task},
 };
 use ethrex_blockchain::Blockchain;
@@ -14,7 +14,7 @@ use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
 use mojave_rpc_core::types::Namespace;
 use mojave_rpc_server::{RpcRegistry, RpcService};
-use mojave_utils::{rpc::error::Result, unique_heap::AsyncUniqueHeap};
+use mojave_utils::{ordered_block::OrderedBlock, rpc::error::Result, unique_heap::AsyncUniqueHeap};
 use std::{
     collections::HashMap,
     net::SocketAddr,
