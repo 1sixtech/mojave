@@ -98,8 +98,10 @@ doc:
 doc-watch:
 	cargo watch -x "doc --no-deps"
 
-image-prefix := "1sixtech/mojave"
+image-prefix := "1sixtech"
 
+# Build the docker image for a specific binary
+# Binary name should be one of: mojave-node, mojave-sequencer, mojave-prover
 docker-build bin:
 	role="{{bin}}"; \
 	role="${role#mojave-}"; \
@@ -109,23 +111,8 @@ docker-build bin:
 	  --build-arg "TARGET_BIN={{bin}}" \
 	  .
 
-docker-build-sequencer:
-    just docker-build mojave-sequencer
-
-docker-build-node:
-    just docker-build mojave-node
-
-docker-build-prover:
-    just docker-build mojave-prover
-
-docker-run-sequencer *ARGS:
-	docker run -p 1739:1739 1sixtech/mojave/mojave-sequencer {{ARGS}}
-
-docker-run-node *ARGS:
-	docker run -p 8545:8545 -p 30304:30304 1sixtech/mojave/mojave-node {{ARGS}}
-
-docker-run-prover *ARGS:
-    docker run 1sixtech/mojave/mojave-prover {{ARGS}}
+docker-run bin *ARGS:
+	docker run -p 8545:8545 -p 1739:1739 -p 30304:30304 "{{image-prefix}}/{{bin}}" {{ARGS}}
 
 test: clean
 	bash test_data/tests-e2e.sh
