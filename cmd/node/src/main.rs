@@ -1,6 +1,7 @@
 pub mod cli;
+pub mod config;
 
-use crate::cli::Command;
+use crate::{cli::Command, config::load_config};
 use anyhow::Result;
 use mojave_node_lib::{initializers::get_signer, types::MojaveNode};
 use mojave_utils::p2p::public_key_from_signing_key;
@@ -15,7 +16,7 @@ async fn main() -> Result<()> {
     }
     match cli.command {
         Command::Start { options } => {
-            let node_options: mojave_node_lib::types::NodeOptions = (&options).into();
+            let node_options: mojave_node_lib::types::NodeOptions = load_config(options)?;
             let node = MojaveNode::init(&node_options).await.map_err(|error| {
                 tracing::error!("Failed to initialize the node: {}", error);
                 std::process::exit(1);

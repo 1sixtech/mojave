@@ -2,12 +2,12 @@ use clap::{ArgAction, Parser, Subcommand};
 use mojave_node_lib::types::{Node, SyncMode};
 use mojave_utils::network::Network;
 use tracing::Level;
+use serde::{Serialize, Deserialize};
 
-#[derive(Parser)]
+#[derive(Parser, Debug, Serialize, Deserialize)]
 pub struct Options {
     #[arg(
         long = "network",
-        default_value_t = Network::default(),
         value_name = "GENESIS_FILE_PATH",
         help = "Receives a `Genesis` struct in json format. This is the only argument which is required. You can look at some example genesis files at `test_data/genesis*`.",
         long_help = "Alternatively, the name of a known network can be provided instead to use its preset genesis file and include its preset bootnodes. The networks currently supported include holesky, sepolia, hoodi and mainnet.",
@@ -15,7 +15,8 @@ pub struct Options {
         env = "ETHREX_NETWORK",
         value_parser = clap::value_parser!(Network),
     )]
-    pub network: Network,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub network: Option<Network>,
 
     #[arg(
     	long = "bootnodes",
@@ -26,7 +27,8 @@ pub struct Options {
         help = "Comma separated enode URLs for P2P discovery bootstrap.",
         help_heading = "P2P options"
     )]
-    pub bootnodes: Vec<Node>,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub bootnodes: Option<Vec<Node>>,
 
     #[arg(
         long = "syncmode",
@@ -36,6 +38,7 @@ pub struct Options {
         long_help = "Can be either \"full\" or \"snap\" with \"full\" as default value.",
         help_heading = "P2P options"
     )]
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub syncmode: Option<SyncMode>,
 
     #[arg(
@@ -56,7 +59,8 @@ pub struct Options {
         help_heading = "Node options",
         env = "ETHREX_DATADIR"
     )]
-    pub datadir: String,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub datadir: Option<String>,
 
     #[arg(
         long = "force",
@@ -65,7 +69,8 @@ pub struct Options {
         action = clap::ArgAction::SetTrue,
         help_heading = "Node options"
     )]
-    pub force: bool,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub force: Option<bool>,
 
     #[arg(
         long = "metrics.addr",
@@ -73,7 +78,8 @@ pub struct Options {
         default_value = "0.0.0.0",
         help_heading = "Node options"
     )]
-    pub metrics_addr: String,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub metrics_addr: Option<String>,
 
     #[arg(
         long = "metrics.port",
@@ -82,7 +88,8 @@ pub struct Options {
         help_heading = "Node options",
         env = "ETHREX_METRICS_PORT"
     )]
-    pub metrics_port: String,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub metrics_port: Option<String>,
 
     #[arg(
         long = "metrics",
@@ -90,7 +97,8 @@ pub struct Options {
         help = "Enable metrics collection and exposition",
         help_heading = "Node options"
     )]
-    pub metrics_enabled: bool,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub metrics_enabled: Option<bool>,
 
     #[arg(
         long = "http.addr",
@@ -100,7 +108,8 @@ pub struct Options {
         help_heading = "RPC options",
         env = "ETHREX_HTTP_ADDR"
     )]
-    pub http_addr: String,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub http_addr: Option<String>,
 
     #[arg(
         long = "http.port",
@@ -110,7 +119,8 @@ pub struct Options {
         help_heading = "RPC options",
         env = "ETHREX_HTTP_PORT"
     )]
-    pub http_port: String,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub http_port: Option<String>,
 
     #[arg(
         long = "authrpc.addr",
@@ -119,7 +129,8 @@ pub struct Options {
         help = "Listening address for the authenticated rpc server.",
         help_heading = "RPC options"
     )]
-    pub authrpc_addr: String,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub authrpc_addr: Option<String>,
 
     #[arg(
         long = "authrpc.port",
@@ -128,7 +139,8 @@ pub struct Options {
         help = "Listening port for the authenticated rpc server.",
         help_heading = "RPC options"
     )]
-    pub authrpc_port: String,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub authrpc_port: Option<String>,
 
     #[arg(
         long = "authrpc.jwtsecret",
@@ -137,10 +149,12 @@ pub struct Options {
         help = "Receives the jwt secret used for authenticated rpc requests.",
         help_heading = "RPC options"
     )]
-    pub authrpc_jwtsecret: String,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub authrpc_jwtsecret: Option<String>,
 
     #[arg(long = "p2p.enabled", default_value =  "true" , value_name = "P2P_ENABLED", action = ArgAction::SetTrue, help_heading = "P2P options")]
-    pub p2p_enabled: bool,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub p2p_enabled: Option<bool>,
 
     #[arg(
         long = "p2p.addr",
@@ -148,7 +162,8 @@ pub struct Options {
         value_name = "ADDRESS",
         help_heading = "P2P options"
     )]
-    pub p2p_addr: String,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub p2p_addr: Option<String>,
 
     #[arg(
         long = "p2p.port",
@@ -156,7 +171,8 @@ pub struct Options {
         value_name = "PORT",
         help_heading = "P2P options"
     )]
-    pub p2p_port: String,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub p2p_port: Option<String>,
 
     #[arg(
         long = "discovery.addr",
@@ -165,7 +181,8 @@ pub struct Options {
         help = "UDP address for P2P discovery.",
         help_heading = "P2P options"
     )]
-    pub discovery_addr: String,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub discovery_addr: Option<String>,
 
     #[arg(
         long = "discovery.port",
@@ -174,33 +191,8 @@ pub struct Options {
         help = "UDP port for P2P discovery.",
         help_heading = "P2P options"
     )]
-    pub discovery_port: String,
-}
-
-impl From<&Options> for mojave_node_lib::types::NodeOptions {
-    fn from(options: &Options) -> Self {
-        Self {
-            http_addr: options.http_addr.clone(),
-            http_port: options.http_port.clone(),
-            authrpc_addr: options.authrpc_addr.clone(),
-            authrpc_port: options.authrpc_port.clone(),
-            authrpc_jwtsecret: options.authrpc_jwtsecret.clone(),
-            p2p_enabled: options.p2p_enabled,
-            p2p_addr: options.p2p_addr.clone(),
-            p2p_port: options.p2p_port.clone(),
-            discovery_addr: options.discovery_addr.clone(),
-            discovery_port: options.discovery_port.clone(),
-            network: options.network.clone(),
-            bootnodes: options.bootnodes.clone(),
-            datadir: options.datadir.clone(),
-            syncmode: options.syncmode.unwrap_or(SyncMode::Full),
-            sponsorable_addresses_file_path: options.sponsorable_addresses_file_path.clone(),
-            metrics_addr: options.metrics_addr.clone(),
-            metrics_port: options.metrics_port.clone(),
-            metrics_enabled: options.metrics_enabled,
-            force: options.force,
-        }
-    }
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub discovery_port: Option<String>,
 }
 
 #[allow(clippy::upper_case_acronyms)]
