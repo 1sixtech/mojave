@@ -1,9 +1,12 @@
 use thiserror::Error;
+use bitcoin::taproot::TaprootBuilderError;
 
 #[derive(Debug, Error)]
 pub enum BatchSubmitterError {
     #[error("Bitcoin RPC error: {0}")]
     BitcoinRPCError(#[from] bitcoincore_rpc::Error),
+    #[error("Error building taproot")]
+    Taproot(#[from] TaprootBuilderError),
     #[error("Anyhow error: {0}")]
     AnyhowError(#[from] anyhow::Error),
     #[error("Configuration error: {0}")]
