@@ -9,7 +9,7 @@ use ethrex_p2p::{
     sync_manager::SyncManager,
     types::{Node, NodeRecord},
 };
-use ethrex_rpc::{EthClient, GasTipEstimator, NodeData, RpcApiContext as L1Context, RpcErr};
+use ethrex_rpc::{GasTipEstimator, NodeData, RpcApiContext as L1Context, RpcErr};
 use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
 use mojave_rpc_core::types::Namespace;
@@ -37,7 +37,6 @@ pub async fn start_api(
     peer_handler: PeerHandler,
     client_version: String,
     rollup_store: StoreRollup,
-    eth_client: EthClient,
     block_queue: AsyncUniqueHeap<OrderedBlock, u64>,
     shutdown_token: CancellationToken,
 ) -> Result<()> {
@@ -59,7 +58,6 @@ pub async fn start_api(
             log_filter_handler: None,
         },
         rollup_store,
-        eth_client,
         block_queue,
         pending_signed_blocks: PendingHeap::new(),
     };
@@ -73,7 +71,6 @@ pub async fn start_api(
             Box::pin(ethrex_rpc::map_eth_requests(req, ctx.l1_context))
         });
     crate::rpc::handlers::register_moj_sendBroadcastBlock(&mut registry);
-    crate::rpc::handlers::register_eth_sendRawTransaction(&mut registry);
 
     let service = RpcService::new(context.clone(), registry).with_permissive_cors();
     let http_router = service.router();
