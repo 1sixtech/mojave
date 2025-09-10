@@ -53,7 +53,6 @@ pub struct Options {
         long = "datadir",
         value_name = "DATABASE_DIRECTORY",
         help = "If the datadir is the word `memory`, ethrex will use the InMemory Engine",
-        default_value = ".mojave/mojave-node",
         help = "Receives the name of the directory where the Database is located.",
         long_help = "If the datadir is the word `memory`, ethrex will use the `InMemory Engine`.",
         help_heading = "Node options",
@@ -75,7 +74,6 @@ pub struct Options {
     #[arg(
         long = "metrics.addr",
         value_name = "ADDRESS",
-        default_value = "0.0.0.0",
         help_heading = "Node options"
     )]
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
@@ -84,7 +82,7 @@ pub struct Options {
     #[arg(
         long = "metrics.port",
         value_name = "PROMETHEUS_METRICS_PORT",
-        default_value = "9090", // Default Prometheus port (https://prometheus.io/docs/tutorials/getting_started/#show-me-how-it-is-done).
+        // default_value = "9090", // Default Prometheus port (https://prometheus.io/docs/tutorials/getting_started/#show-me-how-it-is-done).
         help_heading = "Node options",
         env = "ETHREX_METRICS_PORT"
     )]
@@ -102,7 +100,6 @@ pub struct Options {
 
     #[arg(
         long = "http.addr",
-        default_value = "0.0.0.0",
         value_name = "ADDRESS",
         help = "Listening address for the http rpc server.",
         help_heading = "RPC options",
@@ -113,7 +110,6 @@ pub struct Options {
 
     #[arg(
         long = "http.port",
-        default_value = "8545",
         value_name = "PORT",
         help = "Listening port for the http rpc server.",
         help_heading = "RPC options",
@@ -124,7 +120,6 @@ pub struct Options {
 
     #[arg(
         long = "authrpc.addr",
-        default_value = "localhost",
         value_name = "ADDRESS",
         help = "Listening address for the authenticated rpc server.",
         help_heading = "RPC options"
@@ -134,7 +129,6 @@ pub struct Options {
 
     #[arg(
         long = "authrpc.port",
-        default_value = "8551",
         value_name = "PORT",
         help = "Listening port for the authenticated rpc server.",
         help_heading = "RPC options"
@@ -144,7 +138,6 @@ pub struct Options {
 
     #[arg(
         long = "authrpc.jwtsecret",
-        default_value = "jwt.hex",
         value_name = "JWTSECRET_PATH",
         help = "Receives the jwt secret used for authenticated rpc requests.",
         help_heading = "RPC options"
@@ -152,13 +145,12 @@ pub struct Options {
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub authrpc_jwtsecret: Option<String>,
 
-    #[arg(long = "p2p.enabled", default_value =  "true" , value_name = "P2P_ENABLED", action = ArgAction::SetTrue, help_heading = "P2P options")]
+    #[arg(long = "p2p.enabled", value_name = "P2P_ENABLED", action = ArgAction::SetTrue, help_heading = "P2P options")]
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub p2p_enabled: Option<bool>,
 
     #[arg(
         long = "p2p.addr",
-        default_value = "0.0.0.0",
         value_name = "ADDRESS",
         help_heading = "P2P options"
     )]
@@ -167,7 +159,6 @@ pub struct Options {
 
     #[arg(
         long = "p2p.port",
-        default_value = "30303",
         value_name = "PORT",
         help_heading = "P2P options"
     )]
@@ -176,7 +167,6 @@ pub struct Options {
 
     #[arg(
         long = "discovery.addr",
-        default_value = "0.0.0.0",
         value_name = "ADDRESS",
         help = "UDP address for P2P discovery.",
         help_heading = "P2P options"
@@ -186,7 +176,6 @@ pub struct Options {
 
     #[arg(
         long = "discovery.port",
-        default_value = "30303",
         value_name = "PORT",
         help = "UDP port for P2P discovery.",
         help_heading = "P2P options"

@@ -61,27 +61,28 @@ pub struct NodeOptions {
     pub discovery_port: String,
 }
 
+// TODO: set proper defaults for work without config
 impl Default for NodeOptions {
     fn default() -> Self {
         Self {
-            http_addr: Default::default(),
-            http_port: Default::default(),
-            authrpc_addr: Default::default(),
-            authrpc_port: Default::default(),
-            authrpc_jwtsecret: Default::default(),
-            p2p_enabled: Default::default(),
-            p2p_addr: Default::default(),
-            p2p_port: Default::default(),
-            discovery_addr: Default::default(),
-            discovery_port: Default::default(),
+            http_addr: "0.0.0.0".to_owned(),
+            http_port: "8545".to_owned(),
+            authrpc_addr: "localhost".to_owned(),
+            authrpc_port: "8551".to_owned(),
+            authrpc_jwtsecret: "jwt.hex".to_owned(),
+            p2p_enabled: true,
+            p2p_addr: "0.0.0.0".to_owned(),
+            p2p_port: "30303".to_owned(),
+            discovery_addr: "0.0.0.0".to_owned(),
+            discovery_port: "30303".to_owned(),
             network: Network::DefaultNet,
-            bootnodes: Default::default(),
-            datadir: Default::default(),
-            syncmode: Default::default(),
+            bootnodes: vec![],
+            datadir: "./mojave/mojave-node".to_owned(),
+            syncmode: SyncMode::Full,
             sponsorable_addresses_file_path: None,
             metrics_addr: "0.0.0.0".to_owned(),
-            metrics_port: Default::default(),
-            metrics_enabled: Default::default(),
+            metrics_port: "9090".to_owned(),
+            metrics_enabled: false,
             force: false,
         }
     }
