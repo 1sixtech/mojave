@@ -11,7 +11,7 @@ documentation = { workspace = true }
 [dependencies]
 ethrex-common = { workspace = true }
 ethrex-p2p = { workspace = true }
-ethrex-rpc = { workspace = true }
+mojave-rpc-core = { workspace = true }
 
 anyhow = { workspace = true }
 daemonize = { workspace = true }
