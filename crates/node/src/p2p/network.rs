@@ -13,7 +13,7 @@ use secp256k1::SecretKey;
 use tokio::sync::Mutex;
 use tokio_util::task::TaskTracker;
 
-use crate::{node::get_client_version, utils::get_bootnodes};
+use crate::{error::Result, node::get_client_version, utils::get_bootnodes};
 
 #[expect(clippy::too_many_arguments)]
 pub async fn start_network(
@@ -28,8 +28,8 @@ pub async fn start_network(
     tracker: TaskTracker,
     blockchain: Arc<Blockchain>,
     based_context: Option<P2PBasedContext>,
-) {
-    let bootnodes = get_bootnodes(bootnodes, network, data_dir);
+) -> Result<()> {
+    let bootnodes = get_bootnodes(bootnodes, network, data_dir).await;
 
     let context = P2PContext::new(
         local_p2p_node,
@@ -43,12 +43,11 @@ pub async fn start_network(
         based_context,
     );
 
-    ethrex_p2p::start_network(context, bootnodes)
-        .await
-        .expect("Network starts");
+    ethrex_p2p::start_network(context, bootnodes).await?;
 
     tracker.spawn(ethrex_p2p::periodically_show_peer_stats(
         blockchain,
         peer_table.peers,
     ));
+    Ok(())
 }
