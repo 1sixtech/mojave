@@ -113,7 +113,7 @@ impl MojaveNode {
     pub async fn run(self, options: &NodeOptions) -> Result<(), Box<dyn std::error::Error>> {
         let rpc_shutdown = CancellationToken::new();
         let jwt_secret = read_jwtsecret_file(&options.authrpc_jwtsecret)?;
-        let api_task = tokio::spawn(start_api(
+        let api_task = start_api(
             get_http_socket_addr(&options.http_addr, &options.http_port),
             get_authrpc_socket_addr(&options.authrpc_addr, &options.authrpc_port),
             self.store,
@@ -127,7 +127,7 @@ impl MojaveNode {
             self.rollup_store.clone(),
             AsyncUniqueHeap::new(),
             rpc_shutdown.clone(),
-        ));
+        );
         tokio::select! {
             res = api_task => {
                 if let Err(err) = res {
