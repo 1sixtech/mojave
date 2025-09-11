@@ -15,10 +15,7 @@ pub struct ProofCoordinator {
 }
 
 impl ProofCoordinator {
-    pub fn new(
-        proof_data_receiver: Receiver<u64>,
-        prover_address: &str,
-    ) -> Result<Self> {
+    pub fn new(proof_data_receiver: Receiver<u64>, prover_address: &str) -> Result<Self> {
         let prover_url = vec![prover_address.to_string()];
         let client = MojaveClient::builder()
             .prover_urls(&prover_url)
