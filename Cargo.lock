@@ -4348,6 +4348,7 @@ dependencies = [
  "hex",
  "mojave-node-lib",
  "mojave-utils",
+ "tokio",
  "tracing",
 ]
 
@@ -4478,6 +4479,7 @@ dependencies = [
  "mojave-block-producer",
  "mojave-node-lib",
  "mojave-utils",
+ "tokio",
  "tracing",
 ]
 

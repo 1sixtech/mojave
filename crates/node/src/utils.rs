@@ -11,9 +11,7 @@ use ethrex_p2p::{
 use mojave_utils::network::{MAINNET_BOOTNODES, Network, TESTNET_BOOTNODES};
 use secp256k1::SecretKey;
 use std::{
-    fs::File,
-    io::Read as _,
-    net::{Ipv4Addr, SocketAddr, ToSocketAddrs},
+    net::{Ipv4Addr, SocketAddr},
     path::PathBuf,
 };
 use tracing::{error, info};
@@ -39,6 +37,13 @@ pub fn read_node_config_file(file_path: PathBuf) -> Result<NodeConfigFile> {
     }
 }
 
+pub async fn read_node_config_file_async(file_path: PathBuf) -> Result<NodeConfigFile> {
+    match tokio::fs::read(file_path).await {
+        Ok(bytes) => serde_json::from_slice(&bytes).map_err(Error::SerdeJson),
+        Err(e) => Err(Error::Custom(format!("No config file found: {e}"))),
+    }
+}
+
 pub async fn store_node_config_file(config: NodeConfigFile, file_path: PathBuf) {
     let json = match serde_json::to_string(&config) {
         Ok(json) => json,
@@ -48,35 +53,32 @@ pub async fn store_node_config_file(config: NodeConfigFile, file_path: PathBuf) 
         }
     };
 
-    if let Err(e) = std::fs::write(file_path, json) {
+    if let Err(e) = tokio::fs::write(file_path, json).await {
         error!("Could not store config in file: {e:?}");
     };
 }
 
-pub fn jwtsecret_file(file: &mut File) -> Result<Bytes> {
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
+pub fn jwtsecret_from_bytes(bytes: &[u8]) -> Result<Bytes> {
+    let mut contents = String::from_utf8_lossy(bytes).to_string();
     if contents.starts_with("0x") {
-        contents = contents[2..contents.len()].to_string();
+        contents = contents[2..].to_string();
     }
     contents = contents.trim_end_matches('\n').to_string();
-    Ok(hex::decode(contents)?.into())
+    Ok(Bytes::from(hex::decode(contents)?))
 }
 
-pub fn read_jwtsecret_file(jwt_secret_path: &str) -> Result<Bytes> {
-    match File::open(jwt_secret_path) {
-        Ok(mut file) => Ok(jwtsecret_file(&mut file)?),
-        Err(_) => Ok(write_jwtsecret_file(jwt_secret_path)),
+pub async fn read_jwtsecret_file(jwt_secret_path: &str) -> Result<Bytes> {
+    match tokio::fs::read(jwt_secret_path).await {
+        Ok(bytes) => jwtsecret_from_bytes(&bytes),
+        Err(_) => write_jwtsecret_file(jwt_secret_path).await,
     }
 }
 
-pub fn write_jwtsecret_file(jwt_secret_path: &str) -> Bytes {
+pub async fn write_jwtsecret_file(jwt_secret_path: &str) -> Result<Bytes> {
     info!("JWT secret not found in the provided path, generating JWT secret");
     let secret = generate_jwt_secret();
-    std::fs::write(jwt_secret_path, &secret).expect("Unable to write JWT secret file");
-    hex::decode(secret)
-        .map(Bytes::from)
-        .expect("Failed to decode generated JWT secret")
+    tokio::fs::write(jwt_secret_path, &secret).await?;
+    Ok(Bytes::from(hex::decode(secret)?))
 }
 
 pub fn generate_jwt_secret() -> String {
@@ -87,23 +89,24 @@ pub fn generate_jwt_secret() -> String {
     hex::encode(secret)
 }
 
-pub fn resolve_data_dir(data_dir: &str) -> String {
+pub async fn resolve_data_dir(data_dir: &str) -> Result<String> {
     let path = match std::env::home_dir() {
         Some(home) => home.join(data_dir),
         None => PathBuf::from(".").join(data_dir),
     };
 
     // Create the directory in full recursion.
-    if !path.exists() {
-        std::fs::create_dir_all(&path).expect("Failed to create the data directory.");
+    if let Some(parent) = path.parent() {
+        tokio::fs::create_dir_all(parent).await?;
     }
 
-    path.to_str()
-        .expect("Invalid UTF-8 in data directory")
-        .to_owned()
+    let s = path
+        .to_str()
+        .ok_or_else(|| Error::Custom("Invalid UTF-8 in data directory".to_string()))?;
+    Ok(s.to_owned())
 }
 
-pub fn get_bootnodes(bootnodes: Vec<Node>, network: &Network, data_dir: &str) -> Vec<Node> {
+pub async fn get_bootnodes(bootnodes: Vec<Node>, network: &Network, data_dir: &str) -> Vec<Node> {
     let mut bootnodes: Vec<Node> = bootnodes.clone();
 
     match network {
@@ -128,7 +131,7 @@ pub fn get_bootnodes(bootnodes: Vec<Node>, network: &Network, data_dir: &str) ->
 
     tracing::info!("Reading known peers from config file {:?}", config_file);
 
-    match read_node_config_file(config_file) {
+    match read_node_config_file_async(config_file).await {
         Ok(ref mut config) => bootnodes.append(&mut config.known_peers),
         Err(e) => tracing::error!("Could not read from peers file: {e}"),
     };
@@ -136,43 +139,38 @@ pub fn get_bootnodes(bootnodes: Vec<Node>, network: &Network, data_dir: &str) ->
     bootnodes
 }
 
-pub fn parse_socket_addr(addr: &str, port: &str) -> Result<SocketAddr> {
-    // NOTE: this blocks until hostname can be resolved
-    format!("{addr}:{port}")
-        .to_socket_addrs()?
+pub async fn parse_socket_addr(addr: &str, port: &str) -> Result<SocketAddr> {
+    let mut addrs = tokio::net::lookup_host(format!("{addr}:{port}")).await?;
+    addrs
         .next()
-        .ok_or(Error::Custom(format!(
-            "Could not resolve address: {addr}:{port}"
-        )))
+        .ok_or_else(|| Error::Custom(format!("Could not resolve address: {addr}:{port}")))
 }
 
-pub fn get_http_socket_addr(http_addr: &str, http_port: &str) -> SocketAddr {
-    parse_socket_addr(http_addr, http_port).expect("Failed to parse http address and port")
+pub async fn get_http_socket_addr(http_addr: &str, http_port: &str) -> Result<SocketAddr> {
+    parse_socket_addr(http_addr, http_port).await
 }
 
-pub fn get_authrpc_socket_addr(authrpc_addr: &str, authrpc_port: &str) -> SocketAddr {
-    parse_socket_addr(authrpc_addr, authrpc_port).expect("Failed to parse authrpc address and port")
+pub async fn get_authrpc_socket_addr(authrpc_addr: &str, authrpc_port: &str) -> Result<SocketAddr> {
+    parse_socket_addr(authrpc_addr, authrpc_port).await
 }
 
-pub fn get_local_p2p_node(
+pub async fn get_local_p2p_node(
     discovery_addr: &str,
     discovery_port: &str,
     p2p_addr: &str,
     p2p_port: &str,
     signer: &SecretKey,
-) -> Node {
-    let udp_socket_addr = parse_socket_addr(discovery_addr, discovery_port)
-        .expect("Failed to parse discovery address and port");
-    let tcp_socket_addr =
-        parse_socket_addr(p2p_addr, p2p_port).expect("Failed to parse addr and port");
+) -> Result<Node> {
+    let udp_socket_addr = parse_socket_addr(discovery_addr, discovery_port).await?;
+    let tcp_socket_addr = parse_socket_addr(p2p_addr, p2p_port).await?;
 
     // TODO: If hhtp.addr is 0.0.0.0 we get the local ip as the one of the node, otherwise we use the provided one.
     // This is fine for now, but we might need to support more options in the future.
     let p2p_node_ip = if udp_socket_addr.ip() == Ipv4Addr::new(0, 0, 0, 0) {
-        local_ip_address::local_ip().expect("Failed to get local ip")
+        local_ip_address::local_ip()
     } else {
-        udp_socket_addr.ip()
-    };
+        Ok(udp_socket_addr.ip())
+    }?;
 
     let local_public_key = public_key_from_signing_key(signer);
 
@@ -188,5 +186,5 @@ pub fn get_local_p2p_node(
     let enode = node.enode_url();
     tracing::info!("Node: {enode}");
 
-    node
+    Ok(node)
 }
