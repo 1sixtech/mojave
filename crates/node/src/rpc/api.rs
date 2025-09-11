@@ -66,11 +66,10 @@ pub async fn start_api(
     let filter_handle = spawn_filter_cleanup_task(active_filters.clone(), shutdown_token.clone());
 
     // Build RPC registry and service
-    let mut registry: RpcRegistry<RpcApiContext> = RpcRegistry::new()
+    let registry: RpcRegistry<RpcApiContext> = RpcRegistry::new()
         .with_fallback(Namespace::Eth, |req, ctx: RpcApiContext| {
             Box::pin(ethrex_rpc::map_eth_requests(req, ctx.l1_context))
         });
-    crate::rpc::handlers::register_moj_sendBroadcastBlock(&mut registry);
 
     let service = RpcService::new(context.clone(), registry).with_permissive_cors();
     let http_router = service.router();

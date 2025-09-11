@@ -1,6 +1,6 @@
 use crate::{
     error::{Error, Result},
-    types::{JobId, ProofResponse, ProverData, SignedProofResponse, Strategy},
+    types::{JobId, ProofResponse, ProverData, Strategy},
 };
 use ethrex_rpc::{
     clients::eth::RpcResponse,
@@ -10,15 +10,12 @@ use futures::{
     FutureExt,
     future::{Fuse, select_ok},
 };
-use mojave_signature::{
-    SigningKey,
-    types::{Signature, Signer},
-};
+
 use mojave_utils::rpc::types::MojaveRequestMethods;
 use reqwest::{ClientBuilder, Url};
 use serde::de::DeserializeOwned;
 use serde_json::{json, to_string};
-use std::{pin::Pin, str::FromStr, sync::Arc, time::Duration};
+use std::{pin::Pin, sync::Arc, time::Duration};
 
 const INITIAL_RETRY_DELAY: Duration = Duration::from_millis(100);
 const BACKOFF_FACTOR: u32 = 2;
@@ -67,12 +64,10 @@ impl MojaveClientBuilder {
     }
 
     pub fn build(mut self) -> Result<MojaveClient> {
-        let sequencer_urls = self.sequencer_urls.take();
         let prover_urls = self.prover_urls.take();
-        let private_key = self.private_key.take();
         let timeout = self.timeout.take();
 
-        MojaveClient::new(sequencer_urls, prover_urls, private_key, timeout)
+        MojaveClient::new(prover_urls, timeout)
     }
 }
 
@@ -83,9 +78,7 @@ pub struct MojaveClient {
 
 struct MojaveClientInner {
     client: reqwest::Client,
-    sequencer_urls: Option<Vec<Url>>,
     prover_urls: Option<Vec<Url>>,
-    signing_key: Option<SigningKey>,
 }
 
 impl MojaveClient {
@@ -107,12 +100,7 @@ impl MojaveClient {
         }
     }
 
-    pub fn new(
-        sequencer_urls: Option<Vec<String>>,
-        prover_urls: Option<Vec<String>>,
-        private_key: Option<String>,
-        timeout: Option<Duration>,
-    ) -> Result<Self> {
+    pub fn new(prover_urls: Option<Vec<String>>, timeout: Option<Duration>) -> Result<Self> {
         let http_client = ClientBuilder::new()
             .timeout(timeout.unwrap_or(DEFAULT_TIMEOUT))
             .build()?;
@@ -120,15 +108,7 @@ impl MojaveClient {
         let client = MojaveClient {
             inner: Arc::new(MojaveClientInner {
                 client: http_client,
-                sequencer_urls: Self::parse_urls(sequencer_urls)?,
                 prover_urls: Self::parse_urls(prover_urls)?,
-                signing_key: match private_key {
-                    Some(private_key) => Some(
-                        SigningKey::from_str(&private_key)
-                            .map_err(|error| Error::Custom(error.to_string()))?,
-                    ),
-                    None => None,
-                },
             }),
         };
         Ok(client)
@@ -359,44 +339,6 @@ impl<'a> Request<'a> {
                 .prover_urls
                 .as_ref()
                 .ok_or(Error::MissingProverUrl)?,
-        };
-
-        self.client
-            .send_request(&request, urls, self.max_retry.unwrap_or(1), self.strategy)
-            .await
-    }
-
-    pub async fn send_proof_response(&self, proof_response: &ProofResponse) -> Result<()> {
-        let signing_key = self
-            .client
-            .inner
-            .signing_key
-            .as_ref()
-            .ok_or(Error::MissingPrivateKey)?;
-        let signature: Signature = signing_key.sign(proof_response)?;
-        let verifying_key = signing_key.verifying_key();
-
-        let params = SignedProofResponse {
-            proof_response: proof_response.clone(),
-            signature,
-            verifying_key,
-        };
-
-        let request = RpcRequest {
-            id: RpcRequestId::Number(1),
-            jsonrpc: "2.0".to_string(),
-            method: to_string(&MojaveRequestMethods::SendProofResponse)?,
-            params: Some(vec![json!(params)]),
-        };
-
-        let urls = match self.urls {
-            Some(urls) => urls,
-            None => self
-                .client
-                .inner
-                .sequencer_urls
-                .as_ref()
-                .ok_or(Error::MissingSequencerUrl)?,
         };
 
         self.client

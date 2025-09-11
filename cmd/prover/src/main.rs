@@ -35,7 +35,6 @@ fn main() -> Result<()> {
                 start_api(
                     prover_options.aligned_mode,
                     &bind_addr,
-                    &prover_options.private_key,
                     prover_options.queue_capacity,
                 )
                 .await
