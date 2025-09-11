@@ -32,7 +32,37 @@ cleanup() {
 echo "Starting all services"
 
 bash scripts/start.sh &
-sleep 10
+
+# Wait for services to be ready
+wait_for_jsonrpc() {
+    local url="$1"
+    local timeout="${2:-120}"
+    local elapsed=0
+    while (( elapsed < timeout )); do
+        if curl -fsS --max-time 2 -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"web3_clientVersion","params":[]}' \
+            "$url" >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep 2
+        elapsed=$((elapsed + 2))
+    done
+    return 1
+}
+
+echo "Waiting for sequencer readiness..."
+if ! wait_for_jsonrpc "http://localhost:1739" 120; then
+    echo "ERROR: Sequencer did not become ready in time"
+    exit 1
+fi
+
+echo "Waiting for full node readiness..."
+if ! wait_for_jsonrpc "http://localhost:8545" 120; then
+    echo "ERROR: Full node did not become ready in time"
+    exit 1
+fi
+
+echo "Both services are ready."
 
 echo "All services started. Testing connection..."
 
@@ -42,17 +72,6 @@ trap cleanup INT TERM EXIT
 # ================================
 # Start testing
 # ================================
-
-
-# Test connection to sequencer
-response=$(curl -s -X POST -H "Content-Type: application/json" \
-    --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
-    http://localhost:1739)
-
-echo "Response from sequencer: $response"
-
-
-
 
 # Deploy with bytecode
 CONTRACT_ADDRESS=$(rex deploy "$COUNTER_CONTRACT_BYTE_CODE" 0 "$PRIVATE_KEY" --print-address)

@@ -44,23 +44,23 @@ pub async fn run(
 
     let local_node_record = node.local_node_record.lock().await.clone();
 
-    let api_task = tokio::spawn(start_api(
-        get_http_socket_addr(&node_options.http_addr, &node_options.http_port),
-        get_authrpc_socket_addr(&node_options.authrpc_addr, &node_options.authrpc_port),
+    let api_task = start_api(
+        get_http_socket_addr(&node_options.http_addr, &node_options.http_port).await?,
+        get_authrpc_socket_addr(&node_options.authrpc_addr, &node_options.authrpc_port).await?,
         node.store,
         node.blockchain,
-        read_jwtsecret_file(&node_options.authrpc_jwtsecret)?,
+        read_jwtsecret_file(&node_options.authrpc_jwtsecret).await?,
         node.local_p2p_node,
         local_node_record,
         node.syncer,
         node.peer_handler,
         get_client_version(),
         node.rollup_store,
-    ));
+    );
     tokio::select! {
         res = api_task => {
-            if let Err(err) = res {
-                tracing::error!("API task failed: {}", err);
+            if let Err(error) = res {
+                tracing::error!("API task returned error: {}", error);
             }
         }
         _ = tokio::signal::ctrl_c() => {
@@ -113,7 +113,9 @@ impl BlockProducer {
 async fn handle_message(context: &BlockProducerContext, message: Message) {
     match message {
         Message::BuildBlock(sender) => {
-            let _ = sender.send(context.build_block().await);
+            if let Err(e) = sender.send(context.build_block().await) {
+                tracing::warn!(error = ?e, "Failed to send built block over channel");
+            }
         }
     }
 }

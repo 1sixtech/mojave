@@ -249,11 +249,11 @@ impl MojaveClient {
                 Ok(response) => return Ok(response),
                 Err(e) => {
                     tracing::error!("Request failed (attempt {}): {}", retry, e);
-                    last_error = Some(e);
-                    if Self::is_retryable(last_error.as_ref().unwrap()) {
+                    if Self::is_retryable(&e) {
                         tracing::info!("Retrying request (attempt {})", retry);
+                        last_error = Some(e);
                     } else {
-                        return Err(last_error.unwrap());
+                        return Err(e);
                     }
                 }
             }

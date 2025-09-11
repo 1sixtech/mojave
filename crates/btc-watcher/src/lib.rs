@@ -5,3 +5,10 @@ pub mod sequence;
 pub mod transaction;
 pub mod types;
 pub mod watch;
+
+pub mod prelude {
+    pub use crate::{
+        error::{Error, Result},
+        types::*,
+    };
+}

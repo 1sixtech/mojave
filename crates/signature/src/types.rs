@@ -21,6 +21,7 @@ pub enum SignatureScheme {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Signature {
     pub bytes: Vec<u8>,
     pub scheme: SignatureScheme,

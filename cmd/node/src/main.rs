@@ -5,7 +5,7 @@ use crate::{cli::Command, config::load_config};
 use anyhow::Result;
 use mojave_node_lib::{initializers::get_signer, types::MojaveNode};
 use mojave_utils::{
-    daemon::{DaemonOptions, run_daemonized, stop_daemonized},
+    daemon::{DaemonOptions, run_daemonized_async, stop_daemonized},
     p2p::public_key_from_signing_key,
 };
 use tracing::Level;
@@ -15,7 +15,8 @@ use std::str::FromStr;
 const PID_FILE_NAME: &str = "node.pid";
 const LOG_FILE_NAME: &str = "node.log";
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     mojave_utils::logging::init();
     let cli = cli::Cli::run();
     let config = load_config(&cli)?;
@@ -31,22 +32,26 @@ fn main() -> Result<()> {
                 pid_file_path: PathBuf::from(config.datadir.clone()).join(PID_FILE_NAME),
                 log_file_path: PathBuf::from(config.datadir).join(LOG_FILE_NAME),
             };
-            run_daemonized(daemon_opts, || async move {
+            run_daemonized_async(daemon_opts, || async move {
                 let node = MojaveNode::init(&node_options)
                     .await
                     .unwrap_or_else(|error| {
                         tracing::error!("Failed to initialize the node: {}", error);
                         std::process::exit(1);
                     });
-                node.run(&node_options).await
+
+                node.run(&node_options)
+                    .await
+                    .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
             })
+            .await
             .unwrap_or_else(|err| {
-                tracing::error!("Failed to start daemonized node: {}", err);
+                tracing::error!(error = %err, "Failed to start daemonized node");
             });
         }
         Command::Stop => stop_daemonized(PathBuf::from(config.datadir.clone()).join(PID_FILE_NAME))?,
         Command::GetPubKey => {
-            let signer = get_signer(&config.datadir)?;
+            let signer = get_signer(&config.datadir).await?;
             let public_key = public_key_from_signing_key(&signer);
             let public_key = hex::encode(public_key);
             println!("{public_key}");

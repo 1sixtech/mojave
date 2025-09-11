@@ -4380,6 +4380,7 @@ dependencies = [
  "mojave-node-lib",
  "mojave-utils",
  "serde",
+ "tokio",
  "tracing",
 ]
 
@@ -4512,6 +4513,7 @@ dependencies = [
  "mojave-node-lib",
  "mojave-utils",
  "serde",
+ "tokio",
  "tracing",
 ]
 

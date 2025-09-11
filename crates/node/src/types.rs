@@ -14,6 +14,7 @@ use tokio::sync::Mutex;
 use tokio_util::sync::CancellationToken;
 
 #[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct NodeConfigFile {
     pub known_peers: Vec<Node>,
     pub node_record: NodeRecord,
@@ -38,6 +39,7 @@ impl From<SyncMode> for ethrex_p2p::sync::SyncMode {
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(default)]
+#[serde(deny_unknown_fields)]
 pub struct NodeOptions {
     pub network: Network,
     pub bootnodes: Vec<Node>,
