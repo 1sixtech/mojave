@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use ethrex_prover_lib::{backends::Backend, prove, to_batch_proof};
+use ethrex_prover_lib::{backend::Backend, prove, to_batch_proof};
 use ethrex_rpc::RpcErr;
 use mojave_client::{
     MojaveClient,

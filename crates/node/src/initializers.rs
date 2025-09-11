@@ -1,17 +1,15 @@
 use crate::{
     error::{Error, Result},
-    utils::read_node_config_file,
+    utils::read_node_config_file_async,
 };
 
 use ethrex_blockchain::{Blockchain, BlockchainType};
 use ethrex_common::types::Genesis;
 use ethrex_p2p::types::{Node, NodeRecord};
 use ethrex_storage::{EngineType, Store};
-use ethrex_vm::EvmEngine;
 use rand::rngs::OsRng;
 use secp256k1::SecretKey;
 use std::{
-    fs,
     os::unix::fs::PermissionsExt,
     path::{Path, PathBuf},
     sync::Arc,
@@ -44,19 +42,15 @@ pub fn open_store(data_dir: &str) -> Result<Store> {
     }
 }
 
-pub fn init_blockchain(
-    evm_engine: EvmEngine,
-    store: Store,
-    blockchain_type: BlockchainType,
-) -> Arc<Blockchain> {
-    info!("Initiating blockchain with EVM: {}", evm_engine);
-    Blockchain::new(evm_engine, store, blockchain_type).into()
+pub fn init_blockchain(store: Store, blockchain_type: BlockchainType) -> Arc<Blockchain> {
+    info!("Initiating blockchain");
+    Blockchain::new(store, blockchain_type, false).into()
 }
 
-pub fn get_signer(data_dir: &str) -> Result<SecretKey> {
+pub async fn get_signer(data_dir: &str) -> Result<SecretKey> {
     // Get the signer from the default directory, create one if the key file is not present.
     let key_path = Path::new(data_dir).join("node.key");
-    match fs::read(key_path.clone()) {
+    match tokio::fs::read(key_path.clone()).await {
         Ok(content) => Ok(SecretKey::from_slice(&content)?),
         Err(_) => {
             info!(
@@ -64,24 +58,26 @@ pub fn get_signer(data_dir: &str) -> Result<SecretKey> {
                 key_path
             );
             if let Some(parent) = key_path.parent() {
-                fs::create_dir_all(parent)?;
+                tokio::fs::create_dir_all(parent).await?;
             }
             let signer = SecretKey::new(&mut OsRng);
-            fs::write(&key_path, signer.secret_bytes())?;
-            key_path.metadata()?.permissions().set_mode(0o600);
+            tokio::fs::write(&key_path, signer.secret_bytes()).await?;
+            let mut perms = tokio::fs::metadata(&key_path).await?.permissions();
+            perms.set_mode(0o600);
+            tokio::fs::set_permissions(&key_path, perms).await?;
             Ok(signer)
         }
     }
 }
 
-pub fn get_local_node_record(
+pub async fn get_local_node_record(
     data_dir: &str,
     local_p2p_node: &Node,
     signer: &SecretKey,
 ) -> Result<NodeRecord> {
     let config_file = PathBuf::from(data_dir.to_owned() + "/node_config.json");
 
-    match read_node_config_file(config_file) {
+    match read_node_config_file_async(config_file).await {
         Ok(ref mut config) => {
             Ok(
                 NodeRecord::from_node(local_p2p_node, config.node_record.seq + 1, signer)

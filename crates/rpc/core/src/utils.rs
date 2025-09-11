@@ -1,10 +1,9 @@
-use crate::rpc::{
-    error::{Error, Result},
-    types::{Namespace, RpcErrorResponse, RpcRequest, RpcRequestId, RpcSuccessResponse},
+use crate::{
+    RpcErr, RpcErrorResponse, RpcRequest, RpcRequestId, RpcSuccessResponse, types::Namespace,
 };
 use serde_json::Value;
 
-pub fn rpc_response(id: RpcRequestId, res: Result<Value>) -> Result<Value> {
+pub fn rpc_response(id: RpcRequestId, res: Result<Value, RpcErr>) -> Result<Value, RpcErr> {
     Ok(match res {
         Ok(result) => serde_json::to_value(RpcSuccessResponse {
             id,
@@ -19,11 +18,11 @@ pub fn rpc_response(id: RpcRequestId, res: Result<Value>) -> Result<Value> {
     }?)
 }
 
-pub fn resolve_namespace(req: &RpcRequest) -> Result<Namespace> {
+pub fn resolve_namespace(req: &RpcRequest) -> Result<Namespace, RpcErr> {
     let req_method = req.method.replace('\"', "");
     let mut parts = req_method.split('_');
     let Some(namespace) = parts.next() else {
-        return Err(Error::MethodNotFound(req.method.clone()));
+        return Err(RpcErr::MethodNotFound(req.method.clone()));
     };
     match namespace {
         "debug" => Ok(Namespace::Debug),
@@ -32,6 +31,6 @@ pub fn resolve_namespace(req: &RpcRequest) -> Result<Namespace> {
         "net" => Ok(Namespace::Net),
         "txpool" => Ok(Namespace::TxPool),
         "web3" => Ok(Namespace::Web3),
-        _others => Err(Error::MethodNotFound(req.method.clone())),
+        _others => Err(RpcErr::MethodNotFound(req.method.clone())),
     }
 }

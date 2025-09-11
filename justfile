@@ -115,4 +115,4 @@ docker-run bin *ARGS:
 	docker run -p 8545:8545 -p 1739:1739 -p 30304:30304 "{{image-prefix}}/{{bin}}" {{ARGS}}
 
 test: clean
-	bash test_data/tests-e2e.sh
+	bash tests/tests-e2e.sh
