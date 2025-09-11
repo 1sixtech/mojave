@@ -1,12 +1,10 @@
 use mojave_client::types::ProofResponse;
-use reqwest::Url;
 use std::collections::{HashMap, HashSet};
 use tokio::sync::Mutex;
 
 pub struct JobRecord {
     pub job_id: String,
     pub prover_data: mojave_client::types::ProverData,
-    pub sequencer_url: Url,
 }
 
 pub struct JobStore {

@@ -2,16 +2,14 @@ use crate::{job::JobRecord, rpc::ProverRpcContext};
 use guest_program::input::ProgramInput;
 use mojave_client::types::{ProofResponse, ProverData};
 use mojave_utils::rpc::error::{Error, Result};
-use reqwest::Url;
 use tiny_keccak::{Hasher, Keccak};
 
 pub async fn enqueue_proof_input(
     ctx: &ProverRpcContext,
     prover_data: ProverData,
-    sequencer_addr: Url,
 ) -> Result<String> {
     let job_id = calculate_job_id(&prover_data.input)?;
-    tracing::debug!(%job_id, sequencer = %sequencer_addr, "Parsed proof input");
+    tracing::debug!(%job_id, "Parsed proof input");
     if ctx.job_store.already_requested(&job_id).await {
         tracing::warn!(%job_id, "Duplicate batch requested");
         return Err(Error::BadParams("This batch already requested".to_owned()));
@@ -20,7 +18,6 @@ pub async fn enqueue_proof_input(
     let record = JobRecord {
         job_id: job_id.clone(),
         prover_data,
-        sequencer_url: sequencer_addr,
     };
     ctx.job_store.insert_job(&record.job_id).await;
     ctx.sender

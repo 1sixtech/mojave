@@ -273,16 +273,12 @@ impl<'a> Request<'a> {
         self.strategy = strategy;
         self
     }
-    pub async fn send_proof_input(
-        &self,
-        proof_input: &ProverData,
-        sequencer_address: &str,
-    ) -> Result<JobId> {
+    pub async fn send_proof_input(&self, proof_input: &ProverData) -> Result<JobId> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
             jsonrpc: "2.0".to_string(),
             method: to_string(&MojaveRequestMethods::SendProofInput)?,
-            params: Some(vec![json!(proof_input), json!(sequencer_address)]),
+            params: Some(vec![json!(proof_input)]),
         };
 
         let urls = match self.urls {

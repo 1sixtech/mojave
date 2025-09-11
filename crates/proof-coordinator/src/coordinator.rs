@@ -12,14 +12,12 @@ pub struct ProofCoordinator {
     pub(crate) client: MojaveClient,
     /// Comes from the block builder
     pub(crate) proof_data_receiver: Receiver<u64>,
-    pub(crate) sequencer_address: String,
 }
 
 impl ProofCoordinator {
     pub fn new(
         proof_data_receiver: Receiver<u64>,
         prover_address: &str,
-        sequencer_address: String,
     ) -> Result<Self> {
         let prover_url = vec![prover_address.to_string()];
         let client = MojaveClient::builder()
@@ -30,7 +28,6 @@ impl ProofCoordinator {
         Ok(Self {
             client,
             proof_data_receiver,
-            sequencer_address: sequencer_address.to_string(),
         })
     }
 
@@ -49,7 +46,7 @@ impl ProofCoordinator {
             .client
             .request()
             .strategy(Strategy::Sequential)
-            .send_proof_input(&input, &self.sequencer_address)
+            .send_proof_input(&input)
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 

@@ -22,7 +22,6 @@ guest_program = { workspace = true }
 axum = { workspace = true }
 bincode = { workspace = true }
 hex = { workspace = true }
-reqwest = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 tiny-keccak = { workspace = true }
