@@ -1,7 +1,7 @@
 use clap::{ArgAction, Parser, Subcommand};
 use mojave_node_lib::types::{Node, SyncMode};
 use mojave_utils::network::Network;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Parser, Debug, Serialize, Deserialize)]
 pub struct Options {
@@ -144,11 +144,7 @@ pub struct Options {
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub p2p_addr: Option<String>,
 
-    #[arg(
-        long = "p2p.port",
-        value_name = "PORT",
-        help_heading = "P2P options"
-    )]
+    #[arg(long = "p2p.port", value_name = "PORT", help_heading = "P2P options")]
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub p2p_port: Option<String>,
 

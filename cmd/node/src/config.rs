@@ -1,7 +1,10 @@
-use figment::{Figment, providers::{Serialized, Json, Env, Format}};
-use serde::{Serialize, Deserialize};
+use figment::{
+    Figment,
+    providers::{Env, Format, Json, Serialized},
+};
 use mojave_node_lib::types::{Node, SyncMode};
 use mojave_utils::network::Network;
+use serde::{Deserialize, Serialize};
 
 use crate::cli::Cli;
 
@@ -87,11 +90,12 @@ impl From<&Config> for mojave_node_lib::types::NodeOptions {
     }
 }
 
-pub(crate) fn load_config(cli: &Cli) -> Result<Config, figment::Error> {
+pub(crate) fn load_config(cli: &Cli) -> Result<Config, Box<figment::Error>> {
     let figment = Figment::new()
         .merge(Serialized::defaults(Config::default()))
         .merge(Env::prefixed("ETHREX_"))
         .merge(Json::file("mojave/node.setting.json"))
-        .merge(Serialized::defaults(cli)).extract()?;
+        .merge(Serialized::defaults(cli))
+        .extract()?;
     Ok(figment)
 }

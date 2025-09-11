@@ -10,9 +10,8 @@ use mojave_utils::{
     daemon::{DaemonOptions, run_daemonized_async, stop_daemonized},
     p2p::public_key_from_signing_key,
 };
+use std::{path::PathBuf, str::FromStr};
 use tracing::Level;
-use std::path::PathBuf;
-use std::str::FromStr;
 
 const PID_FILE_NAME: &str = "sequencer.pid";
 const LOG_FILE_NAME: &str = "sequencer.log";
@@ -32,7 +31,7 @@ async fn main() -> Result<()> {
             sequencer_options: _,
         } => {
             let node_options: mojave_node_lib::types::NodeOptions = (&config).into();
-            
+
             let block_producer_options: BlockProducerOptions = (&config).into();
             let daemon_opts = DaemonOptions {
                 no_daemon: config.no_daemon,
@@ -50,7 +49,9 @@ async fn main() -> Result<()> {
             })
             .await?;
         }
-        Command::Stop => stop_daemonized(PathBuf::from(config.datadir.clone()).join(PID_FILE_NAME))?,
+        Command::Stop => {
+            stop_daemonized(PathBuf::from(config.datadir.clone()).join(PID_FILE_NAME))?
+        }
         Command::GetPubKey => {
             let signer = get_signer(&config.datadir).await?;
             let public_key = public_key_from_signing_key(&signer);
