@@ -15,19 +15,13 @@ on:
         required: true
 
 env:
-  REGISTRY_IMAGE: ghcr.io/${{ github.repository }}
+  REGISTRY_IMAGE_PREFIX: ghcr.io/${{ github.repository }}
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: docker/metadata-action@v4
-        id: metadata
-        with:
-          images: ${{ env.REGISTRY_IMAGE }}
-          tags: |
-            type=raw,value=${{ inputs.release_tag_name }}
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v2
@@ -35,22 +29,84 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      # sequencer
+      - uses: docker/metadata-action@v4
+        id: meta_sequencer
+        with:
+          images: ${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-sequencer
+          tags: |
+            type=raw,value=${{ inputs.release_tag_name }}
+
       - uses: docker/build-push-action@v4
-        id: build
+        id: build_sequencer
         with:
           context: .
-          file: Dockerfile
-          labels: ${{ steps.metadata.outputs.labels }}
-          outputs: type=image,name=${{ env.REGISTRY_IMAGE
-            }},push-by-digest=true,name-canonical=true,push=true
-      - run: |
-          mkdir -p /tmp/digests
-          digest="${{ steps.build.outputs.digest }}"
-          touch "/tmp/digests/${digest#sha256:}"
+          file: docker/Dockerfile.sequencer
+          labels: ${{ steps.meta_sequencer.outputs.labels }}
+          outputs: type=image,name=${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-sequencer,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Collect digest (sequencer)
+        run: |
+          mkdir -p /tmp/digests/sequencer
+          digest="${{ steps.build_sequencer.outputs.digest }}"
+          touch "/tmp/digests/sequencer/${digest#sha256:}"
+
+      # node
+      - uses: docker/metadata-action@v4
+        id: meta_node
+        with:
+          images: ${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-node
+          tags: |
+            type=raw,value=${{ inputs.release_tag_name }}
+
+      - uses: docker/build-push-action@v4
+        id: build_node
+        with:
+          context: .
+          file: docker/Dockerfile.node
+          labels: ${{ steps.meta_node.outputs.labels }}
+          outputs: type=image,name=${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-node,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Collect digest (node)
+        run: |
+          mkdir -p /tmp/digests/node
+          digest="${{ steps.build_node.outputs.digest }}"
+          touch "/tmp/digests/node/${digest#sha256:}"
+
+      # prover
+      - uses: docker/metadata-action@v4
+        id: meta_prover
+        with:
+          images: ${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-prover
+          tags: |
+            type=raw,value=${{ inputs.release_tag_name }}
+
+      - uses: docker/build-push-action@v4
+        id: build_prover
+        with:
+          context: .
+          file: docker/Dockerfile.prover
+          labels: ${{ steps.meta_prover.outputs.labels }}
+          outputs: type=image,name=${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-prover,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Collect digest (prover)
+        run: |
+          mkdir -p /tmp/digests/prover
+          digest="${{ steps.build_prover.outputs.digest }}"
+          touch "/tmp/digests/prover/${digest#sha256:}"
+
+      # upload 3 roles' digests at once
       - uses: actions/upload-artifact@v4
         with:
           name: digests
-          path: /tmp/digests/*
+          path: /tmp/digests/**
           if-no-files-found: error
           retention-days: 1
 
@@ -65,18 +121,62 @@ jobs:
           name: digests
           path: /tmp/digests
       - uses: docker/setup-buildx-action@v3
-      - uses: docker/metadata-action@v4
-        id: metadata
-        with:
-          images: ${{ env.REGISTRY_IMAGE }}
       - uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - working-directory: /tmp/digests
+
+      # sequencer
+      - uses: docker/metadata-action@v4
+        id: meta_sequencer
+        with:
+          images: ${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-sequencer
+          tags: |
+            type=raw,value=${{ inputs.release_tag_name }}
+      - name: Create manifest (sequencer)
+        working-directory: /tmp/digests/sequencer
         run: |
-          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf '${{ env.REGISTRY_IMAGE }}@sha256:%s ' *)
-      - run: |
-          docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ steps.metadata.outputs.version }}
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-sequencer@sha256:%s ' *)
+      - name: Inspect manifest (sequencer)
+        run: |
+          docker buildx imagetools inspect \
+            ${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-sequencer:${{ steps.meta_sequencer.outputs.version }}
+
+      # node
+      - uses: docker/metadata-action@v4
+        id: meta_node
+        with:
+          images: ${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-node
+          tags: |
+            type=raw,value=${{ inputs.release_tag_name }}
+      - name: Create manifest (node)
+        working-directory: /tmp/digests/node
+        run: |
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-node@sha256:%s ' *)
+      - name: Inspect manifest (node)
+        run: |
+          docker buildx imagetools inspect \
+            ${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-node:${{ steps.meta_node.outputs.version }}
+
+      # prover
+      - uses: docker/metadata-action@v4
+        id: meta_prover
+        with:
+          images: ${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-prover
+          tags: |
+            type=raw,value=${{ inputs.release_tag_name }}
+      - name: Create manifest (prover)
+        working-directory: /tmp/digests/prover
+        run: |
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-prover@sha256:%s ' *)
+      - name: Inspect manifest (prover)
+        run: |
+          docker buildx imagetools inspect \
+            ${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-prover:${{ steps.meta_prover.outputs.version }}
