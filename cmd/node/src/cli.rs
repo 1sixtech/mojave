@@ -172,6 +172,7 @@ pub struct Options {
         help_heading = "Daemon Options",
         action = clap::ArgAction::SetTrue
     )]
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub no_daemon: Option<bool>,
 }
 
@@ -192,6 +193,7 @@ pub struct Cli {
         long_help = "Possible values: info, debug, trace, warn, error",
         help_heading = "Node options"
     )]
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub log_level: Option<String>,
     #[arg(
         long = "datadir",

@@ -1,11 +1,8 @@
 use clap::{ArgAction, ArgGroup, Parser, Subcommand};
-use mojave_block_producer::types::BlockProducerOptions;
 use mojave_node_lib::types::{Node, SyncMode};
 use mojave_utils::network::Network;
 
 use serde::{Deserialize, Serialize};
-
-use crate::config::Config;
 
 #[derive(Parser, Debug, Serialize, Deserialize)]
 pub struct Options {
@@ -176,6 +173,7 @@ pub struct Options {
         help_heading = "Daemon Options",
         action = clap::ArgAction::SetTrue
     )]
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub no_daemon: Option<bool>,
 }
 
@@ -196,6 +194,7 @@ pub struct Cli {
         long_help = "Possible values: info, debug, trace, warn, error",
         help_heading = "Node options"
     )]
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub log_level: Option<String>,
     #[arg(
         long = "datadir",
@@ -244,14 +243,17 @@ pub struct SequencerOptions {
         help_heading = "Prover Options",
         // default_value = "http://0.0.0.0:3900"
     )]
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub prover_address: Option<String>,
     #[arg(
         long = "block_time",
         help = "Block creation interval in milliseconds",
         default_value = "1000"
     )]
-    pub block_time: u64,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub block_time: Option<u64>,
     #[arg(long = "private_key", help = "Private key used for signing blocks")]
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub private_key: Option<String>,
 }
 
@@ -260,15 +262,5 @@ impl std::fmt::Debug for SequencerOptions {
         f.debug_struct("SequencerOptions")
             .field("block_time", &self.block_time)
             .finish()
-    }
-}
-
-impl From<&Config> for BlockProducerOptions {
-    fn from(value: &Config) -> Self {
-        Self {
-            prover_address: value.prover_address.clone(),
-            block_time: value.block_time,
-            private_key: value.private_key.clone(),
-        }
     }
 }

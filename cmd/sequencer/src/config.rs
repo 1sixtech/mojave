@@ -98,6 +98,16 @@ impl From<&Config> for mojave_node_lib::types::NodeOptions {
     }
 }
 
+impl From<&Config> for mojave_block_producer::types::BlockProducerOptions {
+    fn from(value: &Config) -> Self {
+        Self {
+            prover_address: value.prover_address.clone(),
+            block_time: value.block_time,
+            private_key: value.private_key.clone(),
+        }
+    }
+}
+
 pub(crate) fn load_config(cli: &Cli) -> Result<Config, Box<figment::Error>> {
     let figment = Figment::new()
         .merge(Serialized::defaults(Config::default()))

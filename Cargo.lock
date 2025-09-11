@@ -4437,8 +4437,10 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "figment",
  "mojave-prover-lib",
  "mojave-utils",
+ "serde",
  "tracing",
 ]
 
