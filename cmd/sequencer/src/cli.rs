@@ -2,9 +2,10 @@ use clap::{ArgAction, ArgGroup, Parser, Subcommand};
 use mojave_block_producer::types::BlockProducerOptions;
 use mojave_node_lib::types::{Node, SyncMode};
 use mojave_utils::network::Network;
-use tracing::Level;
 
 use serde::{Serialize, Deserialize};
+
+use crate::config::Config;
 
 #[derive(Parser, Debug, Serialize, Deserialize)]
 pub struct Options {
@@ -238,16 +239,16 @@ pub enum Command {
     GetPubKey,
 }
 
-#[derive(Parser)]
+#[derive(Parser, Serialize, Deserialize)]
 #[clap(group(ArgGroup::new("mojave::SequencerOptions")))]
 pub struct SequencerOptions {
     #[arg(
         long = "prover.address",
         help = "Allowed domain(s) and port(s) for the prover in the form 'domain:port'",
         help_heading = "Prover Options",
-        default_value = "http://0.0.0.0:3900"
+        // default_value = "http://0.0.0.0:3900"
     )]
-    pub prover_address: String,
+    pub prover_address: Option<String>,
     #[arg(
         long = "block_time",
         help = "Block creation interval in milliseconds",
@@ -255,7 +256,7 @@ pub struct SequencerOptions {
     )]
     pub block_time: u64,
     #[arg(long = "private_key", help = "Private key used for signing blocks")]
-    pub private_key: String,
+    pub private_key: Option<String>,
 }
 
 impl std::fmt::Debug for SequencerOptions {
@@ -266,8 +267,8 @@ impl std::fmt::Debug for SequencerOptions {
     }
 }
 
-impl From<&SequencerOptions> for BlockProducerOptions {
-    fn from(value: &SequencerOptions) -> Self {
+impl From<&Config> for BlockProducerOptions {
+    fn from(value: &Config) -> Self {
         Self {
             prover_address: value.prover_address.clone(),
             block_time: value.block_time,

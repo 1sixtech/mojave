@@ -25,8 +25,7 @@ fn main() -> Result<()> {
     }
     match cli.command {
         Command::Start { options: _ } => {
-            let mut node_options: mojave_node_lib::types::NodeOptions = (&config).into();
-            node_options.datadir = config.datadir.clone();
+            let node_options: mojave_node_lib::types::NodeOptions = (&config).into();
             let daemon_opts = DaemonOptions {
                 no_daemon: config.no_daemon,
                 pid_file_path: PathBuf::from(config.datadir.clone()).join(PID_FILE_NAME),
