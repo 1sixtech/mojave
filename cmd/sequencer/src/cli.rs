@@ -52,18 +52,6 @@ pub struct Options {
     pub sponsorable_addresses_file_path: Option<String>,
 
     #[arg(
-        long = "datadir",
-        value_name = "DATABASE_DIRECTORY",
-        help = "If the datadir is the word `memory`, ethrex will use the InMemory Engine",
-        help = "Receives the name of the directory where the Database is located.",
-        long_help = "If the datadir is the word `memory`, ethrex will use the `InMemory Engine`.",
-        help_heading = "Node options",
-        env = "ETHREX_DATADIR"
-    )]
-    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
-    pub datadir: Option<String>,
-
-    #[arg(
         long = "force",
         help = "Force remove the database",
         long_help = "Delete the database without confirmation.",
@@ -184,15 +172,23 @@ pub struct Options {
     )]
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub discovery_port: Option<String>,
+
+    #[arg(
+        long = "no-daemon",
+        help = "If set, the node will run in the foreground (not as a daemon). By default, the node runs as a daemon.",
+        help_heading = "Daemon Options",
+        action = clap::ArgAction::SetTrue
+    )]
+    pub no_daemon: Option<bool>,
 }
 
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Parser)]
+#[derive(Parser, Serialize, Deserialize, Debug)]
 #[command(
-    name = "mojave-sequencer",
+    name = "mojave-node",
     author,
     version,
-    about = "Mojave is a blockchain node implementation for the Mojave network",
+    about = "mojave-node is the node implementation for the Mojave network.",
     arg_required_else_help = true
 )]
 pub struct Cli {
@@ -203,7 +199,19 @@ pub struct Cli {
         long_help = "Possible values: info, debug, trace, warn, error",
         help_heading = "Node options"
     )]
-    pub log_level: Option<Level>,
+    pub log_level: Option<String>,
+    #[arg(
+        long = "datadir",
+        value_name = "DATABASE_DIRECTORY",
+        help = "If the datadir is the word `memory`, ethrex will use the InMemory Engine",
+        default_value = ".mojave/node",
+        help = "Receives the name of the directory where the Database is located.",
+        long_help = "If the datadir is the word `memory`, ethrex will use the `InMemory Engine`.",
+        help_heading = "Node options",
+        env = "ETHREX_DATADIR"
+    )]
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub datadir: Option<String>,
     #[command(subcommand)]
     pub command: Command,
 }
@@ -215,7 +223,7 @@ impl Cli {
 }
 
 #[allow(clippy::large_enum_variant)]
-#[derive(Subcommand)]
+#[derive(Subcommand, Serialize, Deserialize, Debug)]
 pub enum Command {
     #[command(name = "init", about = "Run the sequencer")]
     Start {
@@ -224,19 +232,10 @@ pub enum Command {
         #[command(flatten)]
         sequencer_options: SequencerOptions,
     },
+    #[command(name = "stop", about = "Stop the sequencer")]
+    Stop,
     #[command(name = "get-pub-key", about = "Display the public key of the node")]
-    GetPubKey {
-        #[arg(
-            long = "datadir",
-            value_name = "DATABASE_DIRECTORY",
-            default_value = "mojave-sequencer",
-            help = "Receives the name of the directory where the Database is located.",
-            long_help = "If the datadir is the word `memory`, ethrex will use the `InMemory Engine`.",
-            help_heading = "Node options",
-            env = "ETHREX_DATADIR"
-        )]
-        datadir: String,
-    },
+    GetPubKey,
 }
 
 #[derive(Parser)]

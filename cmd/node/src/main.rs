@@ -4,29 +4,50 @@ pub mod config;
 use crate::{cli::Command, config::load_config};
 use anyhow::Result;
 use mojave_node_lib::{initializers::get_signer, types::MojaveNode};
-use mojave_utils::p2p::public_key_from_signing_key;
+use mojave_utils::{
+    daemon::{DaemonOptions, run_daemonized, stop_daemonized},
+    p2p::public_key_from_signing_key,
+};
+use tracing::Level;
+use std::path::PathBuf;
+use std::str::FromStr;
 
-#[tokio::main]
-async fn main() -> Result<()> {
+const PID_FILE_NAME: &str = "node.pid";
+const LOG_FILE_NAME: &str = "node.log";
+
+fn main() -> Result<()> {
     mojave_utils::logging::init();
     let cli = cli::Cli::run();
+    let config = load_config(&cli)?;
 
-    if let Some(log_level) = cli.log_level {
-        mojave_utils::logging::change_level(log_level);
+    if let Some(log_level) = &cli.log_level {
+        mojave_utils::logging::change_level(Level::from_str(log_level)?);
     }
     match cli.command {
-        Command::Start { options } => {
-            let node_options: mojave_node_lib::types::NodeOptions = load_config(options)?;
-            let node = MojaveNode::init(&node_options).await.map_err(|error| {
-                tracing::error!("Failed to initialize the node: {}", error);
-                std::process::exit(1);
-            })?;
-            if let Err(err) = node.run(&node_options).await {
-                tracing::error!("Node stopped unexpectedly: {}", err);
-            }
+        Command::Start { options: _ } => {
+            let mut node_options: mojave_node_lib::types::NodeOptions = (&config).into();
+            node_options.datadir = config.datadir.clone();
+            let daemon_opts = DaemonOptions {
+                no_daemon: config.no_daemon,
+                pid_file_path: PathBuf::from(config.datadir.clone()).join(PID_FILE_NAME),
+                log_file_path: PathBuf::from(config.datadir).join(LOG_FILE_NAME),
+            };
+            run_daemonized(daemon_opts, || async move {
+                let node = MojaveNode::init(&node_options)
+                    .await
+                    .unwrap_or_else(|error| {
+                        tracing::error!("Failed to initialize the node: {}", error);
+                        std::process::exit(1);
+                    });
+                node.run(&node_options).await
+            })
+            .unwrap_or_else(|err| {
+                tracing::error!("Failed to start daemonized node: {}", err);
+            });
         }
-        Command::GetPubKey { datadir } => {
-            let signer = get_signer(&datadir)?;
+        Command::Stop => stop_daemonized(PathBuf::from(config.datadir.clone()).join(PID_FILE_NAME))?,
+        Command::GetPubKey => {
+            let signer = get_signer(&config.datadir)?;
             let public_key = public_key_from_signing_key(&signer);
             let public_key = hex::encode(public_key);
             println!("{public_key}");

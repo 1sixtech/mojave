@@ -11,11 +11,15 @@ documentation = { workspace = true }
 [dependencies]
 mojave-client = { workspace = true }
 mojave-node-lib = { workspace = true }
+mojave-rpc-core = { workspace = true }
+mojave-rpc-macros = { workspace = true }
+mojave-rpc-server = { workspace = true }
 mojave-signature = { workspace = true }
 mojave-utils = { workspace = true }
 
 ethrex-blockchain = { workspace = true }
 ethrex-common = { workspace = true }
+ethrex-l2 = { workspace = true }
 ethrex-l2-common = { workspace = true }
 ethrex-p2p = { workspace = true }
 ethrex-rpc = { workspace = true }
@@ -28,5 +32,4 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 tokio-stream = { workspace = true }
-tower-http = { workspace = true, features = ["cors"] }
 tracing = { workspace = true }

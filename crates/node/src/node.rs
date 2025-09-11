@@ -14,9 +14,7 @@ use ethrex_p2p::{
     network::peer_table, peer_handler::PeerHandler, rlpx::l2::l2_connection::P2PBasedContext,
     sync_manager::SyncManager,
 };
-use ethrex_rpc::EthClient;
 use ethrex_storage_rollup::{EngineTypeRollup, StoreRollup};
-use ethrex_vm::EvmEngine;
 use mojave_utils::unique_heap::AsyncUniqueHeap;
 use std::{path::PathBuf, sync::Arc, time::Duration};
 use tokio::sync::Mutex;
@@ -41,7 +39,7 @@ impl MojaveNode {
         rollup_store.init().await?;
         tracing::info!("Successfully initialized the rollup database.");
 
-        let blockchain = init_blockchain(EvmEngine::LEVM, store.clone(), BlockchainType::L2);
+        let blockchain = init_blockchain(store.clone(), BlockchainType::L2);
 
         let cancel_token = tokio_util::sync::CancellationToken::new();
 
@@ -60,7 +58,7 @@ impl MojaveNode {
             &signer,
         )?));
 
-        let peer_table = peer_table(local_p2p_node.node_id());
+        let peer_table = peer_table();
         let peer_handler = PeerHandler::new(peer_table.clone());
 
         let based_context = Some(P2PBasedContext {
@@ -74,7 +72,7 @@ impl MojaveNode {
         start_network(
             options.bootnodes.clone(),
             &options.network,
-            &options.datadir,
+            &data_dir,
             local_p2p_node.clone(),
             local_node_record.clone(),
             signer,
@@ -93,6 +91,7 @@ impl MojaveNode {
             cancel_token.clone(),
             blockchain.clone(),
             store.clone(),
+            data_dir.clone(),
         )
         .await;
 
@@ -113,7 +112,6 @@ impl MojaveNode {
 
     pub async fn run(self, options: &NodeOptions) -> Result<(), Box<dyn std::error::Error>> {
         let rpc_shutdown = CancellationToken::new();
-        let eth_client = EthClient::new("http://127.0.0.1")?;
         let jwt_secret = read_jwtsecret_file(&options.authrpc_jwtsecret)?;
         let api_task = tokio::spawn(start_api(
             get_http_socket_addr(&options.http_addr, &options.http_port),
@@ -127,7 +125,6 @@ impl MojaveNode {
             self.peer_handler,
             get_client_version(),
             self.rollup_store.clone(),
-            eth_client,
             AsyncUniqueHeap::new(),
             rpc_shutdown.clone(),
         ));

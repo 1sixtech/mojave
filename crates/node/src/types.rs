@@ -3,8 +3,7 @@ use ethrex_blockchain::Blockchain;
 use ethrex_common::types::Genesis;
 pub use ethrex_p2p::types::Node;
 use ethrex_p2p::{
-    kademlia::KademliaTable, peer_handler::PeerHandler, sync_manager::SyncManager,
-    types::NodeRecord,
+    kademlia::Kademlia, peer_handler::PeerHandler, sync_manager::SyncManager, types::NodeRecord,
 };
 use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
@@ -98,6 +97,6 @@ pub struct MojaveNode {
     pub local_p2p_node: Node,
     pub local_node_record: Arc<Mutex<NodeRecord>>,
     pub syncer: SyncManager,
-    pub peer_table: Arc<Mutex<KademliaTable>>,
+    pub peer_table: Kademlia,
     pub peer_handler: PeerHandler,
 }
