@@ -5,8 +5,8 @@ use crate::{
     rpc::start_api,
     types::{MojaveNode, NodeConfigFile, NodeOptions},
     utils::{
-        get_local_p2p_node, parse_socket_addr, read_jwtsecret_file, resolve_data_dir,
-        store_node_config_file,
+        get_authrpc_socket_addr, get_http_socket_addr, get_local_p2p_node, read_jwtsecret_file,
+        resolve_data_dir, store_node_config_file,
     },
 };
 use ethrex_blockchain::BlockchainType;
@@ -114,11 +114,9 @@ impl MojaveNode {
     pub async fn run(self, options: &NodeOptions) -> Result<()> {
         let rpc_shutdown = CancellationToken::new();
         let jwt_secret = read_jwtsecret_file(&options.authrpc_jwtsecret).await?;
-        let http_addr = parse_socket_addr(&options.http_addr, &options.http_port).await?;
-        let authrpc_addr = parse_socket_addr(&options.authrpc_addr, &options.authrpc_port).await?;
-        let api_task = tokio::spawn(start_api(
-            http_addr,
-            authrpc_addr,
+        let api_task = start_api(
+            get_http_socket_addr(&options.http_addr, &options.http_port).await?,
+            get_authrpc_socket_addr(&options.authrpc_addr, &options.authrpc_port).await?,
             self.store,
             self.blockchain,
             jwt_secret,
@@ -130,17 +128,11 @@ impl MojaveNode {
             self.rollup_store.clone(),
             AsyncUniqueHeap::new(),
             rpc_shutdown.clone(),
-        ));
+        );
         tokio::select! {
             res = api_task => {
-                match res {
-                    Ok(Ok(_)) => {}
-                    Ok(Err(e)) => {
-                        tracing::error!("API task returned error: {}", e);
-                    }
-                    Err(err) => {
-                        tracing::error!("API task failed to join: {}", err);
-                    }
+                if let Err(error) = res {
+                    tracing::error!("API task returned error: {}", error);
                 }
             }
             _ = tokio::signal::ctrl_c() => {
