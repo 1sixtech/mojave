@@ -22,10 +22,6 @@ pub enum MojaveRequestMethods {
     GetJobId,
     #[serde(rename = "moj_getProof")]
     GetProof,
-    #[serde(rename = "moj_sendBroadcastBlock")]
-    SendBroadcastBlock,
     #[serde(rename = "moj_sendProofInput")]
     SendProofInput,
-    #[serde(rename = "moj_sendProofResponse")]
-    SendProofResponse,
 }
