@@ -1,8 +1,8 @@
 use clap::{Parser, Subcommand};
+use serde::{Deserialize, Serialize};
 use std::fmt;
-use tracing::Level;
 
-#[derive(Parser)]
+#[derive(Parser, Serialize, Deserialize, Debug)]
 #[command(
     name = "mojave-prover",
     author,
@@ -18,7 +18,8 @@ pub struct Cli {
         long_help = "Possible values: info, debug, trace, warn, error",
         help_heading = "Prover options"
     )]
-    pub log_level: Option<Level>,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub log_level: Option<String>,
     #[arg(
         long = "datadir",
         value_name = "DATA_DIRECTORY",
@@ -28,7 +29,8 @@ pub struct Cli {
         help_heading = "Prover options",
         env = "ETHREX_DATADIR"
     )]
-    pub datadir: String,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub datadir: Option<String>,
     #[command(subcommand)]
     pub command: Command,
 }
@@ -39,46 +41,51 @@ impl Cli {
     }
 }
 
-#[derive(Parser)]
+#[derive(Parser, Serialize, Deserialize)]
 pub struct ProverOptions {
     #[arg(
         long = "prover.port",
-        default_value = "3900",
+        // default_value = "3900",
         help = "Port for the prover",
         help_heading = "Prover Options"
     )]
-    pub prover_port: u16,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub prover_port: Option<u16>,
 
     #[arg(
         long = "prover.host",
-        default_value = "0.0.0.0",
+        // default_value = "0.0.0.0",
         help = "Host for the prover",
         help_heading = "Prover Options"
     )]
-    pub prover_host: String,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub prover_host: Option<String>,
 
     #[arg(
         long = "prover.queue-capacity",
-        default_value_t = 100,
+        // default_value_t = 100,
         value_name = "CAPACITY",
         help = "Bounded mpsc queue capacity for proof jobs",
         help_heading = "Prover Options"
     )]
-    pub queue_capacity: usize,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub queue_capacity: Option<usize>,
 
     #[arg(
         long = "prover.aligned-mode",
         help = "Enable aligned mode for proof generation",
         help_heading = "Prover Options"
     )]
-    pub aligned_mode: bool,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub aligned_mode: Option<bool>,
 
     #[arg(
         long = "prover.private_key",
         help = "Private key used for signing proofs",
         help_heading = "Prover Options"
     )]
-    pub private_key: String,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub private_key: Option<String>,
 
     #[arg(
         long = "no-daemon",
@@ -86,7 +93,8 @@ pub struct ProverOptions {
         help_heading = "Daemon Options",
         action = clap::ArgAction::SetTrue
     )]
-    pub no_daemon: bool,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub no_daemon: Option<bool>,
 }
 
 impl fmt::Debug for ProverOptions {
@@ -102,7 +110,7 @@ impl fmt::Debug for ProverOptions {
     }
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, Serialize, Deserialize, Debug)]
 
 pub enum Command {
     #[command(name = "init", about = "Run the prover")]
