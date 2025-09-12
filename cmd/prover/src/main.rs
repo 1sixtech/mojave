@@ -31,12 +31,13 @@ fn main() -> Result<()> {
                 log_file_path: PathBuf::from(cli.datadir).join(LOG_FILE_NAME),
             };
 
-            run_daemonized(daemon_opts, || async move {
+            run_daemonized(daemon_opts, |cancel_token| async move {
                 start_api(
                     prover_options.aligned_mode,
                     &bind_addr,
                     &prover_options.private_key,
                     prover_options.queue_capacity,
+                    cancel_token,
                 )
                 .await
                 .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)

@@ -111,7 +111,7 @@ impl MojaveNode {
         })
     }
 
-    pub async fn run(self, options: &NodeOptions) -> Result<()> {
+    pub async fn run(self, options: &NodeOptions, cancel_token: CancellationToken) -> Result<()> {
         let rpc_shutdown = CancellationToken::new();
         let jwt_secret = read_jwtsecret_file(&options.authrpc_jwtsecret).await?;
         let api_task = start_api(
@@ -135,12 +135,12 @@ impl MojaveNode {
                     tracing::error!("API task returned error: {}", error);
                 }
             }
-            _ = tokio::signal::ctrl_c() => {
+            _ = cancel_token.cancelled() => {
                 tracing::info!("Shutting down the full node..");
                 rpc_shutdown.cancel();
                 let node_config_path = PathBuf::from(self.data_dir).join("node_config.json");
                 tracing::info!("Storing config at {:?}...", node_config_path);
-                self.cancel_token.cancel();
+                cancel_token.cancel();
                 let node_config = NodeConfigFile::new(self.peer_table, self.local_node_record.lock().await.clone()).await;
                 store_node_config_file(node_config, node_config_path).await;
                 tokio::time::sleep(Duration::from_secs(1)).await;

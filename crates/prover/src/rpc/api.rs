@@ -9,12 +9,14 @@ use mojave_utils::rpc::error::{Error, Result};
 use std::sync::Arc;
 use tokio::{net::TcpListener, sync::mpsc};
 use tracing::info;
+use tokio_util::sync::CancellationToken;
 
 pub async fn start_api(
     aligned_mode: bool,
     http_addr: &str,
     private_key: &str,
     queue_capacity: usize,
+    cancel_token: CancellationToken,
 ) -> Result<()> {
     let (job_sender, job_receiver) = mpsc::channel::<JobRecord>(queue_capacity);
     let context = Arc::new(ProverRpcContext {

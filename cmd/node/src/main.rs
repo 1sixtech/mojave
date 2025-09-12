@@ -29,7 +29,7 @@ async fn main() -> Result<()> {
                 pid_file_path: PathBuf::from(cli.datadir.clone()).join(PID_FILE_NAME),
                 log_file_path: PathBuf::from(cli.datadir).join(LOG_FILE_NAME),
             };
-            run_daemonized_async(daemon_opts, || async move {
+            run_daemonized_async(daemon_opts, |cancel_token| async move {
                 let node = MojaveNode::init(&node_options)
                     .await
                     .unwrap_or_else(|error| {
@@ -37,7 +37,7 @@ async fn main() -> Result<()> {
                         std::process::exit(1);
                     });
 
-                node.run(&node_options)
+                node.run(&node_options, cancel_token)
                     .await
                     .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
             })

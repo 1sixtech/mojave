@@ -36,11 +36,11 @@ async fn main() -> Result<()> {
                 log_file_path: PathBuf::from(cli.datadir).join(LOG_FILE_NAME),
             };
 
-            run_daemonized_async(daemon_opts, || async move {
+            run_daemonized_async(daemon_opts, |cancel_token| async move {
                 let node = MojaveNode::init(&node_options)
                     .await
                     .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
-                mojave_block_producer::run(node, &node_options, &block_producer_options)
+                mojave_block_producer::run(node, &node_options, &block_producer_options, cancel_token)
                     .await
                     .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
             })

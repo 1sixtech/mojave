@@ -17,6 +17,7 @@ use tokio::sync::{
     mpsc::{self, error::TrySendError},
     oneshot,
 };
+use tokio_util::sync::CancellationToken;
 use tokio_stream::{StreamExt, wrappers::ReceiverStream};
 use tracing::error;
 
@@ -24,6 +25,7 @@ pub async fn run(
     node: MojaveNode,
     node_options: &NodeOptions,
     block_producer_options: &BlockProducerOptions,
+    cancel_token: CancellationToken,
 ) -> Result<()> {
     let context = BlockProducerContext::new(
         node.store.clone(),
@@ -63,11 +65,11 @@ pub async fn run(
                 tracing::error!("API task returned error: {}", error);
             }
         }
-        _ = tokio::signal::ctrl_c() => {
+        _ = cancel_token.cancelled() => {
             tracing::info!("Shutting down the block producer..");
             let node_config_path = PathBuf::from(node.data_dir.clone()).join("node_config.json");
             tracing::info!("Storing config at {:?}...", node_config_path);
-            node.cancel_token.cancel();
+            cancel_token.cancel();
             let node_config = NodeConfigFile::new(node.peer_table.clone(), node.local_node_record.lock().await.clone()).await;
             store_node_config_file(node_config, node_config_path).await;
             tokio::time::sleep(Duration::from_secs(1)).await;

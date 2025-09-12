@@ -8,6 +8,7 @@ use std::{
 use anyhow::{Context, Result};
 use daemonize::Daemonize;
 use sysinfo::{Pid, System};
+use tokio_util::sync::CancellationToken;
 use thiserror::Error;
 
 const PROCESS_KILL_TIMEOUT_SEC: u64 = 5;
@@ -45,7 +46,7 @@ pub enum DaemonError {
 
 pub fn run_daemonized<F, Fut>(opts: DaemonOptions, proc: F) -> Result<()>
 where
-    F: FnOnce() -> Fut,
+    F: FnOnce(CancellationToken) -> Fut,
     Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
 {
     let rt = tokio::runtime::Builder::new_multi_thread()
@@ -57,7 +58,7 @@ where
 
 pub async fn run_daemonized_async<F, Fut>(opts: DaemonOptions, proc: F) -> Result<()>
 where
-    F: FnOnce() -> Fut,
+    F: FnOnce(CancellationToken) -> Fut,
     Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
 {
     if opts.no_daemon {
@@ -182,12 +183,15 @@ fn is_pid_running(pid: Pid) -> bool {
 
 async fn run_main_task_async<F, Fut, P>(proc: F, pid_file: Option<P>) -> Result<()>
 where
-    F: FnOnce() -> Fut,
+    F: FnOnce(CancellationToken) -> Fut,
     Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
     P: AsRef<Path>,
 {
+    let cancel_token = CancellationToken::new();
+    let task = proc(cancel_token.clone());
+    tokio::pin!(task);
     let result: Result<()> = tokio::select! {
-        res = proc() => {
+        res = &mut task => {
             match res {
                 Ok(()) => Ok(()),
                 Err(err) => {
@@ -198,7 +202,13 @@ where
         },
         _ = tokio::signal::ctrl_c() => {
             tracing::info!("Shutting down...");
-            Ok(())
+            cancel_token.cancel();
+            if let Err(e) = task.await {
+                tracing::error!("Process stopped unexpectedly: {e}");
+                Err(anyhow::anyhow!("{}", e))
+            } else {
+                Ok(())
+            }
         }
     };
 
