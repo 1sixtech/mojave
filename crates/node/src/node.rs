@@ -140,7 +140,6 @@ impl MojaveNode {
                 rpc_shutdown.cancel();
                 let node_config_path = PathBuf::from(self.data_dir).join("node_config.json");
                 tracing::info!("Storing config at {:?}...", node_config_path);
-                cancel_token.cancel();
                 let node_config = NodeConfigFile::new(self.peer_table, self.local_node_record.lock().await.clone()).await;
                 store_node_config_file(node_config, node_config_path).await;
                 tokio::time::sleep(Duration::from_secs(1)).await;
