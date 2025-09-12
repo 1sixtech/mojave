@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use ethrex_blockchain::Blockchain;
 use ethrex_p2p::{
-    kademlia::KademliaTable,
+    kademlia::Kademlia,
     network::P2PContext,
     rlpx::l2::l2_connection::P2PBasedContext,
     types::{Node, NodeRecord},
@@ -13,7 +13,7 @@ use secp256k1::SecretKey;
 use tokio::sync::Mutex;
 use tokio_util::task::TaskTracker;
 
-use crate::{node::get_client_version, utils::get_bootnodes};
+use crate::{error::Result, node::get_client_version, utils::get_bootnodes};
 
 #[expect(clippy::too_many_arguments)]
 pub async fn start_network(
@@ -23,13 +23,13 @@ pub async fn start_network(
     local_p2p_node: Node,
     local_node_record: Arc<Mutex<NodeRecord>>,
     signer: SecretKey,
-    peer_table: Arc<Mutex<KademliaTable>>,
+    peer_table: Kademlia,
     store: Store,
     tracker: TaskTracker,
     blockchain: Arc<Blockchain>,
     based_context: Option<P2PBasedContext>,
-) {
-    let bootnodes = get_bootnodes(bootnodes, network, data_dir);
+) -> Result<()> {
+    let bootnodes = get_bootnodes(bootnodes, network, data_dir).await;
 
     let context = P2PContext::new(
         local_p2p_node,
@@ -38,16 +38,16 @@ pub async fn start_network(
         signer,
         peer_table.clone(),
         store,
-        blockchain,
+        blockchain.clone(),
         get_client_version(),
         based_context,
     );
 
-    context.set_fork_id().await.expect("Set fork id");
+    ethrex_p2p::start_network(context, bootnodes).await?;
 
-    ethrex_p2p::start_network(context, bootnodes)
-        .await
-        .expect("Network starts");
-
-    tracker.spawn(ethrex_p2p::periodically_show_peer_stats(peer_table.clone()));
+    tracker.spawn(ethrex_p2p::periodically_show_peer_stats(
+        blockchain,
+        peer_table.peers,
+    ));
+    Ok(())
 }

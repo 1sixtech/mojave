@@ -47,18 +47,6 @@ pub struct Options {
     pub sponsorable_addresses_file_path: Option<String>,
 
     #[arg(
-        long = "datadir",
-        value_name = "DATABASE_DIRECTORY",
-        help = "If the datadir is the word `memory`, ethrex will use the InMemory Engine",
-        default_value = ".mojave/mojave-node",
-        help = "Receives the name of the directory where the Database is located.",
-        long_help = "If the datadir is the word `memory`, ethrex will use the `InMemory Engine`.",
-        help_heading = "Node options",
-        env = "ETHREX_DATADIR"
-    )]
-    pub datadir: String,
-
-    #[arg(
         long = "force",
         help = "Force remove the database",
         long_help = "Delete the database without confirmation.",
@@ -175,6 +163,13 @@ pub struct Options {
         help_heading = "P2P options"
     )]
     pub discovery_port: String,
+    #[arg(
+        long = "no-daemon",
+        help = "If set, the node will run in the foreground (not as a daemon). By default, the node runs as a daemon.",
+        help_heading = "Daemon Options",
+        action = clap::ArgAction::SetTrue
+    )]
+    pub no_daemon: bool,
 }
 
 impl From<&Options> for mojave_node_lib::types::NodeOptions {
@@ -192,7 +187,7 @@ impl From<&Options> for mojave_node_lib::types::NodeOptions {
             discovery_port: options.discovery_port.clone(),
             network: options.network.clone(),
             bootnodes: options.bootnodes.clone(),
-            datadir: options.datadir.clone(),
+            datadir: Default::default(),
             syncmode: options.syncmode.unwrap_or(SyncMode::Full),
             sponsorable_addresses_file_path: options.sponsorable_addresses_file_path.clone(),
             metrics_addr: options.metrics_addr.clone(),
@@ -221,6 +216,17 @@ pub struct Cli {
         help_heading = "Node options"
     )]
     pub log_level: Option<Level>,
+    #[arg(
+        long = "datadir",
+        value_name = "DATABASE_DIRECTORY",
+        help = "If the datadir is the word `memory`, ethrex will use the InMemory Engine",
+        default_value = ".mojave/node",
+        help = "Receives the name of the directory where the Database is located.",
+        long_help = "If the datadir is the word `memory`, ethrex will use the `InMemory Engine`.",
+        help_heading = "Node options",
+        env = "ETHREX_DATADIR"
+    )]
+    pub datadir: String,
     #[command(subcommand)]
     pub command: Command,
 }
@@ -239,17 +245,8 @@ pub enum Command {
         #[command(flatten)]
         options: Options,
     },
+    #[command(name = "stop", about = "Stop the node")]
+    Stop,
     #[command(name = "get-pub-key", about = "Display the public key of the node")]
-    GetPubKey {
-        #[arg(
-            long = "datadir",
-            value_name = "DATABASE_DIRECTORY",
-            default_value = "mojave",
-            help = "Receives the name of the directory where the Database is located.",
-            long_help = "If the datadir is the word `memory`, ethrex will use the `InMemory Engine`.",
-            help_heading = "Node options",
-            env = "ETHREX_DATADIR"
-        )]
-        datadir: String,
-    },
+    GetPubKey,
 }
