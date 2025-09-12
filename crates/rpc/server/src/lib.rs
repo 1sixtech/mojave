@@ -6,7 +6,7 @@ use ethrex_rpc::RpcRequestWrapper;
 use mojave_rpc_core::{
     RpcErr, RpcRequest,
     types::Namespace,
-    utils::{resolve_namespace, rpc_response},
+    utils::{resolve_namespace, rpc_response, rpc_response_error},
 };
 use serde_json::Value;
 use tower_http::cors::CorsLayer;
@@ -170,11 +170,9 @@ async fn handle<C: Clone + Send + Sync + 'static>(
     let wrapper = match serde_json::from_str::<RpcRequestWrapper>(&body) {
         Ok(wrapper) => wrapper,
         Err(_) => {
-            let error_response = rpc_response(
-                mojave_rpc_core::RpcRequestId::Number(0),
-                Err(RpcErr::BadParams("Invalid JSON".to_string())),
-            )
-            .unwrap_or_else(|_| serde_json::json!({"error": "Parse error"}));
+            let error_response =
+                rpc_response_error(None, RpcErr::BadParams("Invalid JSON".to_string()))
+                    .unwrap_or_else(|_| serde_json::json!({"error": "Parse error"}));
             return Err((StatusCode::BAD_REQUEST, Json(error_response)));
         }
     };
