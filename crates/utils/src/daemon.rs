@@ -8,8 +8,8 @@ use std::{
 use anyhow::{Context, Result};
 use daemonize::Daemonize;
 use sysinfo::{Pid, System};
-use tokio_util::sync::CancellationToken;
 use thiserror::Error;
+use tokio_util::sync::CancellationToken;
 
 const PROCESS_KILL_TIMEOUT_SEC: u64 = 5;
 

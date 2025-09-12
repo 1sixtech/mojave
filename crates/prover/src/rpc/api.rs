@@ -8,8 +8,8 @@ use mojave_utils::rpc::error::{Error, Result};
 
 use std::sync::Arc;
 use tokio::{net::TcpListener, sync::mpsc};
-use tracing::info;
 use tokio_util::sync::CancellationToken;
+use tracing::info;
 
 pub async fn start_api(
     aligned_mode: bool,
@@ -36,7 +36,10 @@ pub async fn start_api(
         .await
         .map_err(|error| Error::Internal(error.to_string()))?;
     tracing::info!(addr = %http_addr, "HTTP server bound");
-    let http_server = axum::serve(http_listener, http_router).into_future();
+    let server_cancel = cancel_token.clone();
+    let http_server = axum::serve(http_listener, http_router)
+        .with_graceful_shutdown(server_cancel.cancelled_owned())
+        .into_future();
     info!("Starting HTTP server at {http_addr}");
 
     let client = MojaveClient::builder()
@@ -46,7 +49,8 @@ pub async fn start_api(
     tracing::info!("MojaveClient initialized");
 
     // Start the proof worker in the background.
-    let proof_worker_handle = spawn_proof_worker(context, job_receiver, client);
+    let proof_worker_handle =
+        spawn_proof_worker(context.clone(), job_receiver, client, cancel_token.clone());
     tracing::info!("Proof worker task spawned");
 
     let _ = tokio::try_join!(

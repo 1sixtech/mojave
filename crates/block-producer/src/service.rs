@@ -17,8 +17,8 @@ use tokio::sync::{
     mpsc::{self, error::TrySendError},
     oneshot,
 };
-use tokio_util::sync::CancellationToken;
 use tokio_stream::{StreamExt, wrappers::ReceiverStream};
+use tokio_util::sync::CancellationToken;
 use tracing::error;
 
 pub async fn run(
@@ -46,6 +46,7 @@ pub async fn run(
 
     let local_node_record = node.local_node_record.lock().await.clone();
 
+    let rpc_shutdown = CancellationToken::new();
     let api_task = start_api(
         get_http_socket_addr(&node_options.http_addr, &node_options.http_port).await?,
         get_authrpc_socket_addr(&node_options.authrpc_addr, &node_options.authrpc_port).await?,
@@ -58,6 +59,7 @@ pub async fn run(
         node.peer_handler,
         get_client_version(),
         node.rollup_store,
+        rpc_shutdown.clone(),
     );
     tokio::select! {
         res = api_task => {
@@ -67,6 +69,7 @@ pub async fn run(
         }
         _ = cancel_token.cancelled() => {
             tracing::info!("Shutting down the block producer..");
+            rpc_shutdown.cancel();
             let node_config_path = PathBuf::from(node.data_dir.clone()).join("node_config.json");
             tracing::info!("Storing config at {:?}...", node_config_path);
             let node_config = NodeConfigFile::new(node.peer_table.clone(), node.local_node_record.lock().await.clone()).await;
