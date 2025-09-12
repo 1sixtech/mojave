@@ -14,8 +14,8 @@
  #[derive(Clone)]
  struct Ctx;
 
- #[mojave_rpc_macros::rpc(namespace = "moj", method = "getJobId")]
- pub async fn get_job_id(
+ #[mojave_rpc_macros::rpc(namespace = "moj", method = "getPendingJobIds")]
+ pub async fn get_pending_jobs(
      _ctx: Ctx,
      _params: (),
  ) -> Result<Value, RpcErr> {
@@ -30,11 +30,11 @@
  # use mojave_rpc_core::RpcErr;
  # use serde_json::Value;
  # #[derive(Clone)] struct Ctx;
- # #[mojave_rpc_macros::rpc(namespace = "moj", method = "getJobId")]
- # async fn get_job_id(_ctx: Ctx, _params: ()) -> Result<Value, RpcErr> { Ok(serde_json::json!([])) }
+ # #[mojave_rpc_macros::rpc(namespace = "moj", method = "getPendingJobIds")]
+ # async fn get_pending_jobs(_ctx: Ctx, _params: ()) -> Result<Value, RpcErr> { Ok(serde_json::json!([])) }
  let mut registry: mojave_rpc_server::RpcRegistry<Ctx> =
      mojave_rpc_server::RpcRegistry::new();
- register_moj_getJobId(&mut registry);
+     register_moj_getPendingJobIds(&mut registry);
  ```
 
  Parameter extraction rules

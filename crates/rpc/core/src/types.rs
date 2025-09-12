@@ -18,8 +18,8 @@ pub enum Namespace {
 
 #[derive(Eq, PartialEq, Serialize, Deserialize)]
 pub enum MojaveRequestMethods {
-    #[serde(rename = "moj_getJobId")]
-    GetJobId,
+    #[serde(rename = "moj_getPendingJobIds")]
+    GetPendingJobIds,
     #[serde(rename = "moj_getProof")]
     GetProof,
     #[serde(rename = "moj_sendBroadcastBlock")]

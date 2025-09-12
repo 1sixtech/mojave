@@ -26,7 +26,7 @@ pub async fn start_api(
 
     let mut registry: RpcRegistry<Arc<ProverRpcContext>> = RpcRegistry::new();
     crate::rpc::handlers::register_moj_sendProofInput(&mut registry);
-    crate::rpc::handlers::register_moj_getJobId(&mut registry);
+    crate::rpc::handlers::register_moj_getPendingJobIds(&mut registry);
     crate::rpc::handlers::register_moj_getProof(&mut registry);
     let service = RpcService::new(context.clone(), registry).with_permissive_cors();
     let http_router = service.router();
