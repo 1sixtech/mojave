@@ -6,19 +6,20 @@ use bitcoin::{
     absolute::LockTime,
     blockdata::script,
     hashes::Hash,
-    key::{TapTweak, TweakedPublicKey, UntweakedKeypair},
+    key::UntweakedKeypair,
     secp256k1::{
-        constants::SCHNORR_SIGNATURE_SIZE, schnorr::Signature, Message, XOnlyPublicKey, SECP256K1,
+        constants::SCHNORR_SIGNATURE_SIZE, schnorr::Signature, Message, XOnlyPublicKey,
     },
     sighash::{Prevouts, SighashCache},
     taproot::{
-        ControlBlock, LeafVersion, TapLeafHash, TaprootBuilder, TaprootBuilderError,
+        ControlBlock, LeafVersion, TapLeafHash,
         TaprootSpendInfo,
     },
     transaction::Version,
-    Address, Amount, Network, OutPoint, ScriptBuf, Sequence, Transaction, TxIn, TxOut, Txid,
+    Address, Amount, OutPoint, ScriptBuf, Sequence, Transaction, TxIn, TxOut, Txid,
     Witness,
 };
+use secp256k1::SECP256K1;
 use bitcoincore_rpc::{json::ListUnspentResultEntry};
 use rand::{rngs::OsRng, RngCore};
 
@@ -187,7 +188,7 @@ pub fn build_commit_tx(
         .cloned()
         .collect();
 
-    /// Repeatedly enlarge the size (fee) until a tx can be built
+    // Repeatedly enlarge the size (fee) until a tx can be built
     let (commit_txn, consumed_utxo) = loop {
         let fee = (last_size as u64) * fee_rate;
 

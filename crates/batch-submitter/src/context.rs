@@ -1,23 +1,10 @@
-use core::{result::Result::Ok, str::FromStr};
-use std::cmp::Reverse;
-
 use anyhow::anyhow;
 use bitcoin::{
-    absolute::LockTime,
-    blockdata::{opcodes::all::OP_CHECKSIG, script},
-    hashes::Hash,
-    key::{TapTweak, TweakedPublicKey, UntweakedKeypair},
-    secp256k1::{
-        constants::SCHNORR_SIGNATURE_SIZE, schnorr::Signature, Message, XOnlyPublicKey, SECP256K1,
-    },
-    sighash::{Prevouts, SighashCache},
+    secp256k1::{ XOnlyPublicKey, SECP256K1,},
     taproot::{
-        ControlBlock, LeafVersion, TapLeafHash, TaprootBuilder, TaprootBuilderError,
-        TaprootSpendInfo,
+        LeafVersion, TaprootBuilder,
     },
-    transaction::Version,
-    Address, Amount, Network, OutPoint, ScriptBuf, Sequence, Transaction, TxIn, TxOut, Txid,
-    Witness,
+    Address, Network, Transaction
 };
 use bitcoincore_rpc::RpcApi;
 
