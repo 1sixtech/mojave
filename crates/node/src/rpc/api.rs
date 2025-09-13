@@ -76,7 +76,7 @@ pub async fn start_api(
         .await
         .map_err(|error| RpcErr::Internal(error.to_string()))?;
     let http_server = axum::serve(http_listener, http_router)
-        .with_graceful_shutdown(ethrex_rpc::shutdown_signal())
+        .with_graceful_shutdown(shutdown_token.cancelled_owned())
         .into_future();
     info!("Starting HTTP server at {http_addr}");
 
