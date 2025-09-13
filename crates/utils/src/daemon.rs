@@ -186,21 +186,7 @@ where
     Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
     P: AsRef<Path>,
 {
-    let result: Result<()> = tokio::select! {
-        res = proc() => {
-            match res {
-                Ok(()) => Ok(()),
-                Err(err) => {
-                    tracing::error!("Process stopped unexpectedly: {}", err);
-                    Err(anyhow::anyhow!("{}", err))
-                }
-            }
-        },
-        _ = tokio::signal::ctrl_c() => {
-            tracing::info!("Shutting down...");
-            Ok(())
-        }
-    };
+    let res = proc().await;
 
     if let Some(pid_file) = pid_file
         && let Err(e) = std::fs::remove_file(pid_file)
@@ -208,5 +194,11 @@ where
         tracing::warn!(error = %e, "Failed to remove pid file during shutdown");
     }
 
-    result
+    match res {
+        Ok(()) => Ok(()),
+        Err(err) => {
+            tracing::error!("Process stopped unexpectedly: {}", err);
+            Err(anyhow::anyhow!("{}", err))
+        }
+    }
 }

@@ -16,9 +16,9 @@ use ethrex_p2p::{
 };
 use ethrex_storage_rollup::{EngineTypeRollup, StoreRollup};
 use mojave_utils::unique_heap::AsyncUniqueHeap;
-use std::{path::PathBuf, sync::Arc, time::Duration};
+use std::{path::PathBuf, sync::Arc};
 use tokio::sync::Mutex;
-use tokio_util::{sync::CancellationToken, task::TaskTracker};
+use tokio_util::task::TaskTracker;
 
 impl MojaveNode {
     pub async fn init(options: &NodeOptions) -> Result<Self> {
@@ -112,7 +112,7 @@ impl MojaveNode {
     }
 
     pub async fn run(self, options: &NodeOptions) -> Result<()> {
-        let rpc_shutdown = CancellationToken::new();
+        let rpc_shutdown = self.cancel_token.child_token();
         let jwt_secret = read_jwtsecret_file(&options.authrpc_jwtsecret).await?;
         let api_task = start_api(
             get_http_socket_addr(&options.http_addr, &options.http_port).await?,
@@ -129,21 +129,24 @@ impl MojaveNode {
             AsyncUniqueHeap::new(),
             rpc_shutdown.clone(),
         );
+        tokio::pin!(api_task);
         tokio::select! {
-            res = api_task => {
+            res = &mut api_task => {
                 if let Err(error) = res {
                     tracing::error!("API task returned error: {}", error);
                 }
             }
             _ = tokio::signal::ctrl_c() => {
                 tracing::info!("Shutting down the full node..");
-                rpc_shutdown.cancel();
                 let node_config_path = PathBuf::from(self.data_dir).join("node_config.json");
                 tracing::info!("Storing config at {:?}...", node_config_path);
                 self.cancel_token.cancel();
                 let node_config = NodeConfigFile::new(self.peer_table, self.local_node_record.lock().await.clone()).await;
                 store_node_config_file(node_config, node_config_path).await;
-                tokio::time::sleep(Duration::from_secs(1)).await;
+
+                if let Err(_elapsed) = tokio::time::timeout(std::time::Duration::from_secs(10), api_task).await {
+                    tracing::warn!("Timed out waiting for API to stop");
+                }
                 tracing::info!("Successfully shut down the full node.");
             }
         }
