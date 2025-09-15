@@ -317,11 +317,11 @@ impl<'a> Request<'a> {
             .await
     }
 
-    pub async fn get_job_id(&self) -> Result<Vec<JobId>> {
+    pub async fn get_pending_job_ids(&self) -> Result<Vec<JobId>> {
         let request = RpcRequest {
             id: RpcRequestId::Number(1),
             jsonrpc: "2.0".to_string(),
-            method: to_string(&MojaveRequestMethods::GetJobId)?,
+            method: to_string(&MojaveRequestMethods::GetPendingJobIds)?,
             params: None,
         };
 

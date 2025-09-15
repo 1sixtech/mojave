@@ -17,6 +17,7 @@ use std::{
     time::Duration,
 };
 use tokio::{net::TcpListener, sync::Mutex as TokioMutex};
+use tokio_util::sync::CancellationToken;
 use tracing::info;
 
 use mojave_rpc_core::types::Namespace;
@@ -43,6 +44,7 @@ pub async fn start_api(
     peer_handler: PeerHandler,
     client_version: String,
     rollup_store: StoreRollup,
+    cancel_token: CancellationToken,
 ) -> Result<(), RpcErr> {
     let active_filters = Arc::new(Mutex::new(HashMap::new()));
     let context = RpcApiContext {
@@ -87,7 +89,7 @@ pub async fn start_api(
         .await
         .map_err(|error| RpcErr::Internal(error.to_string()))?;
     let http_server = axum::serve(http_listener, http_router)
-        .with_graceful_shutdown(ethrex_rpc::shutdown_signal())
+        .with_graceful_shutdown(cancel_token.cancelled_owned())
         .into_future();
     info!("Starting HTTP server at {http_addr}");
 

@@ -115,6 +115,7 @@ pub async fn start_test_api_sequencer(
         .private_key(private_key)
         .build()
         .unwrap();
+    let cancel_token = CancellationToken::new();
     let rpc_api = start_api_block_producer(
         http_addr,
         authrpc_addr,
@@ -127,6 +128,7 @@ pub async fn start_test_api_sequencer(
         PeerHandler::dummy(),
         "ethrex/test".to_string(),
         rollup_store,
+        cancel_token,
     );
 
     let (sequencer_tx, sequencer_rx) = tokio::sync::oneshot::channel();
