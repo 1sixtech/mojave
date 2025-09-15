@@ -43,8 +43,8 @@ pub fn build_reveal_script(
         .push_opcode(bitcoin::opcodes::all::OP_CHECKSIG)
         .push_opcode(bitcoin::opcodes::all::OP_IF);
 
-    const MAX_PUSH_SIZR: usize = 520;
-    for chunk in payload.chunks(MAX_PUSH_SIZR) {
+    const MAX_PUSH_SIZE: usize = 520;
+    for chunk in payload.chunks(MAX_PUSH_SIZE) {
         script_builder = script_builder.push_slice(script::PushBytesBuf::try_from(chunk.to_vec())?);
     }
     script_builder = script_builder.push_opcode(bitcoin::opcodes::all::OP_ENDIF);
