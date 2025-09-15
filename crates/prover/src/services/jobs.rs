@@ -30,7 +30,8 @@ pub async fn enqueue_proof_input(
     Ok(job_id)
 }
 
-pub async fn get_pending_jobs(ctx: &ProverRpcContext) -> Result<Vec<String>> {
+#[inline]
+pub async fn get_pending_job_ids(ctx: &ProverRpcContext) -> Result<Vec<String>> {
     Ok(ctx.job_store.get_pending_jobs().await)
 }
 
