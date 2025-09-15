@@ -12,7 +12,6 @@ documentation = { workspace = true }
 mojave-client = { workspace = true }
 mojave-node-lib = { workspace = true }
 mojave-rpc-core = { workspace = true }
-mojave-rpc-macros = { workspace = true }
 mojave-rpc-server = { workspace = true }
 mojave-signature = { workspace = true }
 mojave-utils = { workspace = true }
@@ -28,8 +27,8 @@ ethrex-storage-rollup = { workspace = true }
 ethrex-vm = { workspace = true }
 
 axum = { workspace = true }
-serde_json = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 tokio-stream = { workspace = true }
+tokio-util = { workspace = true }
 tracing = { workspace = true }

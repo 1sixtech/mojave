@@ -5,7 +5,7 @@
 
  What it provides
  - A dynamic method registry (`RpcRegistry<C>`) that maps JSON-RPC method
-   names (e.g. `"eth_chainId"`, `"moj_getJobId"`) to async handlers.
+   names (e.g. `"eth_chainId"`, `"moj_getPendingJobIds"`) to async handlers.
  - Optional per‑namespace fallbacks (e.g. forward all `eth_*` calls to an L1
    implementation) via `register_fallback`.
  - A small service wrapper (`RpcService<C>`) that binds a context `C` and a

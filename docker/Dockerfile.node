@@ -6,25 +6,28 @@ RUN apt-get update && apt-get install -y  --no-install-recommends \
 
 WORKDIR /build
 
-# Cache dependencies
+# Optional build flags
+ARG BUILD_FLAGS=""
+
+# Cache deps
 COPY Cargo.toml Cargo.lock ./
 RUN mkdir src && echo "fn main() {}" > src/main.rs
 RUN cargo build --release || true
 
+# Build
 COPY . .
-# Optional build flags
-ARG BUILD_FLAGS=""
-RUN cargo build --release $BUILD_FLAGS
+RUN cargo build --release --bin mojave-node ${BUILD_FLAGS}
 
+# Runtime
 FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
 	libssl3 ca-certificates curl \
 	&& rm -rf /var/lib/apt/lists/*
 
-COPY data /usr/local/bin/data
+COPY data /data
 COPY --from=builder /build/target/release/mojave-node /usr/local/bin/mojave-node
-COPY --from=builder /build/target/release/mojave-prover /usr/local/bin/mojave-prover
-COPY --from=builder /build/target/release/mojave-sequencer /usr/local/bin/mojave-sequencer
-EXPOSE 8545
-ENTRYPOINT ["/usr/local/bin/mojave-sequencer"]
+
+EXPOSE 8545 30304
+
+ENTRYPOINT ["mojave-node"]
