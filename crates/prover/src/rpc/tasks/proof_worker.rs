@@ -1,11 +1,8 @@
 use std::sync::Arc;
 
-use ethrex_prover_lib::{backends::Backend, prove, to_batch_proof};
+use ethrex_prover_lib::{backend::Backend, prove, to_batch_proof};
 use ethrex_rpc::RpcErr;
-use mojave_client::{
-    MojaveClient,
-    types::{ProofResponse, ProofResult, Strategy},
-};
+use mojave_client::types::{ProofResponse, ProofResult};
 use tokio::{sync::mpsc, task::JoinHandle};
 
 use crate::rpc::{ProverRpcContext, types::JobRecord};
@@ -13,7 +10,6 @@ use crate::rpc::{ProverRpcContext, types::JobRecord};
 pub(crate) fn spawn_proof_worker(
     ctx: Arc<ProverRpcContext>,
     mut receiver: mpsc::Receiver<JobRecord>,
-    client: MojaveClient,
 ) -> JoinHandle<()> {
     tokio::spawn(async move {
         tracing::info!("Proof worker started");
@@ -51,20 +47,8 @@ pub(crate) fn spawn_proof_worker(
                     ctx.job_store
                         .upsert_proof(&job_id, proof_response.clone())
                         .await;
-                    match client
-                        .request()
-                        .urls(std::slice::from_ref(&job.sequencer_url))
-                        .strategy(Strategy::Sequential)
-                        .send_proof_response(&proof_response)
-                        .await
-                    {
-                        Ok(_) => {
-                            tracing::info!(%job_id, %batch_number, sequencer = %job.sequencer_url, "Proof sent to sequencer");
-                        }
-                        Err(err) => {
-                            tracing::error!("Proof sending error: {:}", err.to_string());
-                        }
-                    }
+
+                    todo!("Send proof to sequencer")
                 }
                 None => {
                     tracing::info!("Proof worker channel closed; stopping");

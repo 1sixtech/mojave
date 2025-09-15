@@ -240,6 +240,7 @@ echo -e "${BLUE}[SEQUENCER]${NC} Starting sequencer…"
     set -a
     set +a
     exec cargo run --bin mojave-sequencer -- init \
+        --no-daemon \
         --network "$GENESIS" \
         --http.port "$SEQ_PORT" \
         --private_key "$SEQ_PRIVKEY"
@@ -265,6 +266,7 @@ echo -e "${GREEN}[NODE]${NC} Starting full node…"
 # Build node command with optional bootnodes
 node_cmd=(
     cargo run --bin mojave-node -- init
+    --no-daemon
     --network "$GENESIS"
     --discovery.port "$NODE_P2P_PORT"
     --p2p.port "$NODE_P2P_PORT"

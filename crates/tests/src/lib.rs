@@ -83,7 +83,6 @@ pub async fn start_test_api_node(
         PeerHandler::dummy(),
         "ethrex/test".to_string(),
         rollup_store,
-        eth_client.clone(),
         block_queue,
         shutdown_token,
     );

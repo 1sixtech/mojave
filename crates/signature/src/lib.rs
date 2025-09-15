@@ -12,3 +12,10 @@ cfg_if::cfg_if! {
       pub use eddsa::{SigningKey, VerifyingKey};
     }
 }
+
+pub mod prelude {
+    pub use crate::{
+        error::{Error, Result},
+        types::*,
+    };
+}
