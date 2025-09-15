@@ -1,4 +1,7 @@
+use ethrex_rpc::RpcErrorMetadata;
 use serde::{Deserialize, Serialize};
+
+use crate::RpcRequestId;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Namespace {
@@ -24,4 +27,11 @@ pub enum MojaveRequestMethods {
     GetProof,
     #[serde(rename = "moj_sendProofInput")]
     SendProofInput,
+}
+
+#[derive(Serialize)]
+pub struct RpcErrorResponse {
+    pub jsonrpc: String,
+    pub id: Option<RpcRequestId>,
+    pub error: RpcErrorMetadata,
 }
