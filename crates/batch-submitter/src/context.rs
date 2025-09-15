@@ -1,27 +1,20 @@
 use anyhow::anyhow;
 use bitcoin::{
-    secp256k1::{ XOnlyPublicKey, SECP256K1,},
-    taproot::{
-        LeafVersion, TaprootBuilder,
-    },
-    Address, Network, Transaction
+    Address, Network, Transaction,
+    secp256k1::{SECP256K1, XOnlyPublicKey},
+    taproot::{LeafVersion, TaprootBuilder},
 };
 use bitcoincore_rpc::RpcApi;
 
 use crate::{
+    BatchSubmitterError,
     writer::{
-        generate_key_pair,
-        calculate_commit_output_value,
-        build_reveal_script,
-        build_commit_tx,
-        build_reveal_tx,
-        sign_reveal_tx,
+        build_commit_tx, build_reveal_script, build_reveal_tx, calculate_commit_output_value,
+        generate_key_pair, sign_reveal_tx,
     },
-    BatchSubmitterError
 };
 
 use bitcoincore_rpc::Client as BitcoinRPCClient;
-
 
 pub struct WriterContext {
     rpc_client: BitcoinRPCClient,

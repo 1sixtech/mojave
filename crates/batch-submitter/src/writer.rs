@@ -3,30 +3,23 @@ use std::cmp::Reverse;
 
 use anyhow::anyhow;
 use bitcoin::{
+    Address, Amount, OutPoint, ScriptBuf, Sequence, Transaction, TxIn, TxOut, Txid, Witness,
     absolute::LockTime,
     blockdata::script,
     hashes::Hash,
     key::UntweakedKeypair,
-    secp256k1::{
-        constants::SCHNORR_SIGNATURE_SIZE, schnorr::Signature, Message, XOnlyPublicKey,
-    },
+    secp256k1::{Message, XOnlyPublicKey, constants::SCHNORR_SIGNATURE_SIZE, schnorr::Signature},
     sighash::{Prevouts, SighashCache},
-    taproot::{
-        ControlBlock, LeafVersion, TapLeafHash,
-        TaprootSpendInfo,
-    },
+    taproot::{ControlBlock, LeafVersion, TapLeafHash, TaprootSpendInfo},
     transaction::Version,
-    Address, Amount, OutPoint, ScriptBuf, Sequence, Transaction, TxIn, TxOut, Txid,
-    Witness,
 };
+use bitcoincore_rpc::json::ListUnspentResultEntry;
+use rand::{RngCore, rngs::OsRng};
 use secp256k1::SECP256K1;
-use bitcoincore_rpc::{json::ListUnspentResultEntry};
-use rand::{rngs::OsRng, RngCore};
 
-use crate::{BatchSubmitterError};
+use crate::BatchSubmitterError;
 
 const BITCOIN_DUST_LIMIT: u64 = 546;
-
 
 pub fn generate_key_pair() -> Result<UntweakedKeypair, anyhow::Error> {
     let mut rand_bytes = [0; 32];
@@ -204,13 +197,13 @@ pub fn build_commit_tx(
         });
 
         // add change output if needed
-        if let Some(excess) = sum.checked_sub(input_total) {
-            if excess >= BITCOIN_DUST_LIMIT {
-                outputs.push(TxOut {
-                    value: Amount::from_sat(excess),
-                    script_pubkey: change_address.script_pubkey(),
-                });
-            }
+        if let Some(excess) = sum.checked_sub(input_total)
+            && excess >= BITCOIN_DUST_LIMIT
+        {
+            outputs.push(TxOut {
+                value: Amount::from_sat(excess),
+                script_pubkey: change_address.script_pubkey(),
+            });
         }
 
         // build inputs
