@@ -6,9 +6,6 @@ RUN apt-get update && apt-get install -y  --no-install-recommends \
 
 WORKDIR /build
 
-# Target binary name (e.g., mojave-node, mojave-sequencer, mojave-prover)
-ARG TARGET_BIN="mojave-prover"
-
 # Optional build flags
 ARG BUILD_FLAGS=""
 
@@ -19,17 +16,15 @@ RUN cargo build --release || true
 
 # Build
 COPY . .
-RUN cargo build --release --bin ${TARGET_BIN} ${BUILD_FLAGS}
+RUN cargo build --release --bin mojave-prover ${BUILD_FLAGS}
 
 # Runtime
 FROM debian:bookworm-slim
-
-ARG TARGET_BIN
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
 	libssl3 ca-certificates curl \
 	&& rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /build/target/release/${TARGET_BIN} /usr/local/bin/${TARGET_BIN}
+COPY --from=builder /build/target/release/mojave-prover /usr/local/bin/mojave-prover
 
 ENTRYPOINT ["mojave-prover"]
