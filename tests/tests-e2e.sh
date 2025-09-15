@@ -8,10 +8,20 @@ set -e  # Exit on error
 echo "Running e2e tests"
 
 echo "Checking if rex is installed"
-REX_PATH=$(command -v rex 2>/dev/null || true)
-if [ -z "$REX_PATH" ]; then
-    echo "ERROR: 'rex' command not found!"
-    exit 1
+if ! command -v rex >/dev/null 2>&1; then
+  REX_REPOSITORY_URL="https://github.com/lambdaclass/rex"
+  REX_CLI_DOC_URL="${REX_REPOSITORY_URL}/blob/main/cli/README.md"
+
+cat >&2 <<EOF
+ERROR: 'rex' command not found. ❌
+
+See the installation guides:
+  - Repository: ${REX_REPOSITORY_URL}
+  - CLI README: ${REX_CLI_DOC_URL}
+
+After installation, ensure 'rex' is on your PATH (e.g., \`rex --version\`) and re-run the script.
+EOF
+  exit 127
 fi
 
 # Source code: https://github.com/Drizzle210/Counter/blob/main/src/Counter.sol
