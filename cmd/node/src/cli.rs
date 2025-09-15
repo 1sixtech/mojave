@@ -3,7 +3,7 @@ use mojave_node_lib::types::{Node, SyncMode};
 use mojave_utils::network::Network;
 use serde::{Deserialize, Serialize};
 
-#[derive(Parser, Debug, Serialize, Deserialize)]
+#[derive(Parser, Debug, Serialize, Deserialize, Clone)]
 pub struct Options {
     #[arg(
         long = "network",
@@ -177,7 +177,7 @@ pub struct Options {
 }
 
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Parser, Serialize, Deserialize, Debug)]
+#[derive(Parser, Serialize, Deserialize, Debug, Clone)]
 #[command(
     name = "mojave-node",
     author,
@@ -208,6 +208,7 @@ pub struct Cli {
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub datadir: Option<String>,
     #[command(subcommand)]
+    #[serde(flatten)]
     pub command: Command,
 }
 
@@ -218,11 +219,13 @@ impl Cli {
 }
 
 #[allow(clippy::large_enum_variant)]
-#[derive(Subcommand, Serialize, Deserialize, Debug)]
+#[derive(Subcommand, Serialize, Deserialize, Debug, Clone)]
+#[serde(untagged)]
 pub enum Command {
     #[command(name = "init", about = "Run the node")]
     Start {
         #[command(flatten)]
+        #[serde(flatten)]
         options: Options,
     },
     #[command(name = "stop", about = "Stop the node")]

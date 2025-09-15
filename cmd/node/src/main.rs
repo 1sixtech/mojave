@@ -18,7 +18,7 @@ const LOG_FILE_NAME: &str = "node.log";
 async fn main() -> Result<()> {
     mojave_utils::logging::init();
     let cli = cli::Cli::run();
-    let config = load_config(&cli)?;
+    let config = load_config(cli.clone())?;
 
     if let Some(log_level) = &cli.log_level {
         mojave_utils::logging::change_level(Level::from_str(log_level)?);

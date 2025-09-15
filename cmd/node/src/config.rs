@@ -90,12 +90,15 @@ impl From<&Config> for mojave_node_lib::types::NodeOptions {
     }
 }
 
-pub(crate) fn load_config(cli: &Cli) -> Result<Config, Box<figment::Error>> {
+pub(crate) fn load_config(cli: Cli) -> Result<Config, Box<figment::Error>> {
     let figment = Figment::new()
         .merge(Serialized::defaults(Config::default()))
         .merge(Env::prefixed("ETHREX_"))
         .merge(Json::file("mojave/node.setting.json"))
-        .merge(Serialized::defaults(cli))
+        .merge(Serialized::<Cli>::defaults(cli))
         .extract()?;
+
+    println!("{:#?}", figment);
+
     Ok(figment)
 }

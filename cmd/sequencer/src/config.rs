@@ -108,12 +108,12 @@ impl From<&Config> for mojave_block_producer::types::BlockProducerOptions {
     }
 }
 
-pub(crate) fn load_config(cli: &Cli) -> Result<Config, Box<figment::Error>> {
+pub(crate) fn load_config(cli: Cli) -> Result<Config, Box<figment::Error>> {
     let figment = Figment::new()
         .merge(Serialized::defaults(Config::default()))
         .merge(Env::prefixed("ETHREX_"))
         .merge(Json::file("mojave/sequencer.setting.json"))
-        .merge(Serialized::defaults(cli))
+        .merge(Serialized::<Cli>::defaults(cli))
         .extract()?;
     Ok(figment)
 }

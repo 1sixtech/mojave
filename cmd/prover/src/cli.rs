@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-#[derive(Parser, Serialize, Deserialize, Debug)]
+#[derive(Parser, Serialize, Deserialize, Debug, Clone)]
 #[command(
     name = "mojave-prover",
     author,
@@ -23,11 +23,11 @@ pub struct Cli {
     #[arg(
         long = "datadir",
         value_name = "DATA_DIRECTORY",
-        default_value = ".mojave/prover",
+        // default_value = ".mojave/prover",
         help = "Directory for storing prover data.",
         long_help = "Specifies the directory where the prover will store its data.",
         help_heading = "Prover options",
-        env = "ETHREX_DATADIR"
+        // env = "ETHREX_DATADIR"
     )]
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub datadir: Option<String>,
@@ -41,7 +41,7 @@ impl Cli {
     }
 }
 
-#[derive(Parser, Serialize, Deserialize)]
+#[derive(Parser, Serialize, Deserialize, Clone)]
 pub struct ProverOptions {
     #[arg(
         long = "prover.port",
@@ -110,12 +110,13 @@ impl fmt::Debug for ProverOptions {
     }
 }
 
-#[derive(Subcommand, Serialize, Deserialize, Debug)]
-
+#[derive(Subcommand, Serialize, Deserialize, Debug, Clone)]
+#[serde(untagged)]
 pub enum Command {
     #[command(name = "init", about = "Run the prover")]
     Start {
         #[command(flatten)]
+        #[serde(flatten)]
         prover_options: ProverOptions,
     },
 

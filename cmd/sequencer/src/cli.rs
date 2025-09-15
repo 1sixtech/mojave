@@ -4,7 +4,7 @@ use mojave_utils::network::Network;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Parser, Debug, Serialize, Deserialize)]
+#[derive(Parser, Debug, Serialize, Deserialize, Clone)]
 pub struct Options {
     #[arg(
         long = "network",
@@ -12,7 +12,7 @@ pub struct Options {
         help = "Receives a `Genesis` struct in json format. This is the only argument which is required. You can look at some example genesis files at `test_data/genesis*`.",
         long_help = "Alternatively, the name of a known network can be provided instead to use its preset genesis file and include its preset bootnodes. The networks currently supported include holesky, sepolia, hoodi and mainnet.",
         help_heading = "Node options",
-        env = "ETHREX_NETWORK",
+        // env = "ETHREX_NETWORK",
         value_parser = clap::value_parser!(Network),
     )]
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
@@ -72,7 +72,7 @@ pub struct Options {
         value_name = "PROMETHEUS_METRICS_PORT",
         // default_value = "9090", // Default Prometheus port (https://prometheus.io/docs/tutorials/getting_started/#show-me-how-it-is-done).
         help_heading = "Node options",
-        env = "ETHREX_METRICS_PORT"
+        // env = "ETHREX_METRICS_PORT"
     )]
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub metrics_port: Option<String>,
@@ -101,7 +101,7 @@ pub struct Options {
         value_name = "PORT",
         help = "Listening port for the http rpc server.",
         help_heading = "RPC options",
-        env = "ETHREX_HTTP_PORT"
+        // env = "ETHREX_HTTP_PORT"
     )]
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub http_port: Option<String>,
@@ -178,7 +178,7 @@ pub struct Options {
 }
 
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Parser, Serialize, Deserialize, Debug)]
+#[derive(Parser, Serialize, Deserialize, Debug, Clone)]
 #[command(
     name = "mojave-node",
     author,
@@ -200,11 +200,11 @@ pub struct Cli {
         long = "datadir",
         value_name = "DATABASE_DIRECTORY",
         help = "If the datadir is the word `memory`, ethrex will use the InMemory Engine",
-        default_value = ".mojave/node",
+        // default_value = ".mojave/node",
         help = "Receives the name of the directory where the Database is located.",
         long_help = "If the datadir is the word `memory`, ethrex will use the `InMemory Engine`.",
         help_heading = "Node options",
-        env = "ETHREX_DATADIR"
+        // env = "ETHREX_DATADIR"
     )]
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub datadir: Option<String>,
@@ -219,13 +219,16 @@ impl Cli {
 }
 
 #[allow(clippy::large_enum_variant)]
-#[derive(Subcommand, Serialize, Deserialize, Debug)]
+#[derive(Subcommand, Serialize, Deserialize, Debug, Clone)]
+#[serde(untagged)]
 pub enum Command {
     #[command(name = "init", about = "Run the sequencer")]
     Start {
         #[command(flatten)]
+        #[serde(flatten)]
         options: Options,
         #[command(flatten)]
+        #[serde(flatten)]
         sequencer_options: SequencerOptions,
     },
     #[command(name = "stop", about = "Stop the sequencer")]
@@ -234,7 +237,7 @@ pub enum Command {
     GetPubKey,
 }
 
-#[derive(Parser, Serialize, Deserialize)]
+#[derive(Parser, Serialize, Deserialize, Clone)]
 #[clap(group(ArgGroup::new("mojave::SequencerOptions")))]
 pub struct SequencerOptions {
     #[arg(
@@ -248,7 +251,7 @@ pub struct SequencerOptions {
     #[arg(
         long = "block_time",
         help = "Block creation interval in milliseconds",
-        default_value = "1000"
+        // default_value = "1000"
     )]
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub block_time: Option<u64>,
