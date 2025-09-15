@@ -1,16 +1,21 @@
 use crate::{
     rpc::{ProverRpcContext, types::SendProofInputParam},
-    services::jobs::{enqueue_proof_input, get_pending_jobs, get_proof as get_proof_by_id},
+    services::jobs::{
+        enqueue_proof_input, get_pending_job_ids as jobs_get_pending_job_ids,
+        get_proof as get_proof_by_id,
+    },
 };
 use std::sync::Arc;
 
-#[mojave_rpc_macros::rpc(namespace = "moj", method = "getJobId")]
-pub async fn get_job_id(
+#[mojave_rpc_macros::rpc(namespace = "moj", method = "getPendingJobIds")]
+pub async fn get_pending_job_ids(
     ctx: Arc<ProverRpcContext>,
     _params: (),
 ) -> Result<serde_json::Value, mojave_rpc_core::RpcErr> {
-    let pending = get_pending_jobs(&ctx).await?;
-    Ok(serde_json::to_value(pending).unwrap())
+    let job_ids = jobs_get_pending_job_ids(&ctx).await?;
+    let job_ids = serde_json::to_value(job_ids)
+        .map_err(|e| mojave_rpc_core::RpcErr::Internal(e.to_string()))?;
+    Ok(job_ids)
 }
 
 #[mojave_rpc_macros::rpc(namespace = "moj", method = "sendProofInput")]
@@ -35,7 +40,9 @@ pub async fn get_proof(
     job_id: String,
 ) -> Result<serde_json::Value, mojave_rpc_core::RpcErr> {
     let proof = get_proof_by_id(&ctx, &job_id).await?;
-    Ok(serde_json::to_value(proof).unwrap())
+    let proof = serde_json::to_value(proof)
+        .map_err(|e| mojave_rpc_core::RpcErr::Internal(e.to_string()))?;
+    Ok(proof)
 }
 
 #[cfg(test)]
