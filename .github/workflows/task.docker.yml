@@ -37,7 +37,7 @@ jobs:
       - uses: docker/metadata-action@v4
         id: meta_sequencer
         with:
-          images: ${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-sequencer
+          images: ${{ env.REGISTRY_IMAGE_PREFIX }}/sequencer
           tags: |
             type=raw,value=${{ inputs.release_tag_name }}
 
@@ -47,7 +47,7 @@ jobs:
           context: .
           file: docker/Dockerfile.sequencer
           labels: ${{ steps.meta_sequencer.outputs.labels }}
-          outputs: type=image,name=${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-sequencer,push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,name=${{ env.REGISTRY_IMAGE_PREFIX }}/sequencer,push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -61,7 +61,7 @@ jobs:
       - uses: docker/metadata-action@v4
         id: meta_node
         with:
-          images: ${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-node
+          images: ${{ env.REGISTRY_IMAGE_PREFIX }}/node
           tags: |
             type=raw,value=${{ inputs.release_tag_name }}
 
@@ -71,7 +71,7 @@ jobs:
           context: .
           file: docker/Dockerfile.node
           labels: ${{ steps.meta_node.outputs.labels }}
-          outputs: type=image,name=${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-node,push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,name=${{ env.REGISTRY_IMAGE_PREFIX }}/node,push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -85,7 +85,7 @@ jobs:
       - uses: docker/metadata-action@v4
         id: meta_prover
         with:
-          images: ${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-prover
+          images: ${{ env.REGISTRY_IMAGE_PREFIX }}/prover
           tags: |
             type=raw,value=${{ inputs.release_tag_name }}
 
@@ -95,7 +95,7 @@ jobs:
           context: .
           file: docker/Dockerfile.prover
           labels: ${{ steps.meta_prover.outputs.labels }}
-          outputs: type=image,name=${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-prover,push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,name=${{ env.REGISTRY_IMAGE_PREFIX }}/prover,push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -134,7 +134,7 @@ jobs:
       - uses: docker/metadata-action@v4
         id: meta_sequencer
         with:
-          images: ${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-sequencer
+          images: ${{ env.REGISTRY_IMAGE_PREFIX }}/sequencer
           tags: |
             type=raw,value=${{ inputs.release_tag_name }}
       - name: Create manifest (sequencer)
@@ -142,17 +142,17 @@ jobs:
         run: |
           docker buildx imagetools create \
             $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf '${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-sequencer@sha256:%s ' *)
+            $(printf '${{ env.REGISTRY_IMAGE_PREFIX }}/sequencer@sha256:%s ' *)
       - name: Inspect manifest (sequencer)
         run: |
           docker buildx imagetools inspect \
-            ${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-sequencer:${{ steps.meta_sequencer.outputs.version }}
+            ${{ env.REGISTRY_IMAGE_PREFIX }}/sequencer:${{ steps.meta_sequencer.outputs.version }}
 
       # node
       - uses: docker/metadata-action@v4
         id: meta_node
         with:
-          images: ${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-node
+          images: ${{ env.REGISTRY_IMAGE_PREFIX }}/node
           tags: |
             type=raw,value=${{ inputs.release_tag_name }}
       - name: Create manifest (node)
@@ -160,17 +160,17 @@ jobs:
         run: |
           docker buildx imagetools create \
             $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf '${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-node@sha256:%s ' *)
+            $(printf '${{ env.REGISTRY_IMAGE_PREFIX }}/node@sha256:%s ' *)
       - name: Inspect manifest (node)
         run: |
           docker buildx imagetools inspect \
-            ${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-node:${{ steps.meta_node.outputs.version }}
+            ${{ env.REGISTRY_IMAGE_PREFIX }}/node:${{ steps.meta_node.outputs.version }}
 
       # prover
       - uses: docker/metadata-action@v4
         id: meta_prover
         with:
-          images: ${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-prover
+          images: ${{ env.REGISTRY_IMAGE_PREFIX }}/prover
           tags: |
             type=raw,value=${{ inputs.release_tag_name }}
       - name: Create manifest (prover)
@@ -178,8 +178,8 @@ jobs:
         run: |
           docker buildx imagetools create \
             $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf '${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-prover@sha256:%s ' *)
+            $(printf '${{ env.REGISTRY_IMAGE_PREFIX }}/prover@sha256:%s ' *)
       - name: Inspect manifest (prover)
         run: |
           docker buildx imagetools inspect \
-            ${{ env.REGISTRY_IMAGE_PREFIX }}/mojave-prover:${{ steps.meta_prover.outputs.version }}
+            ${{ env.REGISTRY_IMAGE_PREFIX }}/prover:${{ steps.meta_prover.outputs.version }}
