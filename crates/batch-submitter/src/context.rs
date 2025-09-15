@@ -24,7 +24,7 @@ use bitcoincore_rpc::Client as BitcoinRPCClient;
 
 
 pub struct WriterContext {
-    btc_client: BitcoinRPCClient,
+    rpc_client: BitcoinRPCClient,
     fee_rate: u64,
     operator_l1_addr: Address,
     network: Network,
@@ -46,7 +46,7 @@ impl WriterContext {
         let taproot_spend_info = TaprootBuilder::new()
             .add_leaf(0, reveal_script.clone())?
             .finalize(SECP256K1, public_key)
-            .map_err(|_| anyhow!("???????????"))?;  // FIXME
+            .map_err(|_| anyhow!("Unable to create taproot spend info"))?;
 
         // Create reveal address
         let reveal_address = Address::p2tr(
@@ -65,7 +65,7 @@ impl WriterContext {
             &taproot_spend_info,
         );
 
-        let utxos = self.btc_client.list_unspent(None, None, None, None, None)?;
+        let utxos = self.rpc_client.list_unspent(None, None, None, None, None)?;
 
         // step 3: build the commit tx
         let (unsigned_commit_tx, _) = build_commit_tx(
