@@ -56,9 +56,11 @@ pub async fn run(
         node.peer_handler,
         get_client_version(),
         node.rollup_store,
+        node.cancel_token.clone(),
     );
+    tokio::pin!(api_task);
     tokio::select! {
-        res = api_task => {
+        res = &mut api_task => {
             if let Err(error) = res {
                 tracing::error!("API task returned error: {}", error);
             }
@@ -70,7 +72,9 @@ pub async fn run(
             node.cancel_token.cancel();
             let node_config = NodeConfigFile::new(node.peer_table.clone(), node.local_node_record.lock().await.clone()).await;
             store_node_config_file(node_config, node_config_path).await;
-            tokio::time::sleep(Duration::from_secs(1)).await;
+            if let Err(_elapsed) = tokio::time::timeout(std::time::Duration::from_secs(10), api_task).await {
+                tracing::warn!("Timed out waiting for API to stop");
+            }
             tracing::info!("Successfully shut down the block producer.");
         }
     }
