@@ -1,6 +1,6 @@
 mod context;
 mod coordinator;
-mod error;
+pub mod error;
 
 pub use context::ProofCoordinatorContext;
 pub use coordinator::ProofCoordinator;

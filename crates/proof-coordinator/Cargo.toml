@@ -19,5 +19,5 @@ ethrex-storage-rollup = { workspace = true }
 
 guest_program = { workspace = true }
 thiserror = { workspace = true }
-tokio = { workspace = true, features = ["sync", "net"] }
+tokio = { workspace = true, features = ["sync"] }
 tracing = { workspace = true }

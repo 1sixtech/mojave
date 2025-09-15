@@ -37,9 +37,11 @@ async fn main() -> Result<()> {
             };
 
             run_daemonized_async(daemon_opts, || async move {
-                let node = MojaveNode::init(&node_options)
-                    .await
-                    .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
+                let node =
+                    MojaveNode::init(&node_options, Some(&block_producer_options.prover_address))
+                        .await
+                        .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
+
                 mojave_block_producer::run(node, &node_options, &block_producer_options)
                     .await
                     .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)

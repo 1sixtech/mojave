@@ -178,6 +178,13 @@ pub struct Options {
         action = clap::ArgAction::SetTrue
     )]
     pub no_daemon: bool,
+    #[arg(
+        long = "proof-coordinator-enabled",
+        help = "If set, the sequencer will enable the proof coordinator.",
+        help_heading = "Proof Coordinator Options",
+        action = clap::ArgAction::SetTrue
+    )]
+    pub proof_coordinator_enabled: bool,
 }
 
 impl From<&Options> for mojave_node_lib::types::NodeOptions {
@@ -202,6 +209,7 @@ impl From<&Options> for mojave_node_lib::types::NodeOptions {
             metrics_port: options.metrics_port.clone(),
             metrics_enabled: options.metrics_enabled,
             force: options.force,
+            proof_coordinator_enabled: options.proof_coordinator_enabled,
         }
     }
 }

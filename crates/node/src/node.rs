@@ -15,13 +15,15 @@ use ethrex_p2p::{
     sync_manager::SyncManager,
 };
 use ethrex_storage_rollup::{EngineTypeRollup, StoreRollup};
+use mojave_batch_submitter::{committer::Committer, notifier::Notifier};
+use mojave_proof_coordinator::ProofCoordinator;
 use mojave_utils::unique_heap::AsyncUniqueHeap;
 use std::{path::PathBuf, sync::Arc};
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, mpsc};
 use tokio_util::task::TaskTracker;
 
 impl MojaveNode {
-    pub async fn init(options: &NodeOptions) -> Result<Self> {
+    pub async fn init(options: &NodeOptions, prover_address: Option<&str>) -> Result<Self> {
         let data_dir = resolve_data_dir(&options.datadir).await?;
         tracing::info!("Data directory resolved to: {:?}", data_dir);
 
@@ -96,7 +98,7 @@ impl MojaveNode {
         )
         .await;
 
-        Ok(MojaveNode {
+        let mut node = MojaveNode {
             data_dir,
             genesis,
             store,
@@ -108,7 +110,40 @@ impl MojaveNode {
             syncer,
             peer_table,
             peer_handler,
-        })
+            proof_coordinator: None,
+            batch_committer: None,
+        };
+
+        if options.proof_coordinator_enabled {
+            let prover_address = prover_address.ok_or_else(|| {
+                Error::Config("proof coordinator enabled but no prover_address provided".into())
+            })?;
+
+            const DEFAULT_BATCH_CHANNEL_SIZE: usize = 16;
+            node.init_proof_coordinator(options, prover_address, DEFAULT_BATCH_CHANNEL_SIZE)?;
+        }
+
+        Ok(node)
+    }
+
+    fn init_proof_coordinator(
+        &mut self,
+        options: &NodeOptions,
+        prover_address: &str,
+        batch_channel_size: usize,
+    ) -> Result<()> {
+        let sequencer_addr = format!("http://{}:{}", options.http_addr, options.http_port);
+        let (batch_tx, batch_rx) = mpsc::channel(batch_channel_size);
+
+        let batch_notifier = Notifier::new(batch_tx);
+        self.batch_committer = Some(Committer::new(batch_notifier));
+        self.proof_coordinator = Some(ProofCoordinator::new(
+            batch_rx,
+            prover_address,
+            sequencer_addr,
+        )?);
+
+        Ok(())
     }
 
     pub async fn run(self, options: &NodeOptions) -> Result<()> {

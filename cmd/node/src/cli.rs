@@ -194,6 +194,7 @@ impl From<&Options> for mojave_node_lib::types::NodeOptions {
             metrics_port: options.metrics_port.clone(),
             metrics_enabled: options.metrics_enabled,
             force: options.force,
+            proof_coordinator_enabled: false,
         }
     }
 }

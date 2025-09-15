@@ -10,8 +10,7 @@ use tokio::sync::mpsc::Receiver;
 
 pub struct ProofCoordinator {
     pub(crate) client: MojaveClient,
-    /// Comes from the block builder
-    pub(crate) proof_data_receiver: Receiver<u64>,
+    pub(crate) batch_receiver: Receiver<u64>,
     pub(crate) sequencer_address: String,
 }
 
@@ -29,13 +28,13 @@ impl ProofCoordinator {
 
         Ok(Self {
             client,
-            proof_data_receiver,
+            batch_receiver: proof_data_receiver,
             sequencer_address: sequencer_address.to_string(),
         })
     }
 
-    pub async fn process_new_block(&mut self, context: ProofCoordinatorContext) -> Result<()> {
-        let batch_number = match self.proof_data_receiver.recv().await {
+    pub async fn process_new_block(&mut self, context: &ProofCoordinatorContext) -> Result<()> {
+        let batch_number = match self.batch_receiver.recv().await {
             Some(batch_number) => batch_number,
             None => return Ok(()),
         };
