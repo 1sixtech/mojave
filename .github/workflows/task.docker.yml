@@ -1,8 +1,9 @@
 ---
 name: Task - Build & Push Docker Image
 permissions:
-      contents: read
-      packages: write
+  contents: read
+  packages: write
+
 on:
   workflow_dispatch:
     inputs:
@@ -23,6 +24,10 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        role: [sequencer, node, prover]
     steps:
       - uses: actions/checkout@v3
       - uses: docker/setup-qemu-action@v3
@@ -33,96 +38,59 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # sequencer
-      - uses: docker/metadata-action@v4
-        id: meta_sequencer
+      - id: meta
+        uses: docker/metadata-action@v4
         with:
-          images: ${{ env.REGISTRY_IMAGE_PREFIX }}/sequencer
-          tags: |
-            type=raw,value=${{ inputs.release_tag_name }}
+          images: ${{ env.REGISTRY_IMAGE_PREFIX }}/${{ matrix.role }}
+          tags: type=raw,value=${{ inputs.release_tag_name }}
 
-      - uses: docker/build-push-action@v4
-        id: build_sequencer
+      - id: build
+        uses: docker/build-push-action@v4
         with:
           context: .
-          file: docker/Dockerfile.sequencer
-          labels: ${{ steps.meta_sequencer.outputs.labels }}
-          outputs: type=image,name=${{ env.REGISTRY_IMAGE_PREFIX }}/sequencer,push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          file: docker/Dockerfile.${{ matrix.role }}
+          labels: ${{ steps.meta.outputs.labels }}
+          outputs: >
+            type=image,
+            name=${{ env.REGISTRY_IMAGE_PREFIX }}/${{ matrix.role }},
+            push-by-digest=true,
+            name-canonical=true,
+            push=true
+          cache-from: type=gha,scope=${{ matrix.role }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.role }}
 
-      - name: Collect digest (sequencer)
+      - name: Collect digest
+        shell: bash
         run: |
-          mkdir -p /tmp/digests/sequencer
-          digest="${{ steps.build_sequencer.outputs.digest }}"
-          touch "/tmp/digests/sequencer/${digest#sha256:}"
+          set -euo pipefail
 
-      # node
-      - uses: docker/metadata-action@v4
-        id: meta_node
-        with:
-          images: ${{ env.REGISTRY_IMAGE_PREFIX }}/node
-          tags: |
-            type=raw,value=${{ inputs.release_tag_name }}
+          mkdir -p /tmp/digests/${{ matrix.role }}
+          digest="${{ steps.build.outputs.digest }}"
 
-      - uses: docker/build-push-action@v4
-        id: build_node
-        with:
-          context: .
-          file: docker/Dockerfile.node
-          labels: ${{ steps.meta_node.outputs.labels }}
-          outputs: type=image,name=${{ env.REGISTRY_IMAGE_PREFIX }}/node,push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          [[ -n "$digest" ]] || { echo "empty digest"; exit 1; }
 
-      - name: Collect digest (node)
-        run: |
-          mkdir -p /tmp/digests/node
-          digest="${{ steps.build_node.outputs.digest }}"
-          touch "/tmp/digests/node/${digest#sha256:}"
-
-      # prover
-      - uses: docker/metadata-action@v4
-        id: meta_prover
-        with:
-          images: ${{ env.REGISTRY_IMAGE_PREFIX }}/prover
-          tags: |
-            type=raw,value=${{ inputs.release_tag_name }}
-
-      - uses: docker/build-push-action@v4
-        id: build_prover
-        with:
-          context: .
-          file: docker/Dockerfile.prover
-          labels: ${{ steps.meta_prover.outputs.labels }}
-          outputs: type=image,name=${{ env.REGISTRY_IMAGE_PREFIX }}/prover,push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Collect digest (prover)
-        run: |
-          mkdir -p /tmp/digests/prover
-          digest="${{ steps.build_prover.outputs.digest }}"
-          touch "/tmp/digests/prover/${digest#sha256:}"
-
-      # upload 3 roles' digests at once
+          touch "/tmp/digests/${{ matrix.role }}/${digest#sha256:}"
       - uses: actions/upload-artifact@v4
         with:
-          name: digests
-          path: /tmp/digests/**
+          name: digests-${{ matrix.role }}
+          path: /tmp/digests/${{ matrix.role }}/*
           if-no-files-found: error
           retention-days: 1
 
   # this will be needed when we want to push multi-arch images
   merge:
     runs-on: ubuntu-latest
-    needs:
-      - build
+    needs: build
+    strategy:
+      fail-fast: true
+      matrix:
+        role: [sequencer, node, prover]
     steps:
       - uses: actions/download-artifact@v5
         with:
-          name: digests
-          path: /tmp/digests
+          name: digests-${{ matrix.role }}
+          path: /tmp/digests/${{ matrix.role }}
+
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v2
         with:
@@ -130,56 +98,23 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # sequencer
-      - uses: docker/metadata-action@v4
-        id: meta_sequencer
+      - id: meta
+        uses: docker/metadata-action@v4
         with:
-          images: ${{ env.REGISTRY_IMAGE_PREFIX }}/sequencer
-          tags: |
-            type=raw,value=${{ inputs.release_tag_name }}
-      - name: Create manifest (sequencer)
-        working-directory: /tmp/digests/sequencer
-        run: |
-          docker buildx imagetools create \
-            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf '${{ env.REGISTRY_IMAGE_PREFIX }}/sequencer@sha256:%s ' *)
-      - name: Inspect manifest (sequencer)
-        run: |
-          docker buildx imagetools inspect \
-            ${{ env.REGISTRY_IMAGE_PREFIX }}/sequencer:${{ steps.meta_sequencer.outputs.version }}
+          images: ${{ env.REGISTRY_IMAGE_PREFIX }}/${{ matrix.role }}
+          tags: type=raw,value=${{ inputs.release_tag_name }}
 
-      # node
-      - uses: docker/metadata-action@v4
-        id: meta_node
-        with:
-          images: ${{ env.REGISTRY_IMAGE_PREFIX }}/node
-          tags: |
-            type=raw,value=${{ inputs.release_tag_name }}
-      - name: Create manifest (node)
-        working-directory: /tmp/digests/node
+      - name: Create manifest
+        working-directory: /tmp/digests/${{ matrix.role }}
+        shell: bash
         run: |
-          docker buildx imagetools create \
-            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf '${{ env.REGISTRY_IMAGE_PREFIX }}/node@sha256:%s ' *)
-      - name: Inspect manifest (node)
-        run: |
-          docker buildx imagetools inspect \
-            ${{ env.REGISTRY_IMAGE_PREFIX }}/node:${{ steps.meta_node.outputs.version }}
+          set -euo pipefail
 
-      # prover
-      - uses: docker/metadata-action@v4
-        id: meta_prover
-        with:
-          images: ${{ env.REGISTRY_IMAGE_PREFIX }}/prover
-          tags: |
-            type=raw,value=${{ inputs.release_tag_name }}
-      - name: Create manifest (prover)
-        working-directory: /tmp/digests/prover
-        run: |
-          docker buildx imagetools create \
-            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf '${{ env.REGISTRY_IMAGE_PREFIX }}/prover@sha256:%s ' *)
-      - name: Inspect manifest (prover)
-        run: |
-          docker buildx imagetools inspect \
-            ${{ env.REGISTRY_IMAGE_PREFIX }}/prover:${{ steps.meta_prover.outputs.version }}
+          tag_args="$(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON")"
+          refs="$(find . -maxdepth 1 -type f -printf '${{ env.REGISTRY_IMAGE_PREFIX }}/${{ matrix.role }}@sha256:%f ')"
+
+          [[ -n "$refs" ]] || { echo "No digests found to create manifest"; exit 1; }
+
+          docker buildx imagetools create $tag_args $refs
+      - name: Inspect manifest
+        run: docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE_PREFIX }}/${{ matrix.role }}:${{ steps.meta.outputs.version }}
