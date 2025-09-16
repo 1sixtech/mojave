@@ -48,7 +48,7 @@ impl ProofCoordinator {
         let _job_id = self
             .client
             .request()
-            .strategy(Strategy::Sequential)
+            .with_strategy(Strategy::Sequential)
             .send_proof_input(&input, &self.sequencer_address)
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
