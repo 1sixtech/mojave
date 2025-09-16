@@ -31,10 +31,8 @@ CLI flags and commands
 - `init` (start): launches the service; by default runs as a daemon unless `--no-daemon` is supplied.
 - `stop`: reads the PID from the PID file and stops the running service safely. Then remove PID file.
   
-Per‑binary details:
-- Node: `mojave-node init --no-daemon` (foreground) or omit to daemonize; `mojave-node stop` to stop. Datadir default: `.mojave/node`.
-- Sequencer: `mojave-sequencer init --no-daemon`; `mojave-sequencer stop`. Datadir default: `.mojave/sequencer`.
-- Prover: `mojave-prover init --no-daemon`; `mojave-prover stop`. Datadir default: `.mojave/prover`.
+E.g.:
+- `mojave-[node | sequencer | prover] init --no-daemon` (foreground) or omit to daemonize; `mojave-[node | sequencer | prover] stop` to stop. Datadir default: `.mojave/[node | sequencer | prover]`
   
 PID/log file locations
 ----------------------
