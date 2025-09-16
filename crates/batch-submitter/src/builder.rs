@@ -3,23 +3,92 @@ use std::cmp::Reverse;
 
 use anyhow::anyhow;
 use bitcoin::{
-    Address, Amount, OutPoint, ScriptBuf, Sequence, Transaction, TxIn, TxOut, Txid, Witness,
+    Address, Amount, Network, OutPoint, ScriptBuf, Sequence, Transaction, TxIn, TxOut, Txid,
+    Witness,
     absolute::LockTime,
     blockdata::script,
     hashes::Hash,
     key::UntweakedKeypair,
-    secp256k1::{Message, XOnlyPublicKey, constants::SCHNORR_SIGNATURE_SIZE, schnorr::Signature},
+    secp256k1::{
+        Message, SECP256K1, XOnlyPublicKey, constants::SCHNORR_SIGNATURE_SIZE, schnorr::Signature,
+    },
     sighash::{Prevouts, SighashCache},
-    taproot::{ControlBlock, LeafVersion, TapLeafHash, TaprootSpendInfo},
+    taproot::{ControlBlock, LeafVersion, TapLeafHash, TaprootBuilder, TaprootSpendInfo},
     transaction::Version,
 };
-use bitcoincore_rpc::json::ListUnspentResultEntry;
+use bitcoincore_rpc::{Client as BitcoinRPCClient, RpcApi, json::ListUnspentResultEntry};
 use rand::{RngCore, rngs::OsRng};
-use secp256k1::SECP256K1;
 
 use crate::BatchSubmitterError;
 
 const BITCOIN_DUST_LIMIT: u64 = 546;
+
+pub struct BuilderContext {
+    rpc_client: BitcoinRPCClient,
+    fee_rate: u64,
+    operator_l1_addr: Address,
+    network: Network,
+    amount: u64,
+}
+
+pub fn create_inscription_tx(
+    ctx: &BuilderContext,
+    payload: Vec<u8>,
+) -> Result<(Transaction, Transaction), BatchSubmitterError> {
+    // step 1: generate keypair
+    let key_pair = generate_key_pair()?;
+    let public_key = XOnlyPublicKey::from_keypair(&key_pair).0;
+
+    // step 2: create reveal script
+    let reveal_script = build_reveal_script(&public_key, &payload)?;
+    // create merkle tree with a single leaf containing the reveal script
+    let taproot_spend_info = TaprootBuilder::new()
+        .add_leaf(0, reveal_script.clone())?
+        .finalize(SECP256K1, public_key)
+        .map_err(|_| anyhow!("Unable to create taproot spend info"))?;
+
+    // Create reveal address
+    let reveal_address = Address::p2tr(
+        SECP256K1,
+        public_key,
+        taproot_spend_info.merkle_root(),
+        ctx.network,
+    );
+
+    // Calculate commit value
+    let commit_value = calculate_reveal_input_value(ctx, &reveal_script, &taproot_spend_info);
+
+    let utxos = ctx.rpc_client.list_unspent(None, None, None, None, None)?;
+
+    // step 3: build the commit tx
+    let (unsigned_commit_tx, _) =
+        build_commit_tx(ctx, utxos, reveal_address.clone(), commit_value)?;
+
+    let output_to_reveal = unsigned_commit_tx.output[0].clone();
+
+    // step 4: build the reveal tx
+    let mut reveal_tx = build_reveal_tx(
+        ctx,
+        unsigned_commit_tx.clone(),
+        &reveal_script,
+        &taproot_spend_info
+            .control_block(&(reveal_script.clone(), LeafVersion::TapScript))
+            .ok_or(anyhow!("Cannot create control block".to_string()))?,
+    )?;
+
+    // step 4: sign the reveal tx
+    sign_reveal_tx(
+        &mut reveal_tx,
+        &output_to_reveal,
+        &reveal_script,
+        &taproot_spend_info,
+        &key_pair,
+    )?;
+
+    // step 5: sign the commit tx
+
+    Ok((unsigned_commit_tx, reveal_tx))
+}
 
 pub fn generate_key_pair() -> Result<UntweakedKeypair, anyhow::Error> {
     let mut rand_bytes = [0; 32];
@@ -125,19 +194,17 @@ fn default_txin() -> Vec<TxIn> {
     }]
 }
 
-// Compute the required input value for commit_tx
-pub fn calculate_commit_output_value(
-    recipient: &Address,
-    reveal_value: u64,
-    fee_rate: u64,
+// Compute the required input value for reveal_tx
+pub fn calculate_reveal_input_value(
+    ctx: &BuilderContext,
     reveal_script: &script::ScriptBuf,
     taproot_spend_info: &TaprootSpendInfo,
 ) -> u64 {
     get_tx_vsize(
         &default_txin(),
         &[TxOut {
-            script_pubkey: recipient.script_pubkey(),
-            value: Amount::from_sat(reveal_value),
+            script_pubkey: ctx.operator_l1_addr.script_pubkey(),
+            value: Amount::from_sat(ctx.amount),
         }],
         Some(reveal_script),
         Some(
@@ -146,22 +213,19 @@ pub fn calculate_commit_output_value(
                 .expect("Cannot create control block"),
         ),
     ) as u64
-        * fee_rate
-        + reveal_value
+        * ctx.fee_rate
+        + ctx.amount
 }
 
 /// Build `commit_tx`
 /// - `utxos`: the input utxo set
 /// - `recipient`: the address to receive the output
-/// - `change_address`: the address to receive the change
 /// - `output_value`: the value to send to the recipient
-/// - `fee_rate`: the fee rate in sats/vbyte
 pub fn build_commit_tx(
+    ctx: &BuilderContext,
     utxos: Vec<ListUnspentResultEntry>,
     recipient: Address,
-    change_address: Address,
     output_value: u64,
-    fee_rate: u64,
 ) -> Result<(Transaction, Vec<ListUnspentResultEntry>), BatchSubmitterError> {
     // get single input single output transaction size
     let mut size = get_tx_vsize(
@@ -183,7 +247,7 @@ pub fn build_commit_tx(
 
     // Repeatedly enlarge the size (fee) until a tx can be built
     let (commit_txn, consumed_utxo) = loop {
-        let fee = (last_size as u64) * fee_rate;
+        let fee = (last_size as u64) * ctx.fee_rate;
 
         let input_total = output_value + fee;
 
@@ -202,7 +266,7 @@ pub fn build_commit_tx(
         {
             outputs.push(TxOut {
                 value: Amount::from_sat(excess),
-                script_pubkey: change_address.script_pubkey(),
+                script_pubkey: ctx.operator_l1_addr.script_pubkey(),
             });
         }
 
@@ -241,23 +305,15 @@ pub fn build_commit_tx(
 }
 
 /// Build `reveal_tx`
-/// - `unsigned_commit_tx`: the unsigned commit_tx
-/// - `recipient`: the address to receive the output
-/// - `output_value`: the value to send to the recipient
-/// - `fee_rate`: the fee rate in sats/vbyte
-/// - `reveal_script`: the reveal script
-/// - `control_block`: the control block
 pub fn build_reveal_tx(
+    ctx: &BuilderContext,
     unsigned_commit_tx: Transaction,
-    recipient: Address,
-    output_value: u64,
-    fee_rate: u64,
     reveal_script: &ScriptBuf,
     control_block: &ControlBlock,
 ) -> Result<Transaction, BatchSubmitterError> {
     let outputs: Vec<TxOut> = vec![TxOut {
-        value: Amount::from_sat(output_value),
-        script_pubkey: recipient.script_pubkey(),
+        value: Amount::from_sat(ctx.amount),
+        script_pubkey: ctx.operator_l1_addr.script_pubkey(),
     }];
 
     let input_utxo = unsigned_commit_tx.output[0].clone();
@@ -281,8 +337,8 @@ pub fn build_reveal_tx(
     }];
 
     let size = get_tx_vsize(&inputs, &outputs, Some(reveal_script), Some(control_block));
-    let fee = (size as u64) * fee_rate;
-    let input_required = Amount::from_sat(output_value + fee);
+    let fee = (size as u64) * ctx.fee_rate;
+    let input_required = Amount::from_sat(ctx.amount + fee);
     if input_utxo.value < input_required {
         return Err(BatchSubmitterError::WalletError(format!(
             "insufficient funds for tx (need {} sats, have {} sats)",
@@ -300,6 +356,7 @@ pub fn build_reveal_tx(
     Ok(tx)
 }
 
+/// Sign `reveal_tx`
 pub fn sign_reveal_tx(
     reveal_tx: &mut Transaction,
     output_to_reveal: &TxOut,
@@ -307,24 +364,20 @@ pub fn sign_reveal_tx(
     taproot_spend_info: &TaprootSpendInfo,
     key_pair: &UntweakedKeypair,
 ) -> Result<(), anyhow::Error> {
-    let mut sighash_cache = SighashCache::new(reveal_tx);
-    let signature_hash = sighash_cache.taproot_script_spend_signature_hash(
+    let mut cache = SighashCache::new(reveal_tx);
+    let signature_hash = cache.taproot_script_spend_signature_hash(
         0,
         &Prevouts::All(&[output_to_reveal]),
         TapLeafHash::from_script(reveal_script, LeafVersion::TapScript),
         bitcoin::sighash::TapSighashType::Default,
     )?;
 
-    let mut randbytes = [0; 32];
-    OsRng.fill_bytes(&mut randbytes);
-
-    let signature = SECP256K1.sign_schnorr_with_aux_rand(
+    let signature = SECP256K1.sign_schnorr(
         &Message::from_digest_slice(signature_hash.as_byte_array())?,
-        key_pair,
-        &randbytes,
+        key_pair
     );
 
-    let witness = sighash_cache.witness_mut(0).unwrap();
+    let witness = cache.witness_mut(0).unwrap();
     witness.push(signature.as_ref());
     witness.push(reveal_script);
     witness.push(
