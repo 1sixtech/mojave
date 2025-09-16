@@ -1,4 +1,4 @@
-use tokio::signal::unix::{signal, SignalKind};
+use tokio::signal::unix::{SignalKind, signal};
 
 pub async fn wait_for_shutdown_signal() -> std::io::Result<()> {
     let mut sigterm = signal(SignalKind::terminate())?;
