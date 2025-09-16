@@ -7,3 +7,4 @@ pub mod ordered_block;
 pub mod p2p;
 pub mod rpc;
 pub mod unique_heap;
+pub mod signal;
