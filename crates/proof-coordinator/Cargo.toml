@@ -10,6 +10,7 @@ documentation = { workspace = true }
 
 [dependencies]
 mojave-client = { workspace = true }
+mojave-node-lib = { workspace = true }
 
 ethrex-blockchain = { workspace = true }
 ethrex-common = { workspace = true, features = ["c-kzg"] }

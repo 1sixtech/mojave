@@ -30,7 +30,7 @@ async fn main() -> Result<()> {
                 log_file_path: PathBuf::from(cli.datadir).join(LOG_FILE_NAME),
             };
             run_daemonized_async(daemon_opts, || async move {
-                let node = MojaveNode::init(&node_options, None)
+                let node = MojaveNode::init(&node_options)
                     .await
                     .unwrap_or_else(|error| {
                         tracing::error!("Failed to initialize the node: {}", error);

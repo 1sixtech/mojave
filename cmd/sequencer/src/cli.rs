@@ -1,6 +1,7 @@
 use clap::{ArgAction, ArgGroup, Parser, Subcommand};
 use mojave_block_producer::types::BlockProducerOptions;
 use mojave_node_lib::types::{Node, SyncMode};
+use mojave_proof_coordinator::types::ProofCoordinatorOptions;
 use mojave_utils::network::Network;
 use tracing::Level;
 
@@ -178,13 +179,6 @@ pub struct Options {
         action = clap::ArgAction::SetTrue
     )]
     pub no_daemon: bool,
-    #[arg(
-        long = "proof-coordinator-enabled",
-        help = "If set, the sequencer will enable the proof coordinator.",
-        help_heading = "Proof Coordinator Options",
-        action = clap::ArgAction::SetTrue
-    )]
-    pub proof_coordinator_enabled: bool,
 }
 
 impl From<&Options> for mojave_node_lib::types::NodeOptions {
@@ -209,7 +203,6 @@ impl From<&Options> for mojave_node_lib::types::NodeOptions {
             metrics_port: options.metrics_port.clone(),
             metrics_enabled: options.metrics_enabled,
             force: options.force,
-            proof_coordinator_enabled: options.proof_coordinator_enabled,
         }
     }
 }
@@ -300,9 +293,16 @@ impl std::fmt::Debug for SequencerOptions {
 impl From<&SequencerOptions> for BlockProducerOptions {
     fn from(value: &SequencerOptions) -> Self {
         Self {
-            prover_address: value.prover_address.clone(),
             block_time: value.block_time,
             private_key: value.private_key.clone(),
+        }
+    }
+}
+
+impl From<&SequencerOptions> for ProofCoordinatorOptions {
+    fn from(value: &SequencerOptions) -> Self {
+        Self {
+            prover_address: value.prover_address.clone(),
         }
     }
 }

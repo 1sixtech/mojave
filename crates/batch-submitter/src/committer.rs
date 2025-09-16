@@ -1,4 +1,6 @@
-use crate::{error::Result, types::BatchEvents};
+use tokio::sync::mpsc;
+
+use crate::{error::Result, notifier::Notifier, types::BatchEvents};
 
 pub struct Committer<E>
 where
@@ -13,6 +15,15 @@ where
 {
     pub fn new(notifier: E) -> Self {
         Self { notifier }
+    }
+
+    pub async fn run(batch_tx: mpsc::Sender<u64>) -> Result<()> {
+        let batch_notifier = Notifier::new(batch_tx);
+        let _: Committer<Notifier> = Committer::new(batch_notifier);
+
+        tracing::info!("Commiter started but doing nothing as of right now");
+
+        Ok(())
     }
 
     #[allow(dead_code)]

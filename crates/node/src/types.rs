@@ -7,8 +7,6 @@ use ethrex_p2p::{
 };
 use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
-use mojave_batch_submitter::{committer::Committer, notifier::Notifier};
-use mojave_proof_coordinator::ProofCoordinator;
 use mojave_utils::network::Network;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -62,7 +60,6 @@ pub struct NodeOptions {
     pub p2p_port: String,
     pub discovery_addr: String,
     pub discovery_port: String,
-    pub proof_coordinator_enabled: bool,
 }
 
 impl Default for NodeOptions {
@@ -86,12 +83,12 @@ impl Default for NodeOptions {
             metrics_addr: "0.0.0.0".to_owned(),
             metrics_port: Default::default(),
             metrics_enabled: Default::default(),
-            proof_coordinator_enabled: Default::default(),
             force: false,
         }
     }
 }
 
+#[derive(Clone)]
 pub struct MojaveNode {
     pub data_dir: String,
     pub genesis: Genesis,
@@ -101,9 +98,7 @@ pub struct MojaveNode {
     pub cancel_token: CancellationToken,
     pub local_p2p_node: Node,
     pub local_node_record: Arc<Mutex<NodeRecord>>,
-    pub syncer: SyncManager,
+    pub syncer: Arc<SyncManager>,
     pub peer_table: Kademlia,
     pub peer_handler: PeerHandler,
-    pub proof_coordinator: Option<ProofCoordinator>,
-    pub batch_committer: Option<Committer<Notifier>>,
 }
