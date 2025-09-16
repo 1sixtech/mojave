@@ -1,4 +1,4 @@
-use tokio::signal::unix::{signal, SignalKind};
+use tokio::signal::unix::{SignalKind, signal};
 
 // Waits for a termination signal and returns when one is received.
 pub async fn wait_for_shutdown_signal() -> std::io::Result<()> {
@@ -20,5 +20,3 @@ pub async fn wait_for_shutdown_signal() -> std::io::Result<()> {
 
     Ok(())
 }
-
-
