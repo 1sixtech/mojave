@@ -115,7 +115,7 @@ jobs:
           refs=""
           for p in ./*; do
             [ -f "$p" ] || continue
-            refs="$refs ${{ env.REGISTRY_IMAGE_PREFIX }}/${{ matrix.role }}@sha256:${p##*/}"
+            refs="$refs ${{ env.REGISTRY_IMAGE_PREFIX }}/${{ matrix.role }}@sha256:$(basename "$p")"
           done
 
           [[ -n "$refs" ]] || { echo "No digests found to create manifest"; exit 1; }
