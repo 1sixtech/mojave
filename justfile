@@ -11,6 +11,7 @@ build-mojave:
 	cargo build --release
 
 clean:
+	killall mojave-node mojave-sequencer || true
 	rm -rf {{home-dir}}/.mojave/
 
 # Run both node and sequencer in parallel, with sequencer waiting for node
