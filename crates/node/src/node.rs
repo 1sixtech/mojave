@@ -136,7 +136,7 @@ impl MojaveNode {
                     tracing::error!("API task returned error: {}", error);
                 }
             }
-            _ = tokio::signal::ctrl_c() => {
+            _ = mojave_utils::signal::wait_for_shutdown_signal() => {
                 tracing::info!("Shutting down the full node..");
                 let node_config_path = PathBuf::from(self.data_dir).join("node_config.json");
                 tracing::info!("Storing config at {:?}...", node_config_path);

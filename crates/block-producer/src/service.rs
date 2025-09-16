@@ -65,7 +65,7 @@ pub async fn run(
                 tracing::error!("API task returned error: {}", error);
             }
         }
-        _ = tokio::signal::ctrl_c() => {
+        _ = mojave_utils::signal::wait_for_shutdown_signal() => {
             tracing::info!("Shutting down the block producer..");
             let node_config_path = PathBuf::from(node.data_dir.clone()).join("node_config.json");
             tracing::info!("Storing config at {:?}...", node_config_path);

@@ -43,4 +43,6 @@ pub enum Error {
     StoreError(#[from] StoreError),
     #[error("BlockProducer failed because interval does not fit in u64")]
     TryInto(#[from] TryFromIntError),
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
 }
