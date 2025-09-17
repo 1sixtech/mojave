@@ -9,11 +9,10 @@ repository = { workspace = true }
 documentation = { workspace = true }
 
 [dependencies]
-bitcoincore-rpc = "0.19.0"
-anyhow = "1.0.80"
 bitcoin = { workspace = true }
+bitcoincore-rpc = { workspace = true }
+rand = { workspace = true }
 secp256k1 = { workspace = true, features = ["global-context"] }
-rand = "0.8.5"
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["sync"] }
 tracing = { workspace = true }

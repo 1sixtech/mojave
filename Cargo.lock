@@ -4330,7 +4330,6 @@ dependencies = [
 name = "mojave-batch-submitter"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "bitcoin",
  "bitcoincore-rpc",
  "rand 0.8.5",
