@@ -2,14 +2,24 @@ use core::{result::Result::Ok, str::FromStr};
 
 use anyhow::anyhow;
 use bitcoin::{
-    absolute::LockTime, blockdata::script, consensus::Encodable, hashes::Hash, key::UntweakedKeypair, secp256k1::{
-        constants::SCHNORR_SIGNATURE_SIZE, schnorr::Signature, Message, XOnlyPublicKey, SECP256K1
-    }, sighash::{Prevouts, SighashCache}, taproot::{ControlBlock, LeafVersion, TapLeafHash, TaprootBuilder}, transaction::Version, Address, Amount, FeeRate, Network, OutPoint, ScriptBuf, Sequence, Transaction, TxIn, TxOut, Txid, Witness
+    Address, Amount, FeeRate, Network, OutPoint, ScriptBuf, Sequence, Transaction, TxIn, TxOut,
+    Txid, Witness,
+    absolute::LockTime,
+    blockdata::script,
+    consensus::Encodable,
+    hashes::Hash,
+    key::UntweakedKeypair,
+    secp256k1::{
+        Message, SECP256K1, XOnlyPublicKey, constants::SCHNORR_SIGNATURE_SIZE, schnorr::Signature,
+    },
+    sighash::{Prevouts, SighashCache},
+    taproot::{ControlBlock, LeafVersion, TapLeafHash, TaprootBuilder},
+    transaction::Version,
 };
 use bitcoincore_rpc::{Client as BitcoinRPCClient, RpcApi, json};
 use rand::{RngCore, rngs::OsRng};
 
-use crate::BatchSubmitterError;
+use crate::error::BatchSubmitterError;
 
 pub struct BuilderContext {
     pub rpc_client: BitcoinRPCClient,
@@ -54,7 +64,7 @@ pub fn create_inscription_tx(
         ctx.fee_rate,
         ctx.operator_l1_addr.clone(),
         &reveal_script,
-        &control_block
+        &control_block,
     );
 
     // step 3: build the commit tx
@@ -102,7 +112,7 @@ fn fund_tx(ctx: &BuilderContext, tx: Transaction) -> Result<Transaction, BatchSu
         .fund_raw_transaction(
             &tx_raw,
             Some(&json::FundRawTransactionOptions {
-                fee_rate: ctx.fee_rate.fee_vb(1000),    // convert to sat/kvB
+                fee_rate: ctx.fee_rate.fee_vb(1000), // convert to sat/kvB
                 ..Default::default()
             }),
             None,
