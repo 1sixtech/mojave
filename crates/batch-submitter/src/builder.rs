@@ -2,11 +2,21 @@ use core::{result::Result::Ok, str::FromStr};
 
 use anyhow::anyhow;
 use bitcoin::{
-    absolute::LockTime, blockdata::script, consensus::{self, Encodable}, hashes::Hash, key::UntweakedKeypair, secp256k1::{
-        constants::SCHNORR_SIGNATURE_SIZE, schnorr::Signature, Message, XOnlyPublicKey, SECP256K1
-    }, sighash::{Prevouts, SighashCache}, taproot::{ControlBlock, LeafVersion, TapLeafHash, TaprootBuilder}, transaction::Version, Address, Amount, Network, OutPoint, ScriptBuf, Sequence, Transaction, TxIn, TxOut, Txid, Witness
+    Address, Amount, Network, OutPoint, ScriptBuf, Sequence, Transaction, TxIn, TxOut, Txid,
+    Witness,
+    absolute::LockTime,
+    blockdata::script,
+    consensus::Encodable,
+    hashes::Hash,
+    key::UntweakedKeypair,
+    secp256k1::{
+        Message, SECP256K1, XOnlyPublicKey, constants::SCHNORR_SIGNATURE_SIZE, schnorr::Signature,
+    },
+    sighash::{Prevouts, SighashCache},
+    taproot::{ControlBlock, LeafVersion, TapLeafHash, TaprootBuilder},
+    transaction::Version,
 };
-use bitcoincore_rpc::{Client as BitcoinRPCClient, RawTx, RpcApi};
+use bitcoincore_rpc::{Client as BitcoinRPCClient, RpcApi, json};
 use rand::{RngCore, rngs::OsRng};
 
 use crate::BatchSubmitterError;
@@ -54,16 +64,8 @@ pub fn create_inscription_tx(
     // step 3: build the commit tx
     let unfunded_commit_tx = build_unfunded_commit_tx(reveal_address.clone(), commit_value)?;
 
-    let mut encoder: Vec<u8> = Vec::new();
-    unfunded_commit_tx.version.consensus_encode(&mut encoder).unwrap();
-    unfunded_commit_tx.input.consensus_encode(&mut encoder).unwrap();
-    unfunded_commit_tx.output.consensus_encode(&mut encoder).unwrap();
-    unfunded_commit_tx.lock_time.consensus_encode(&mut encoder).unwrap();
-
     // Fund the commit tx. Additional utxos might be added to the output set
-    let unsigned_commit_tx = ctx.rpc_client
-        .fund_raw_transaction(&encoder, None, None)?
-        .transaction().unwrap();
+    let unsigned_commit_tx = fund_tx(ctx, unfunded_commit_tx)?;
 
     // step 4: build and sign the reveal tx
     let signed_reveal_tx = build_and_sign_reveal_tx(
@@ -75,11 +77,52 @@ pub fn create_inscription_tx(
     )?;
 
     // step 5: sign the commit tx
-    let signed_commit_tx = ctx.rpc_client
+    let signed_commit_tx = ctx
+        .rpc_client
         .sign_raw_transaction_with_wallet(&unsigned_commit_tx, None, None)?
-        .transaction().unwrap();
+        .transaction()
+        .unwrap();
 
     Ok((signed_commit_tx, signed_reveal_tx))
+}
+
+/// Encode tx in non-segwit format.
+/// This is needed for fundrawtransaction RPC call, which expects a non-segwit tx
+fn encode_tx_non_segwit(tx: Transaction) -> Vec<u8> {
+    let mut encoder: Vec<u8> = Vec::new();
+    tx.version.consensus_encode(&mut encoder).unwrap();
+    tx.input.consensus_encode(&mut encoder).unwrap();
+    tx.output.consensus_encode(&mut encoder).unwrap();
+    tx.lock_time.consensus_encode(&mut encoder).unwrap();
+
+    encoder
+}
+
+fn fund_tx(ctx: &BuilderContext, tx: Transaction) -> Result<Transaction, BatchSubmitterError> {
+    let tx_raw = encode_tx_non_segwit(tx);
+    let funded_tx = ctx
+        .rpc_client
+        .fund_raw_transaction(
+            &tx_raw,
+            Some(&json::FundRawTransactionOptions {
+                add_inputs: None,
+                change_address: None,
+                change_position: None,
+                change_type: None,
+                include_watching: None,
+                lock_unspents: None,
+                fee_rate: Amount::from_sat(ctx.fee_rate).checked_mul(1000), // convert to sat/kvB
+                subtract_fee_from_outputs: None,
+                replaceable: None,
+                conf_target: None,
+                estimate_mode: None,
+            }),
+            None,
+        )?
+        .transaction()
+        .unwrap();
+
+    Ok(funded_tx)
 }
 
 fn generate_key_pair() -> Result<UntweakedKeypair, anyhow::Error> {
