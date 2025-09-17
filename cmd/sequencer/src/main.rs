@@ -72,14 +72,14 @@ async fn main() -> Result<()> {
                         tracing::info!("Termination signal received, shutting down sequencer..");
                         cancel_token.cancel();
                         block_producer_task
-                        .await
-                        .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
+                            .await
+                            .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
                         coordinator_task
-                        .await
-                        .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
+                            .await
+                            .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
                         batch_submitter_task
-                        .await
-                        .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
+                            .await
+                            .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
                     }
                 }
             })
