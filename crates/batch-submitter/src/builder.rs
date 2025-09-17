@@ -2,21 +2,11 @@ use core::{result::Result::Ok, str::FromStr};
 
 use anyhow::anyhow;
 use bitcoin::{
-    Address, Amount, Network, OutPoint, ScriptBuf, Sequence, Transaction, TxIn, TxOut, Txid,
-    Witness,
-    absolute::LockTime,
-    blockdata::script,
-    consensus,
-    hashes::Hash,
-    key::UntweakedKeypair,
-    secp256k1::{
-        Message, SECP256K1, XOnlyPublicKey, constants::SCHNORR_SIGNATURE_SIZE, schnorr::Signature,
-    },
-    sighash::{Prevouts, SighashCache},
-    taproot::{ControlBlock, LeafVersion, TapLeafHash, TaprootBuilder},
-    transaction::Version,
+    absolute::LockTime, blockdata::script, consensus::{self, Encodable}, hashes::Hash, key::UntweakedKeypair, secp256k1::{
+        constants::SCHNORR_SIGNATURE_SIZE, schnorr::Signature, Message, XOnlyPublicKey, SECP256K1
+    }, sighash::{Prevouts, SighashCache}, taproot::{ControlBlock, LeafVersion, TapLeafHash, TaprootBuilder}, transaction::Version, Address, Amount, Network, OutPoint, ScriptBuf, Sequence, Transaction, TxIn, TxOut, Txid, Witness
 };
-use bitcoincore_rpc::{Client as BitcoinRPCClient, RpcApi};
+use bitcoincore_rpc::{Client as BitcoinRPCClient, RawTx, RpcApi};
 use rand::{RngCore, rngs::OsRng};
 
 use crate::BatchSubmitterError;
@@ -64,16 +54,16 @@ pub fn create_inscription_tx(
     // step 3: build the commit tx
     let unfunded_commit_tx = build_unfunded_commit_tx(reveal_address.clone(), commit_value)?;
 
+    let mut encoder: Vec<u8> = Vec::new();
+    unfunded_commit_tx.version.consensus_encode(&mut encoder).unwrap();
+    unfunded_commit_tx.input.consensus_encode(&mut encoder).unwrap();
+    unfunded_commit_tx.output.consensus_encode(&mut encoder).unwrap();
+    unfunded_commit_tx.lock_time.consensus_encode(&mut encoder).unwrap();
+
     // Fund the commit tx. Additional utxos might be added to the output set
-    let unsigned_commit_tx: Transaction = consensus::encode::deserialize_hex(
-        std::str::from_utf8(
-            &ctx.rpc_client
-                .fund_raw_transaction(&unfunded_commit_tx, None, None)?
-                .hex,
-        )
-        .unwrap(),
-    )
-    .unwrap();
+    let unsigned_commit_tx = ctx.rpc_client
+        .fund_raw_transaction(&encoder, None, None)?
+        .transaction().unwrap();
 
     // step 4: build and sign the reveal tx
     let signed_reveal_tx = build_and_sign_reveal_tx(
@@ -85,15 +75,9 @@ pub fn create_inscription_tx(
     )?;
 
     // step 5: sign the commit tx
-    let signed_commit_tx: Transaction = consensus::encode::deserialize_hex(
-        std::str::from_utf8(
-            &ctx.rpc_client
-                .sign_raw_transaction_with_wallet(&unsigned_commit_tx, None, None)?
-                .hex,
-        )
-        .unwrap(),
-    )
-    .unwrap();
+    let signed_commit_tx = ctx.rpc_client
+        .sign_raw_transaction_with_wallet(&unsigned_commit_tx, None, None)?
+        .transaction().unwrap();
 
     Ok((signed_commit_tx, signed_reveal_tx))
 }
