@@ -1,4 +1,4 @@
-use core::{result::Result::Ok, str::FromStr};
+use core::result::Result::Ok;
 
 use bitcoin::{
     Address, Amount, FeeRate, Network, OutPoint, ScriptBuf, Sequence, Transaction, TxIn, TxOut,
@@ -162,9 +162,7 @@ fn calculate_reveal_input_value(
         version: Version::TWO,
         input: vec![TxIn {
             previous_output: OutPoint {
-                txid: Txid::from_str(
-                    "0000000000000000000000000000000000000000000000000000000000000000",
-                )?,
+                txid: Txid::all_zeros(),
                 vout: 0,
             },
             script_sig: script::Builder::new().into_script(),
