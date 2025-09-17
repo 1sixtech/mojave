@@ -2,19 +2,9 @@ use core::{result::Result::Ok, str::FromStr};
 
 use anyhow::anyhow;
 use bitcoin::{
-    Address, Amount, Network, OutPoint, ScriptBuf, Sequence, Transaction, TxIn, TxOut, Txid,
-    Witness,
-    absolute::LockTime,
-    blockdata::script,
-    consensus::Encodable,
-    hashes::Hash,
-    key::UntweakedKeypair,
-    secp256k1::{
-        Message, SECP256K1, XOnlyPublicKey, constants::SCHNORR_SIGNATURE_SIZE, schnorr::Signature,
-    },
-    sighash::{Prevouts, SighashCache},
-    taproot::{ControlBlock, LeafVersion, TapLeafHash, TaprootBuilder},
-    transaction::Version,
+    absolute::LockTime, blockdata::script, consensus::Encodable, hashes::Hash, key::UntweakedKeypair, secp256k1::{
+        constants::SCHNORR_SIGNATURE_SIZE, schnorr::Signature, Message, XOnlyPublicKey, SECP256K1
+    }, sighash::{Prevouts, SighashCache}, taproot::{ControlBlock, LeafVersion, TapLeafHash, TaprootBuilder}, transaction::Version, Address, Amount, FeeRate, Network, OutPoint, ScriptBuf, Sequence, Transaction, TxIn, TxOut, Txid, Witness
 };
 use bitcoincore_rpc::{Client as BitcoinRPCClient, RpcApi, json};
 use rand::{RngCore, rngs::OsRng};
@@ -23,10 +13,10 @@ use crate::BatchSubmitterError;
 
 pub struct BuilderContext {
     pub rpc_client: BitcoinRPCClient,
-    pub fee_rate: u64,
+    pub fee_rate: FeeRate,
     pub operator_l1_addr: Address,
     pub network: Network,
-    pub amount: u64,
+    pub amount: Amount,
 }
 
 pub fn create_inscription_tx(
@@ -59,7 +49,13 @@ pub fn create_inscription_tx(
         .ok_or(anyhow!("Cannot create control block".to_string()))?;
 
     // Calculate commit value
-    let commit_value = calculate_reveal_input_value(ctx, &reveal_script, &control_block);
+    let commit_value = calculate_reveal_input_value(
+        ctx.amount,
+        ctx.fee_rate,
+        ctx.operator_l1_addr.clone(),
+        &reveal_script,
+        &control_block
+    );
 
     // step 3: build the commit tx
     let unfunded_commit_tx = build_unfunded_commit_tx(reveal_address.clone(), commit_value)?;
@@ -69,7 +65,8 @@ pub fn create_inscription_tx(
 
     // step 4: build and sign the reveal tx
     let signed_reveal_tx = build_and_sign_reveal_tx(
-        ctx,
+        ctx.amount,
+        ctx.operator_l1_addr.clone(),
         unsigned_commit_tx.clone(),
         &reveal_script,
         &control_block,
@@ -105,7 +102,7 @@ fn fund_tx(ctx: &BuilderContext, tx: Transaction) -> Result<Transaction, BatchSu
         .fund_raw_transaction(
             &tx_raw,
             Some(&json::FundRawTransactionOptions {
-                fee_rate: Amount::from_sat(ctx.fee_rate).checked_mul(1000), // convert to sat/kvB
+                fee_rate: ctx.fee_rate.fee_vb(1000),    // convert to sat/kvB
                 ..Default::default()
             }),
             None,
@@ -142,10 +139,12 @@ fn build_reveal_script(
 
 // Estimate the required input value for reveal_tx
 fn calculate_reveal_input_value(
-    ctx: &BuilderContext,
+    amount: Amount,
+    fee_rate: FeeRate,
+    recipient: Address,
     reveal_script: &script::ScriptBuf,
     control_block: &ControlBlock,
-) -> u64 {
+) -> Amount {
     let tx = Transaction {
         version: Version::TWO,
         input: vec![TxIn {
@@ -168,24 +167,24 @@ fn calculate_reveal_input_value(
             ]),
         }],
         output: vec![TxOut {
-            script_pubkey: ctx.operator_l1_addr.script_pubkey(),
-            value: Amount::from_sat(ctx.amount),
+            script_pubkey: recipient.script_pubkey(),
+            value: amount,
         }],
         lock_time: LockTime::ZERO,
     };
-    tx.vsize() as u64 * ctx.fee_rate + ctx.amount
+    fee_rate.fee_vb(tx.vsize() as u64).unwrap() + amount
 }
 
 fn build_unfunded_commit_tx(
     recipient: Address,
-    output_value: u64,
+    output_value: Amount,
 ) -> Result<Transaction, BatchSubmitterError> {
     // Build outputs
     let mut outputs: Vec<TxOut> = vec![];
 
     // The first output contains the taproot commitment
     outputs.push(TxOut {
-        value: Amount::from_sat(output_value),
+        value: output_value,
         script_pubkey: recipient.script_pubkey(),
     });
 
@@ -200,15 +199,16 @@ fn build_unfunded_commit_tx(
 }
 
 fn build_and_sign_reveal_tx(
-    ctx: &BuilderContext,
+    amount: Amount,
+    recipient: Address,
     unsigned_commit_tx: Transaction,
     reveal_script: &ScriptBuf,
     control_block: &ControlBlock,
     key_pair: &UntweakedKeypair,
 ) -> Result<Transaction, BatchSubmitterError> {
     let outputs: Vec<TxOut> = vec![TxOut {
-        value: Amount::from_sat(ctx.amount),
-        script_pubkey: ctx.operator_l1_addr.script_pubkey(),
+        value: amount,
+        script_pubkey: recipient.script_pubkey(),
     }];
 
     let commit_txid = unsigned_commit_tx.compute_txid();
