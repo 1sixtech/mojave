@@ -115,7 +115,7 @@ fn encode_tx_non_segwit(tx: &Transaction) -> Result<Vec<u8>, BatchSubmitterError
 }
 
 fn fund_tx(ctx: &BuilderContext, tx: &Transaction) -> Result<Transaction, BatchSubmitterError> {
-    let tx_raw = encode_tx_non_segwit(&tx)?;
+    let tx_raw = encode_tx_non_segwit(tx)?;
     let funded_tx = ctx
         .rpc_client
         .fund_raw_transaction(
@@ -203,14 +203,11 @@ fn build_unfunded_commit_tx(
     recipient: Address,
     output_value: Amount,
 ) -> Result<Transaction, BatchSubmitterError> {
-    // Build outputs
-    let mut outputs: Vec<TxOut> = vec![];
-
     // The first output contains the taproot commitment
-    outputs.push(TxOut {
+    let outputs: Vec<TxOut> = vec![TxOut {
         value: output_value,
         script_pubkey: recipient.script_pubkey(),
-    });
+    }];
 
     let commit_txn = Transaction {
         version: Version::TWO,
