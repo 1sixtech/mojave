@@ -113,6 +113,7 @@ fn fund_tx(ctx: &BuilderContext, tx: Transaction) -> Result<Transaction, BatchSu
             &tx_raw,
             Some(&json::FundRawTransactionOptions {
                 fee_rate: ctx.fee_rate.fee_vb(1000), // convert to sat/kvB
+                change_position: Some(1),
                 ..Default::default()
             }),
             None,
