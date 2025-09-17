@@ -105,17 +105,8 @@ fn fund_tx(ctx: &BuilderContext, tx: Transaction) -> Result<Transaction, BatchSu
         .fund_raw_transaction(
             &tx_raw,
             Some(&json::FundRawTransactionOptions {
-                add_inputs: None,
-                change_address: None,
-                change_position: None,
-                change_type: None,
-                include_watching: None,
-                lock_unspents: None,
                 fee_rate: Amount::from_sat(ctx.fee_rate).checked_mul(1000), // convert to sat/kvB
-                subtract_fee_from_outputs: None,
-                replaceable: None,
-                conf_target: None,
-                estimate_mode: None,
+                ..Default::default()
             }),
             None,
         )?
