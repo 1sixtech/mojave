@@ -86,15 +86,17 @@ impl MojaveNode {
         .await?;
 
         // Create SyncManager
-        let syncer = SyncManager::new(
-            peer_handler.clone(),
-            options.syncmode.into(),
-            cancel_token.clone(),
-            blockchain.clone(),
-            store.clone(),
-            data_dir.clone(),
-        )
-        .await;
+        let syncer = Arc::new(
+            SyncManager::new(
+                peer_handler.clone(),
+                options.syncmode.into(),
+                cancel_token.clone(),
+                blockchain.clone(),
+                store.clone(),
+                data_dir.clone(),
+            )
+            .await,
+        );
 
         Ok(MojaveNode {
             data_dir,
@@ -136,7 +138,7 @@ impl MojaveNode {
                     tracing::error!("API task returned error: {}", error);
                 }
             }
-            _ = tokio::signal::ctrl_c() => {
+            _ = mojave_utils::signal::wait_for_shutdown_signal() => {
                 tracing::info!("Shutting down the full node..");
                 let node_config_path = PathBuf::from(self.data_dir).join("node_config.json");
                 tracing::info!("Storing config at {:?}...", node_config_path);

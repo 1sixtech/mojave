@@ -40,7 +40,7 @@ pub async fn start_api(
     jwt_secret: Bytes,
     local_p2p_node: Node,
     local_node_record: NodeRecord,
-    syncer: SyncManager,
+    syncer: Arc<SyncManager>,
     peer_handler: PeerHandler,
     client_version: String,
     rollup_store: StoreRollup,
@@ -52,7 +52,7 @@ pub async fn start_api(
             storage,
             blockchain,
             active_filters: active_filters.clone(),
-            syncer: Arc::new(syncer),
+            syncer,
             peer_handler,
             node_data: NodeData {
                 jwt_secret,

@@ -16,3 +16,6 @@ thiserror = "1.0.57"
 bitcoin = { workspace = true }
 secp256k1 = { workspace = true, features = ["global-context"] }
 rand = "0.8.5"
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["sync"] }
+tracing = { workspace = true }
