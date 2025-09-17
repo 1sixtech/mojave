@@ -58,6 +58,7 @@ pub async fn run(
         node.rollup_store,
         node.cancel_token.clone(),
     );
+    let cancel_token = node.cancel_token.clone();
     tokio::pin!(api_task);
     tokio::select! {
         res = &mut api_task => {
@@ -65,11 +66,10 @@ pub async fn run(
                 tracing::error!("API task returned error: {}", error);
             }
         }
-        _ = mojave_utils::signal::wait_for_shutdown_signal() => {
+        _ = cancel_token.cancelled() => {
             tracing::info!("Shutting down the block producer..");
             let node_config_path = PathBuf::from(node.data_dir.clone()).join("node_config.json");
             tracing::info!("Storing config at {:?}...", node_config_path);
-            node.cancel_token.cancel();
             let node_config = NodeConfigFile::new(node.peer_table.clone(), node.local_node_record.lock().await.clone()).await;
             store_node_config_file(node_config, node_config_path).await;
             if let Err(_elapsed) = tokio::time::timeout(std::time::Duration::from_secs(10), api_task).await {

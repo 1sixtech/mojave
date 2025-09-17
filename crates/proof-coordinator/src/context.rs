@@ -15,6 +15,19 @@ pub struct ProofCoordinatorContext {
 }
 
 impl ProofCoordinatorContext {
+    pub fn new(
+        rollup_store: StoreRollup,
+        store: Store,
+        blockchain: Arc<Blockchain>,
+        elasticity_multiplier: u64,
+    ) -> Self {
+        Self {
+            rollup_store,
+            store,
+            blockchain,
+            elasticity_multiplier,
+        }
+    }
     pub(crate) async fn store_proof(
         &self,
         proof_response: ProofResponse,

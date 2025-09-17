@@ -1,6 +1,7 @@
 use clap::{ArgAction, ArgGroup, Parser, Subcommand};
 use mojave_block_producer::types::BlockProducerOptions;
 use mojave_node_lib::types::{Node, SyncMode};
+use mojave_proof_coordinator::types::ProofCoordinatorOptions;
 use mojave_utils::network::Network;
 use tracing::Level;
 
@@ -292,9 +293,16 @@ impl std::fmt::Debug for SequencerOptions {
 impl From<&SequencerOptions> for BlockProducerOptions {
     fn from(value: &SequencerOptions) -> Self {
         Self {
-            prover_address: value.prover_address.clone(),
             block_time: value.block_time,
             private_key: value.private_key.clone(),
+        }
+    }
+}
+
+impl From<&SequencerOptions> for ProofCoordinatorOptions {
+    fn from(value: &SequencerOptions) -> Self {
+        Self {
+            prover_address: value.prover_address.clone(),
         }
     }
 }

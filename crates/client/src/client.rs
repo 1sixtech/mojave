@@ -128,6 +128,7 @@ impl MojaveClient {
     pub fn request(&self) -> RequestBuilder<'_> {
         RequestBuilder::new(self)
     }
+
     pub async fn send_proof_input(
         &self,
         proof_input: &ProverData,

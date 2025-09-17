@@ -86,15 +86,17 @@ impl MojaveNode {
         .await?;
 
         // Create SyncManager
-        let syncer = SyncManager::new(
-            peer_handler.clone(),
-            options.syncmode.into(),
-            cancel_token.clone(),
-            blockchain.clone(),
-            store.clone(),
-            data_dir.clone(),
-        )
-        .await;
+        let syncer = Arc::new(
+            SyncManager::new(
+                peer_handler.clone(),
+                options.syncmode.into(),
+                cancel_token.clone(),
+                blockchain.clone(),
+                store.clone(),
+                data_dir.clone(),
+            )
+            .await,
+        );
 
         Ok(MojaveNode {
             data_dir,
