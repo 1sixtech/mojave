@@ -18,7 +18,7 @@ use bitcoin::{
 use bitcoincore_rpc::{Client as BitcoinRPCClient, RpcApi, json::FundRawTransactionOptions};
 use rand::{RngCore, rngs::OsRng};
 
-use crate::error::BatchSubmitterError;
+use crate::error::{Error, Result};
 
 pub struct BuilderContext {
     pub rpc_client: BitcoinRPCClient,
@@ -31,7 +31,7 @@ pub struct BuilderContext {
 pub fn create_inscription_tx(
     ctx: &BuilderContext,
     payload: Vec<u8>,
-) -> Result<(Transaction, Transaction), BatchSubmitterError> {
+) -> Result<(Transaction, Transaction)> {
     // step 1: generate keypair
     let key_pair = generate_key_pair()?;
     let public_key = XOnlyPublicKey::from_keypair(&key_pair).0;
@@ -42,9 +42,7 @@ pub fn create_inscription_tx(
     let taproot_spend_info = TaprootBuilder::new()
         .add_leaf(0, reveal_script.clone())?
         .finalize(SECP256K1, public_key)
-        .map_err(|_| {
-            BatchSubmitterError::Internal("Unable to create taproot spend info".to_string())
-        })?;
+        .map_err(|_| Error::Internal("Unable to create taproot spend info".to_string()))?;
 
     // Create reveal address
     let reveal_address = Address::p2tr(
@@ -57,9 +55,7 @@ pub fn create_inscription_tx(
     // Get control block
     let control_block = taproot_spend_info
         .control_block(&(reveal_script.clone(), LeafVersion::TapScript))
-        .ok_or(BatchSubmitterError::Internal(
-            "Cannot create control block".to_string(),
-        ))?;
+        .ok_or(Error::Internal("Cannot create control block".to_string()))?;
 
     // Calculate commit value
     let commit_value = calculate_reveal_input_value(
@@ -78,9 +74,7 @@ pub fn create_inscription_tx(
 
     // Verify that the first TxIn of the funded commit tx is our commitment
     if unsigned_commit_tx.output[0] != unfunded_commit_tx.output[0] {
-        return Err(BatchSubmitterError::Internal(
-            "Unexpected error".to_string(),
-        ));
+        return Err(Error::Internal("Unexpected error".to_string()));
     }
 
     // step 4: build and sign the reveal tx
@@ -104,7 +98,7 @@ pub fn create_inscription_tx(
 
 /// Encode tx in non-segwit format.
 /// This is needed for fundrawtransaction RPC call, which expects a non-segwit tx
-fn encode_tx_non_segwit(tx: &Transaction) -> Result<Vec<u8>, BatchSubmitterError> {
+fn encode_tx_non_segwit(tx: &Transaction) -> Result<Vec<u8>> {
     let mut encoder: Vec<u8> = Vec::new();
     tx.version.consensus_encode(&mut encoder)?;
     tx.input.consensus_encode(&mut encoder)?;
@@ -114,7 +108,7 @@ fn encode_tx_non_segwit(tx: &Transaction) -> Result<Vec<u8>, BatchSubmitterError
     Ok(encoder)
 }
 
-fn fund_tx(ctx: &BuilderContext, tx: &Transaction) -> Result<Transaction, BatchSubmitterError> {
+fn fund_tx(ctx: &BuilderContext, tx: &Transaction) -> Result<Transaction> {
     let tx_raw = encode_tx_non_segwit(tx)?;
     let funded_tx = ctx
         .rpc_client
@@ -132,16 +126,13 @@ fn fund_tx(ctx: &BuilderContext, tx: &Transaction) -> Result<Transaction, BatchS
     Ok(funded_tx)
 }
 
-fn generate_key_pair() -> Result<UntweakedKeypair, BatchSubmitterError> {
+fn generate_key_pair() -> Result<UntweakedKeypair> {
     let mut rand_bytes = [0; 32];
     OsRng.fill_bytes(&mut rand_bytes);
     Ok(UntweakedKeypair::from_seckey_slice(SECP256K1, &rand_bytes)?)
 }
 
-fn build_reveal_script(
-    taproot_public_key: &XOnlyPublicKey,
-    payload: &[u8],
-) -> Result<ScriptBuf, BatchSubmitterError> {
+fn build_reveal_script(taproot_public_key: &XOnlyPublicKey, payload: &[u8]) -> Result<ScriptBuf> {
     let mut script_builder = script::Builder::new()
         .push_x_only_key(taproot_public_key)
         .push_opcode(bitcoin::opcodes::all::OP_CHECKSIG)
@@ -151,7 +142,7 @@ fn build_reveal_script(
     for chunk in payload.chunks(MAX_PUSH_SIZE) {
         script_builder = script_builder.push_slice(
             script::PushBytesBuf::try_from(chunk.to_vec())
-                .map_err(|e| BatchSubmitterError::Internal(e.to_string()))?,
+                .map_err(|e| Error::Internal(e.to_string()))?,
         );
     }
     script_builder = script_builder.push_opcode(bitcoin::opcodes::all::OP_ENDIF);
@@ -166,7 +157,7 @@ fn calculate_reveal_input_value(
     recipient: Address,
     reveal_script: &script::ScriptBuf,
     control_block: &ControlBlock,
-) -> Result<Amount, BatchSubmitterError> {
+) -> Result<Amount> {
     let tx = Transaction {
         version: Version::TWO,
         input: vec![TxIn {
@@ -195,14 +186,11 @@ fn calculate_reveal_input_value(
 
     let fee = fee_rate
         .fee_vb(tx.vsize() as u64)
-        .ok_or(BatchSubmitterError::Internal("Overflow error".to_string()))?;
+        .ok_or(Error::Internal("Overflow error".to_string()))?;
     Ok(fee + amount)
 }
 
-fn build_unfunded_commit_tx(
-    recipient: Address,
-    output_value: Amount,
-) -> Result<Transaction, BatchSubmitterError> {
+fn build_unfunded_commit_tx(recipient: Address, output_value: Amount) -> Result<Transaction> {
     // The first output contains the taproot commitment
     let outputs: Vec<TxOut> = vec![TxOut {
         value: output_value,
@@ -226,7 +214,7 @@ fn build_and_sign_reveal_tx(
     reveal_script: &ScriptBuf,
     control_block: &ControlBlock,
     key_pair: &UntweakedKeypair,
-) -> Result<Transaction, BatchSubmitterError> {
+) -> Result<Transaction> {
     let outputs: Vec<TxOut> = vec![TxOut {
         value: amount,
         script_pubkey: recipient.script_pubkey(),
@@ -266,9 +254,9 @@ fn build_and_sign_reveal_tx(
     );
 
     // Set the witness field for the taproot input
-    let witness = cache.witness_mut(0).ok_or(BatchSubmitterError::Internal(
-        "Unable to get witness".to_string(),
-    ))?;
+    let witness = cache
+        .witness_mut(0)
+        .ok_or(Error::Internal("Unable to get witness".to_string()))?;
     witness.push(signature.as_ref());
     witness.push(reveal_script);
     witness.push(control_block.serialize());
