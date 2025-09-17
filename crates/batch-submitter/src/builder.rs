@@ -22,11 +22,11 @@ use rand::{RngCore, rngs::OsRng};
 use crate::BatchSubmitterError;
 
 pub struct BuilderContext {
-    rpc_client: BitcoinRPCClient,
-    fee_rate: u64,
-    operator_l1_addr: Address,
-    network: Network,
-    amount: u64,
+    pub rpc_client: BitcoinRPCClient,
+    pub fee_rate: u64,
+    pub operator_l1_addr: Address,
+    pub network: Network,
+    pub amount: u64,
 }
 
 pub fn create_inscription_tx(
@@ -139,6 +139,7 @@ fn calculate_reveal_input_value(
                 vout: 0,
             },
             script_sig: script::Builder::new().into_script(),
+            sequence: Sequence::ENABLE_RBF_NO_LOCKTIME,
             witness: Witness::from_slice(&[
                 Signature::from_slice(&[0; SCHNORR_SIGNATURE_SIZE])
                     .unwrap()
@@ -147,7 +148,6 @@ fn calculate_reveal_input_value(
                 reveal_script.to_bytes(),
                 control_block.serialize(),
             ]),
-            sequence: Sequence::ENABLE_RBF_NO_LOCKTIME,
         }],
         output: vec![TxOut {
             script_pubkey: ctx.operator_l1_addr.script_pubkey(),
