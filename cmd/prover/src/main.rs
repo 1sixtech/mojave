@@ -41,7 +41,7 @@ fn main() -> Result<()> {
                 .await
                 .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
             })
-            .unwrap_or_else(|err| tracing::error!("Failed to start daemonized node: {}", err));
+            .unwrap_or_else(|err| tracing::error!("Failed to start daemonized prover: {}", err));
         }
         Command::Stop => stop_daemonized(PathBuf::from(cli.datadir.clone()).join(PID_FILE_NAME))?,
     }
