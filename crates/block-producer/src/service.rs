@@ -1,18 +1,11 @@
 use crate::{
     BlockProducerContext,
     error::{Error, Result},
-    rpc::start_api,
     types::BlockProducerOptions,
 };
 use ethrex_common::types::Block;
-use mojave_node_lib::{
-    node::get_client_version,
-    types::{MojaveNode, NodeConfigFile, NodeOptions},
-    utils::{
-        get_authrpc_socket_addr, get_http_socket_addr, read_jwtsecret_file, store_node_config_file,
-    },
-};
-use std::{path::PathBuf, time::Duration};
+use mojave_node_lib::types::MojaveNode;
+use std::time::Duration;
 use tokio::sync::{
     mpsc::{self, error::TrySendError},
     oneshot,
@@ -22,7 +15,6 @@ use tracing::error;
 
 pub async fn run(
     node: MojaveNode,
-    node_options: &NodeOptions,
     block_producer_options: &BlockProducerOptions,
 ) -> Result<()> {
     let context = BlockProducerContext::new(
@@ -33,51 +25,24 @@ pub async fn run(
     );
     let block_time = block_producer_options.block_time;
     let block_producer = BlockProducer::start(context, 100);
-    tokio::spawn(async move {
-        loop {
-            if let Err(error) = block_producer.build_block().await {
-                tracing::error!("Failed to build a block: {}", error);
-            }
-            tokio::time::sleep(Duration::from_millis(block_time)).await;
-        }
-    });
 
-    let local_node_record = node.local_node_record.lock().await.clone();
-
-    let api_task = start_api(
-        get_http_socket_addr(&node_options.http_addr, &node_options.http_port).await?,
-        get_authrpc_socket_addr(&node_options.authrpc_addr, &node_options.authrpc_port).await?,
-        node.store,
-        node.blockchain,
-        read_jwtsecret_file(&node_options.authrpc_jwtsecret).await?,
-        node.local_p2p_node,
-        local_node_record,
-        node.syncer,
-        node.peer_handler,
-        get_client_version(),
-        node.rollup_store,
-        node.cancel_token.clone(),
-    );
     let cancel_token = node.cancel_token.clone();
-    tokio::pin!(api_task);
+
     tokio::select! {
-        res = &mut api_task => {
-            if let Err(error) = res {
-                tracing::error!("API task returned error: {}", error);
+        _ = async {
+            loop {
+                if let Err(error) = block_producer.build_block().await {
+                    tracing::error!("Failed to build a block: {}", error);
+                    break;
+                }
+                tokio::time::sleep(Duration::from_millis(block_time)).await;
             }
-        }
+        } => {}
         _ = cancel_token.cancelled() => {
-            tracing::info!("Shutting down the block producer..");
-            let node_config_path = PathBuf::from(node.data_dir.clone()).join("node_config.json");
-            tracing::info!("Storing config at {:?}...", node_config_path);
-            let node_config = NodeConfigFile::new(node.peer_table.clone(), node.local_node_record.lock().await.clone()).await;
-            store_node_config_file(node_config, node_config_path).await;
-            if let Err(_elapsed) = tokio::time::timeout(std::time::Duration::from_secs(10), api_task).await {
-                tracing::warn!("Timed out waiting for API to stop");
-            }
-            tracing::info!("Successfully shut down the block producer.");
+            tracing::info!("Shutting down block producer");
         }
     }
+
 
     Ok(())
 }
