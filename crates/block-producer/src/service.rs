@@ -13,10 +13,7 @@ use tokio::sync::{
 use tokio_stream::{StreamExt, wrappers::ReceiverStream};
 use tracing::error;
 
-pub async fn run(
-    node: MojaveNode,
-    block_producer_options: &BlockProducerOptions,
-) -> Result<()> {
+pub async fn run(node: MojaveNode, block_producer_options: &BlockProducerOptions) -> Result<()> {
     let context = BlockProducerContext::new(
         node.store.clone(),
         node.blockchain.clone(),
@@ -42,7 +39,6 @@ pub async fn run(
             tracing::info!("Shutting down block producer");
         }
     }
-
 
     Ok(())
 }
