@@ -62,16 +62,16 @@ where
         return Err(DaemonError::AlreadyRunning(pid).into());
     }
 
-    if let Err(e) = std::fs::remove_file(&pid_path) {
-        if e.kind() != std::io::ErrorKind::NotFound {
+    match std::fs::remove_file(&pid_path) {
+        Err(e) if e.kind() != std::io::ErrorKind::NotFound => {
             tracing::warn!(
                 ?pid_path,
                 error = %e,
                 "Failed to remove stale pid file while preparing daemon"
             );
         }
+        _ => {}
     }
-
     let log_file = OpenOptions::new()
         .append(true)
         .create(true)
