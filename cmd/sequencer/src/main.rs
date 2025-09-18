@@ -8,7 +8,7 @@ use mojave_block_producer::types::BlockProducerOptions;
 use mojave_node_lib::{initializers::get_signer, types::MojaveNode};
 use mojave_proof_coordinator::types::ProofCoordinatorOptions;
 use mojave_utils::{
-    block_on::run_on_tokio_single,
+    block_on::block_on_current_thread,
     daemon::{DaemonOptions, run_daemonized, stop_daemonized},
     p2p::public_key_from_signing_key,
 };
@@ -87,7 +87,7 @@ fn main() -> Result<()> {
         }
         Command::Stop => stop_daemonized(PathBuf::from(cli.datadir.clone()).join(PID_FILE_NAME))?,
         Command::GetPubKey => {
-            let signer = run_on_tokio_single(|| async move {
+            let signer = block_on_current_thread(|| async move {
                 get_signer(&cli.datadir).await.map_err(anyhow::Error::from)
             })?;
             let public_key = public_key_from_signing_key(&signer);
