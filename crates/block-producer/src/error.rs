@@ -1,6 +1,9 @@
 use ethrex_blockchain::error::{ChainError, InvalidForkChoice};
+use ethrex_common::types::BlobsBundleError;
 use ethrex_l2::sequencer::errors::BlockProducerError;
-use ethrex_l2_common::state_diff::StateDiffError;
+use ethrex_l2_common::{
+    privileged_transactions::PrivilegedTransactionError, state_diff::StateDiffError,
+};
 use ethrex_storage::error::StoreError;
 use ethrex_storage_rollup::RollupStoreError;
 use ethrex_vm::EvmError;
@@ -45,4 +48,14 @@ pub enum Error {
     TryInto(#[from] TryFromIntError),
     #[error(transparent)]
     Io(#[from] std::io::Error),
+    #[error("Retrieval Error: {0}")]
+    RetrievalError(String),
+    #[error("Committer failed to get information from storage")]
+    FailedToGetInformationFromStorage(String),
+    #[error("Committer failed to generate blobs bundle: {0}")]
+    FailedToGenerateBlobsBundle(#[from] BlobsBundleError),
+    #[error("Unreachable code reached: {0}")]
+    Unreachable(String),
+    #[error("Privileged Transaction error: {0}")]
+    PrivilegedTransactionError(#[from] PrivilegedTransactionError),
 }

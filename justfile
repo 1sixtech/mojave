@@ -28,7 +28,8 @@ sequencer:
     cargo run --release --bin mojave-sequencer init \
         --http.port 1739 \
         --private_key 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
-        --network {{current-dir}}/data/testnet-genesis.json
+        --network {{current-dir}}/data/testnet-genesis.json \
+        --no-daemon
 
 # Run bitcoin regtest in docker
 bitcoin-start:

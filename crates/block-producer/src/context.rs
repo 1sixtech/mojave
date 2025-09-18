@@ -40,9 +40,9 @@ use tracing::{debug, error, info};
 
 #[derive(Clone)]
 pub struct BlockProducerContext {
-    store: Store,
-    blockchain: Arc<Blockchain>,
-    rollup_store: StoreRollup,
+    pub(crate) store: Store,
+    pub(crate) blockchain: Arc<Blockchain>,
+    pub(crate) rollup_store: StoreRollup,
     coinbase_address: Address,
 }
 
