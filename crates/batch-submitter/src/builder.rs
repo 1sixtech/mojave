@@ -369,7 +369,7 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(calculated_value, Amount::from_sat(5000 + 10 * 112));
+        assert_eq!(calculated_value, Amount::from_sat(6120));
 
         let calculated_value = calculate_reveal_input_value(
             Amount::from_sat(0),
@@ -380,6 +380,6 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(calculated_value, Amount::from_sat(0 + 1 * 112));
+        assert_eq!(calculated_value, Amount::from_sat(112));
     }
 }
