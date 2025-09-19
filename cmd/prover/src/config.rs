@@ -26,7 +26,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             log_level: None,
-            datadir: "./mojave/mojave-prover".to_owned(),
+            datadir: "./mojave/prover".to_owned(),
             prover_port: 3900,
             prover_host: "0.0.0.0".to_owned(),
             queue_capacity: 100,

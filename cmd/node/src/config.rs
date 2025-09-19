@@ -40,7 +40,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             log_level: None,
-            datadir: "./mojave/mojave-node".to_owned(),
+            datadir: "./mojave/node".to_owned(),
             http_addr: "0.0.0.0".to_owned(),
             http_port: "8545".to_owned(),
             authrpc_addr: "localhost".to_owned(),
