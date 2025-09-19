@@ -38,9 +38,11 @@ pub fn create_inscription_tx(
 
     // step 2: create reveal script
     let reveal_script = build_reveal_script(&public_key, &payload)?;
+    let reveal_leaf = (reveal_script, LeafVersion::TapScript);
+
     // create merkle tree with a single leaf containing the reveal script
     let taproot_spend_info = TaprootBuilder::new()
-        .add_leaf(0, reveal_script.clone())?
+        .add_leaf(0, reveal_leaf.0.clone())?
         .finalize(SECP256K1, public_key)
         .map_err(|_| Error::Internal("Unable to create taproot spend info".to_string()))?;
 
@@ -54,20 +56,20 @@ pub fn create_inscription_tx(
 
     // Get control block
     let control_block = taproot_spend_info
-        .control_block(&(reveal_script.clone(), LeafVersion::TapScript))
+        .control_block(&reveal_leaf)
         .ok_or(Error::Internal("Cannot create control block".to_string()))?;
 
     // Calculate commit value
     let commit_value = calculate_reveal_input_value(
         ctx.amount,
         ctx.fee_rate,
-        ctx.operator_l1_addr.clone(),
-        &reveal_script,
+        &ctx.operator_l1_addr,
+        &reveal_leaf.0,
         &control_block,
     )?;
 
     // step 3: build the commit tx
-    let unfunded_commit_tx = build_unfunded_commit_tx(reveal_address.clone(), commit_value)?;
+    let unfunded_commit_tx = build_unfunded_commit_tx(&reveal_address, commit_value)?;
 
     // Fund the commit tx. Additional utxos might be added to the output set
     let unsigned_commit_tx = fund_tx(ctx, &unfunded_commit_tx)?;
@@ -80,9 +82,9 @@ pub fn create_inscription_tx(
     // step 4: build and sign the reveal tx
     let signed_reveal_tx = build_and_sign_reveal_tx(
         ctx.amount,
-        ctx.operator_l1_addr.clone(),
-        unsigned_commit_tx.clone(),
-        &reveal_script,
+        &ctx.operator_l1_addr,
+        &unsigned_commit_tx,
+        &reveal_leaf.0,
         &control_block,
         &key_pair,
     )?;
@@ -154,7 +156,7 @@ fn build_reveal_script(taproot_public_key: &XOnlyPublicKey, payload: &[u8]) -> R
 fn calculate_reveal_input_value(
     amount: Amount,
     fee_rate: FeeRate,
-    recipient: Address,
+    recipient: &Address,
     reveal_script: &script::ScriptBuf,
     control_block: &ControlBlock,
 ) -> Result<Amount> {
@@ -188,7 +190,7 @@ fn calculate_reveal_input_value(
     Ok(fee + amount)
 }
 
-fn build_unfunded_commit_tx(recipient: Address, output_value: Amount) -> Result<Transaction> {
+fn build_unfunded_commit_tx(recipient: &Address, output_value: Amount) -> Result<Transaction> {
     // The first output contains the taproot commitment
     let outputs: Vec<TxOut> = vec![TxOut {
         value: output_value,
@@ -207,8 +209,8 @@ fn build_unfunded_commit_tx(recipient: Address, output_value: Amount) -> Result<
 
 fn build_and_sign_reveal_tx(
     amount: Amount,
-    recipient: Address,
-    unsigned_commit_tx: Transaction,
+    recipient: &Address,
+    unsigned_commit_tx: &Transaction,
     reveal_script: &ScriptBuf,
     control_block: &ControlBlock,
     key_pair: &UntweakedKeypair,
@@ -241,7 +243,7 @@ fn build_and_sign_reveal_tx(
     let mut cache = SighashCache::new(tx);
     let sighash = cache.taproot_script_spend_signature_hash(
         0,
-        &Prevouts::All(&[unsigned_commit_tx.output[0].clone()]),
+        &Prevouts::All(std::slice::from_ref(&unsigned_commit_tx.output[0])),
         TapLeafHash::from_script(reveal_script, LeafVersion::TapScript),
         bitcoin::sighash::TapSighashType::Default,
     )?;
@@ -333,7 +335,7 @@ mod tests {
         let recipient = get_testnet_address();
         let output_value = Amount::from_sat(1000);
 
-        let tx = build_unfunded_commit_tx(recipient.clone(), output_value).unwrap();
+        let tx = build_unfunded_commit_tx(&recipient, output_value).unwrap();
 
         assert_eq!(tx.version, Version::TWO);
         assert!(tx.input.is_empty());
@@ -363,7 +365,7 @@ mod tests {
         let calculated_value = calculate_reveal_input_value(
             Amount::from_sat(5000),
             FeeRate::from_sat_per_vb(10).unwrap(),
-            recipient.clone(),
+            &recipient,
             &reveal_script,
             &control_block,
         )
@@ -374,7 +376,7 @@ mod tests {
         let calculated_value = calculate_reveal_input_value(
             Amount::from_sat(0),
             FeeRate::from_sat_per_vb(1).unwrap(),
-            recipient.clone(),
+            &recipient,
             &reveal_script,
             &control_block,
         )
