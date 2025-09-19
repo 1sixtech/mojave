@@ -12,7 +12,6 @@ documentation = { workspace = true }
 bitcoin = { workspace = true }
 bitcoincore-rpc = { workspace = true }
 rand = { workspace = true }
-secp256k1 = { workspace = true, features = ["global-context"] }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["sync"] }
 tracing = { workspace = true }
