@@ -261,3 +261,125 @@ fn build_and_sign_reveal_tx(
 
     Ok(cache.into_transaction())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bitcoin::{opcodes, script::PushBytesBuf};
+    use std::str::FromStr;
+
+    fn get_public_key() -> XOnlyPublicKey {
+        XOnlyPublicKey::from_str("4aa2ea0baac4158535936264f2027a3e7dc31bf1966c8f48b8a5087f256582f7")
+            .unwrap()
+    }
+
+    fn get_testnet_address() -> Address {
+        Address::from_str("tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx")
+            .unwrap()
+            .require_network(Network::Testnet)
+            .unwrap()
+    }
+
+    #[test]
+    fn test_generate_key_pair() {
+        let key_pair = generate_key_pair().expect("Should generate a key pair without error");
+        // Verify that a public key can be derived from the generated key pair
+        let _public_key = XOnlyPublicKey::from_keypair(&key_pair).0;
+    }
+
+    #[test]
+    fn test_build_reveal_script_small_payload() {
+        let public_key = get_public_key();
+
+        let script = build_reveal_script(&public_key, &[]).unwrap();
+        let expected_script = ScriptBuf::from_hex(
+            "204aa2ea0baac4158535936264f2027a3e7dc31bf1966c8f48b8a5087f256582f7ac6368",
+        )
+        .unwrap();
+        assert_eq!(script, expected_script);
+
+        let script = build_reveal_script(&public_key, b"Hello, world!").unwrap();
+        let expected_script = ScriptBuf::from_hex("204aa2ea0baac4158535936264f2027a3e7dc31bf1966c8f48b8a5087f256582f7ac630d48656c6c6f2c20776f726c642168").unwrap();
+        assert_eq!(script, expected_script);
+    }
+
+    #[test]
+    fn test_build_reveal_script_chunked_payload() {
+        let public_key = get_public_key();
+        // Create a payload larger than MAX_PUSH_SIZE (520 bytes)
+        let mut long_payload = vec![0; 60000];
+        OsRng.fill_bytes(&mut long_payload);
+
+        let script = build_reveal_script(&public_key, &long_payload).unwrap();
+
+        let mut expected_script_builder = script::Builder::new()
+            .push_x_only_key(&public_key)
+            .push_opcode(opcodes::all::OP_CHECKSIG)
+            .push_opcode(opcodes::all::OP_IF);
+
+        const MAX_PUSH_SIZE: usize = 520;
+        for chunk in long_payload.chunks(MAX_PUSH_SIZE) {
+            expected_script_builder =
+                expected_script_builder.push_slice(PushBytesBuf::try_from(chunk.to_vec()).unwrap());
+        }
+        expected_script_builder = expected_script_builder.push_opcode(opcodes::all::OP_ENDIF);
+        let expected_script = expected_script_builder.into_script();
+
+        assert_eq!(script, expected_script);
+    }
+
+    #[test]
+    fn test_build_unfunded_commit_tx() {
+        let recipient = get_testnet_address();
+        let output_value = Amount::from_sat(1000);
+
+        let tx = build_unfunded_commit_tx(recipient.clone(), output_value).unwrap();
+
+        assert_eq!(tx.version, Version::TWO);
+        assert!(tx.input.is_empty());
+        assert_eq!(tx.output.len(), 1);
+        assert_eq!(tx.output[0].value, output_value);
+        assert_eq!(tx.output[0].script_pubkey, recipient.script_pubkey());
+        assert_eq!(tx.lock_time, LockTime::ZERO);
+    }
+
+    #[test]
+    fn test_calculate_reveal_input_value() {
+        let recipient = get_testnet_address();
+
+        let public_key = get_public_key();
+        // OP_0 OP_IF OP_PUSHBYTES_11 48656c6c6f20576f726c64 OP_ENDIF
+        let reveal_script = ScriptBuf::from_hex("00630b48656c6c6f20576f726c6468").unwrap();
+
+        let taproot_spend_info = TaprootBuilder::new()
+            .add_leaf(0, reveal_script.clone())
+            .unwrap()
+            .finalize(SECP256K1, public_key)
+            .unwrap();
+        let control_block = taproot_spend_info
+            .control_block(&(reveal_script.clone(), LeafVersion::TapScript))
+            .unwrap();
+
+        let calculated_value = calculate_reveal_input_value(
+            Amount::from_sat(5000),
+            FeeRate::from_sat_per_vb(10).unwrap(),
+            recipient.clone(),
+            &reveal_script,
+            &control_block,
+        )
+        .unwrap();
+
+        assert_eq!(calculated_value, Amount::from_sat(5000 + 10 * 112));
+
+        let calculated_value = calculate_reveal_input_value(
+            Amount::from_sat(0),
+            FeeRate::from_sat_per_vb(1).unwrap(),
+            recipient.clone(),
+            &reveal_script,
+            &control_block,
+        )
+        .unwrap();
+
+        assert_eq!(calculated_value, Amount::from_sat(0 + 1 * 112));
+    }
+}
