@@ -11,6 +11,8 @@ pub enum Error {
     // This shouldn't exist https://github.com/lambdaclass/ethrex/issues/4167
     #[error("{0}")]
     Custom(String),
+    #[error("Config error: {0}")]
+    Config(String),
     #[error(transparent)]
     EthClient(#[from] EthClientError),
     #[error("Failed to force remove the database: {0}")]

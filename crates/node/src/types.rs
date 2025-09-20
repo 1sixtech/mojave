@@ -89,6 +89,7 @@ impl Default for NodeOptions {
     }
 }
 
+#[derive(Clone)]
 pub struct MojaveNode {
     pub data_dir: String,
     pub genesis: Genesis,
@@ -98,7 +99,7 @@ pub struct MojaveNode {
     pub cancel_token: CancellationToken,
     pub local_p2p_node: Node,
     pub local_node_record: Arc<Mutex<NodeRecord>>,
-    pub syncer: SyncManager,
+    pub syncer: Arc<SyncManager>,
     pub peer_table: Kademlia,
     pub peer_handler: PeerHandler,
 }

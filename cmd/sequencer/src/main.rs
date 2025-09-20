@@ -4,8 +4,10 @@ pub mod config;
 use crate::{cli::Command, config::load_config};
 use anyhow::Result;
 
+use mojave_batch_submitter::{committer::Committer, notifier::Notifier};
 use mojave_block_producer::types::BlockProducerOptions;
 use mojave_node_lib::{initializers::get_signer, types::MojaveNode};
+use mojave_proof_coordinator::types::ProofCoordinatorOptions;
 use mojave_utils::{
     daemon::{DaemonOptions, run_daemonized_async, stop_daemonized},
     p2p::public_key_from_signing_key,
@@ -33,6 +35,7 @@ async fn main() -> Result<()> {
             let node_options: mojave_node_lib::types::NodeOptions = (&config).into();
 
             let block_producer_options: BlockProducerOptions = (&config).into();
+            let proof_coordinator_options: ProofCoordinatorOptions = (&config).into();
             let daemon_opts = DaemonOptions {
                 no_daemon: config.no_daemon,
                 pid_file_path: PathBuf::from(config.datadir.clone()).join(PID_FILE_NAME),
@@ -43,9 +46,45 @@ async fn main() -> Result<()> {
                 let node = MojaveNode::init(&node_options)
                     .await
                     .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
-                mojave_block_producer::run(node, &node_options, &block_producer_options)
-                    .await
-                    .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
+
+                let cancel_token = node.cancel_token.clone();
+
+                let mut block_producer_task = Box::pin(mojave_block_producer::run(
+                    node.clone(),
+                    &node_options,
+                    &block_producer_options,
+                ));
+
+                let (batch_tx, batch_rx) = tokio::sync::mpsc::channel(16);
+
+                let coordinator_task = Box::pin(mojave_proof_coordinator::run(
+                    node,
+                    &node_options,
+                    &proof_coordinator_options,
+                    batch_rx,
+                ));
+
+                let batch_submitter_task = Box::pin(Committer::<Notifier>::run(batch_tx));
+
+                tokio::select! {
+                    res = &mut block_producer_task => {
+                        res.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
+                    }
+
+                    _ = mojave_utils::signal::wait_for_shutdown_signal()  => {
+                        tracing::info!("Termination signal received, shutting down sequencer..");
+                        cancel_token.cancel();
+                        block_producer_task
+                            .await
+                            .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
+                        coordinator_task
+                            .await
+                            .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
+                        batch_submitter_task
+                            .await
+                            .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
+                    }
+                }
             })
             .await?;
         }

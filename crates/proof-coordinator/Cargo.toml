@@ -10,6 +10,7 @@ documentation = { workspace = true }
 
 [dependencies]
 mojave-client = { workspace = true }
+mojave-node-lib = { workspace = true }
 
 ethrex-blockchain = { workspace = true }
 ethrex-common = { workspace = true, features = ["c-kzg"] }
@@ -19,5 +20,5 @@ ethrex-storage-rollup = { workspace = true }
 
 guest_program = { workspace = true }
 thiserror = { workspace = true }
-tokio = { workspace = true, features = ["sync", "net"] }
+tokio = { workspace = true, features = ["sync"] }
 tracing = { workspace = true }

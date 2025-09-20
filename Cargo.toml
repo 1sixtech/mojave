@@ -40,9 +40,11 @@ default-members = ["cmd/node", "cmd/prover", "cmd/sequencer"]
 resolver = "2"
 
 [workspace.dependencies]
+mojave-batch-submitter = { path = "crates/batch-submitter" }
 mojave-block-producer = { path = "crates/block-producer" }
 mojave-client = { path = "crates/client" }
 mojave-node-lib = { path = "crates/node" }
+mojave-proof-coordinator = { path = "crates/proof-coordinator" }
 mojave-prover-lib = { path = "crates/prover" }
 mojave-rpc-core = { path = "crates/rpc/core" }
 mojave-rpc-macros = { path = "crates/rpc/macros" }

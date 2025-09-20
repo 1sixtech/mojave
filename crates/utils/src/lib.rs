@@ -6,4 +6,5 @@ pub mod network;
 pub mod ordered_block;
 pub mod p2p;
 pub mod rpc;
+pub mod signal;
 pub mod unique_heap;
