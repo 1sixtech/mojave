@@ -12,7 +12,6 @@ pub struct Options {
         help = "Receives a `Genesis` struct in json format. This is the only argument which is required. You can look at some example genesis files at `test_data/genesis*`.",
         long_help = "Alternatively, the name of a known network can be provided instead to use its preset genesis file and include its preset bootnodes. The networks currently supported include holesky, sepolia, hoodi and mainnet.",
         help_heading = "Node options",
-        // env = "ETHREX_NETWORK",
         value_parser = clap::value_parser!(Network),
     )]
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
@@ -70,9 +69,7 @@ pub struct Options {
     #[arg(
         long = "metrics.port",
         value_name = "PROMETHEUS_METRICS_PORT",
-        // default_value = "9090", // Default Prometheus port (https://prometheus.io/docs/tutorials/getting_started/#show-me-how-it-is-done).
         help_heading = "Node options",
-        // env = "ETHREX_METRICS_PORT"
     )]
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub metrics_port: Option<String>,
@@ -91,7 +88,6 @@ pub struct Options {
         value_name = "ADDRESS",
         help = "Listening address for the http rpc server.",
         help_heading = "RPC options",
-        env = "ETHREX_HTTP_ADDR"
     )]
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub http_addr: Option<String>,
@@ -101,7 +97,6 @@ pub struct Options {
         value_name = "PORT",
         help = "Listening port for the http rpc server.",
         help_heading = "RPC options",
-        // env = "ETHREX_HTTP_PORT"
     )]
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub http_port: Option<String>,
@@ -200,11 +195,9 @@ pub struct Cli {
         long = "datadir",
         value_name = "DATABASE_DIRECTORY",
         help = "If the datadir is the word `memory`, ethrex will use the InMemory Engine",
-        // default_value = ".mojave/node",
         help = "Receives the name of the directory where the Database is located.",
         long_help = "If the datadir is the word `memory`, ethrex will use the `InMemory Engine`.",
         help_heading = "Node options",
-        // env = "ETHREX_DATADIR"
     )]
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub datadir: Option<String>,
@@ -244,14 +237,12 @@ pub struct SequencerOptions {
         long = "prover.address",
         help = "Allowed domain(s) and port(s) for the prover in the form 'domain:port'",
         help_heading = "Prover Options",
-        // default_value = "http://0.0.0.0:3900"
     )]
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub prover_address: Option<String>,
     #[arg(
         long = "block_time",
         help = "Block creation interval in milliseconds",
-        // default_value = "1000"
     )]
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub block_time: Option<u64>,

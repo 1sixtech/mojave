@@ -23,11 +23,9 @@ pub struct Cli {
     #[arg(
         long = "datadir",
         value_name = "DATA_DIRECTORY",
-        // default_value = ".mojave/prover",
         help = "Directory for storing prover data.",
         long_help = "Specifies the directory where the prover will store its data.",
         help_heading = "Prover options",
-        // env = "ETHREX_DATADIR"
     )]
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub datadir: Option<String>,
@@ -45,7 +43,6 @@ impl Cli {
 pub struct ProverOptions {
     #[arg(
         long = "prover.port",
-        // default_value = "3900",
         help = "Port for the prover",
         help_heading = "Prover Options"
     )]
@@ -54,7 +51,6 @@ pub struct ProverOptions {
 
     #[arg(
         long = "prover.host",
-        // default_value = "0.0.0.0",
         help = "Host for the prover",
         help_heading = "Prover Options"
     )]
@@ -63,7 +59,6 @@ pub struct ProverOptions {
 
     #[arg(
         long = "prover.queue-capacity",
-        // default_value_t = 100,
         value_name = "CAPACITY",
         help = "Bounded mpsc queue capacity for proof jobs",
         help_heading = "Prover Options"
