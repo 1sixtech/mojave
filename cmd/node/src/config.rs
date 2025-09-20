@@ -98,7 +98,5 @@ pub(crate) fn load_config(cli: Cli) -> Result<Config, Box<figment::Error>> {
         .merge(Serialized::<Cli>::defaults(cli))
         .extract()?;
 
-    println!("{:#?}", figment);
-
     Ok(figment)
 }

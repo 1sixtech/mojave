@@ -68,7 +68,7 @@ pub struct Options {
     #[arg(
         long = "metrics.port",
         value_name = "PROMETHEUS_METRICS_PORT",
-        help_heading = "Node options",
+        help_heading = "Node options"
     )]
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub metrics_port: Option<String>,
@@ -86,7 +86,7 @@ pub struct Options {
         long = "http.addr",
         value_name = "ADDRESS",
         help = "Listening address for the http rpc server.",
-        help_heading = "RPC options",
+        help_heading = "RPC options"
     )]
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub http_addr: Option<String>,
@@ -95,7 +95,7 @@ pub struct Options {
         long = "http.port",
         value_name = "PORT",
         help = "Listening port for the http rpc server.",
-        help_heading = "RPC options",
+        help_heading = "RPC options"
     )]
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub http_port: Option<String>,
@@ -196,7 +196,7 @@ pub struct Cli {
         help = "If the datadir is the word `memory`, ethrex will use the InMemory Engine",
         help = "Receives the name of the directory where the Database is located.",
         long_help = "If the datadir is the word `memory`, ethrex will use the `InMemory Engine`.",
-        help_heading = "Node options",
+        help_heading = "Node options"
     )]
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub datadir: Option<String>,
