@@ -1,6 +1,5 @@
 use clap::{ArgAction, ArgGroup, Parser, Subcommand};
 use mojave_node_lib::types::{Node, SyncMode};
-use mojave_proof_coordinator::types::ProofCoordinatorOptions;
 use mojave_utils::network::Network;
 
 use serde::{Deserialize, Serialize};

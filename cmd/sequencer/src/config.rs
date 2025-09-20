@@ -101,9 +101,16 @@ impl From<&Config> for mojave_node_lib::types::NodeOptions {
 impl From<&Config> for mojave_block_producer::types::BlockProducerOptions {
     fn from(value: &Config) -> Self {
         Self {
-            prover_address: value.prover_address.clone(),
             block_time: value.block_time,
             private_key: value.private_key.clone(),
+        }
+    }
+}
+
+impl From<&Config> for mojave_proof_coordinator::types::ProofCoordinatorOptions {
+    fn from(value: &Config) -> Self {
+        Self {
+            prover_address: value.prover_address.clone(),
         }
     }
 }
