@@ -138,6 +138,7 @@ fn build_reveal_script(taproot_public_key: &XOnlyPublicKey, payload: &[u8]) -> R
     let mut script_builder = script::Builder::new()
         .push_x_only_key(taproot_public_key)
         .push_opcode(bitcoin::opcodes::all::OP_CHECKSIG)
+        .push_opcode(bitcoin::opcodes::OP_FALSE)
         .push_opcode(bitcoin::opcodes::all::OP_IF);
 
     const MAX_PUSH_SIZE: usize = 520;
@@ -170,9 +171,7 @@ fn calculate_reveal_input_value(
             script_sig: script::Builder::new().into_script(),
             sequence: Sequence::ENABLE_RBF_NO_LOCKTIME,
             witness: Witness::from_slice(&[
-                Signature::from_slice(&[0; SCHNORR_SIGNATURE_SIZE])?
-                    .as_ref()
-                    .to_vec(),
+                vec![0; SCHNORR_SIGNATURE_SIZE],
                 reveal_script.to_bytes(),
                 control_block.serialize(),
             ]),
@@ -243,7 +242,7 @@ fn build_and_sign_reveal_tx(
     let mut cache = SighashCache::new(tx);
     let sighash = cache.taproot_script_spend_signature_hash(
         0,
-        &Prevouts::All(std::slice::from_ref(&unsigned_commit_tx.output[0])),
+        &Prevouts::All(&[&unsigned_commit_tx.output[0]]),
         TapLeafHash::from_script(reveal_script, LeafVersion::TapScript),
         bitcoin::sighash::TapSighashType::Default,
     )?;
