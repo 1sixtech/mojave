@@ -1,6 +1,0 @@
-{
-  "log_level": "debug",
-  "network": { "GenesisPath": "/path/to/genesis.json" },
-  "p2p_enabled": true,
-  "http_port": "8545"
-}
