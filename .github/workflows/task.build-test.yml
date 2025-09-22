@@ -7,7 +7,7 @@ on:
       run_coverage:
         description: "Run coverage gate"
         type: boolean
-        default: false
+        default: true
       coverage_threshold:
         description: "Fail if line coverage below this value (used only when run_coverage=true)"
         type: number
