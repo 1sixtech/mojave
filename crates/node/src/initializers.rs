@@ -185,8 +185,8 @@ mod tests {
         let signer = get_signer(dir.to_str().unwrap()).await.unwrap();
 
         let secp = Secp256k1::new();
-        let pub_kehy = PublicKey::from_secret_key(&secp, &signer);
-        let uncompressed = pub_kehy.serialize_uncompressed();
+        let pub_key = PublicKey::from_secret_key(&secp, &signer);
+        let uncompressed = pub_key.serialize_uncompressed();
         let pubkey_hex = hex::encode(&uncompressed[1..]); // drop 0x04
 
         let enode = format!("enode://{pubkey_hex}@127.0.0.1:30303");
