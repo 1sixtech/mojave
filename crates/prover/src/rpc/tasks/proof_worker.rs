@@ -16,8 +16,7 @@ pub(crate) fn spawn_proof_worker(
         loop {
             match receiver.recv().await {
                 Some(job) => {
-                    let job_id = job.job_id.clone();
-                    tracing::debug!(%job_id, "Worker received job");
+                    tracing::debug!(job_id = %job.job_id.as_ref(), "Worker received job");
 
                     let batch_number = job.prover_data.batch_number;
                     let program_input = job.prover_data.input;
@@ -29,23 +28,23 @@ pub(crate) fn spawn_proof_worker(
 
                     let result = match try_generate_proof {
                         Ok(proof) => {
-                            tracing::info!(%job_id, %batch_number, "Proof generated");
+                            tracing::info!(job_id = %job.job_id.as_ref(), %batch_number, "Proof generated");
                             ProofResult::Proof(proof)
                         }
                         Err(e) => {
-                            tracing::error!(%job_id, %batch_number, error = %e, "Proof generation failed");
+                            tracing::error!(job_id = %job.job_id.as_ref(), %batch_number, error = %e, "Proof generation failed");
                             ProofResult::Error(e.to_string())
                         }
                     };
 
                     let proof_response = ProofResponse {
-                        job_id: job_id.clone(),
+                        job_id: job.job_id,
                         batch_number,
                         result,
                     };
 
                     ctx.job_store
-                        .upsert_proof(&job_id, proof_response.clone())
+                        .upsert_proof(&proof_response.job_id, proof_response.clone())
                         .await;
 
                     todo!("Send proof to sequencer")

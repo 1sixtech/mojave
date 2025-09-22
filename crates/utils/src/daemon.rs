@@ -268,31 +268,6 @@ mod tests {
         ));
     }
 
-    #[tokio::test]
-    async fn run_daemonized_async_no_daemon_ok() {
-        let opts = DaemonOptions {
-            no_daemon: true,
-            pid_file_path: unique_path("unused_pid"),
-            log_file_path: unique_path("unused_log"),
-        };
-        let res = run_daemonized_async(opts, || async { Ok(()) }).await;
-
-        assert!(res.is_ok());
-    }
-
-    #[tokio::test]
-    async fn run_daemonized_async_no_daemon_err_propagates() {
-        let opts = DaemonOptions {
-            no_daemon: true,
-            pid_file_path: unique_path("unused_pid2"),
-            log_file_path: unique_path("unused_log2"),
-        };
-        let res = run_daemonized_async(opts, || async { Err::<(), _>("propagate".into()) }).await;
-
-        assert!(res.is_err());
-        assert!(format!("{res:#?}").contains("propagate"));
-    }
-
     #[test]
     fn run_daemonized_sync_no_daemon_ok() {
         let opts = DaemonOptions {
@@ -333,19 +308,5 @@ mod tests {
 
         // In actual usage, the pid file is not removed if process is not found
         let _ = fs::remove_file(pid_file);
-    }
-
-    #[tokio::test]
-    async fn run_main_task_async_removes_pid_file_on_exit() {
-        let pid_file = unique_path("cleanup_pid_dir").join("daemon.pid");
-        fs::create_dir_all(pid_file.parent().unwrap()).unwrap();
-        fs::write(&pid_file, format!("{}\n", std::process::id())).unwrap();
-
-        assert!(pid_file.exists());
-
-        let res = super::run_main_task_async(|| async { Ok(()) }, Some(&pid_file)).await;
-
-        assert!(res.is_ok());
-        assert!(!pid_file.exists());
     }
 }

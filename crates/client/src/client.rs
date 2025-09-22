@@ -385,10 +385,10 @@ mod tests {
 
     #[tokio::test]
     async fn get_proof_success() {
-        use crate::types::{JobId, ProofResponse, ProofResult};
+        use crate::types::{ProofResponse, ProofResult};
 
         let expected = ProofResponse {
-            job_id: "job-1".to_string(),
+            job_id: "job-1".into(),
             batch_number: 7,
             result: ProofResult::Error("dummy".to_string()),
         };
@@ -404,10 +404,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let got = client
-            .get_proof(JobId(expected.job_id.clone()))
-            .await
-            .unwrap();
+        let got = client.get_proof(expected.job_id.clone()).await.unwrap();
 
         assert_eq!(got.job_id, expected.job_id);
         assert_eq!(got.batch_number, expected.batch_number);
@@ -420,10 +417,10 @@ mod tests {
 
     #[tokio::test]
     async fn get_proof_failed_with_delay() {
-        use crate::types::{JobId, ProofResponse, ProofResult};
+        use crate::types::{ProofResponse, ProofResult};
 
         let expected = ProofResponse {
-            job_id: "job-1".to_string(),
+            job_id: "job-1".into(),
             batch_number: 7,
             result: ProofResult::Error("dummy".to_string()),
         };
@@ -440,10 +437,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let got = client
-            .get_proof(JobId(expected.job_id.clone()))
-            .await
-            .unwrap_err();
+        let got = client.get_proof(expected.job_id.clone()).await.unwrap_err();
 
         let s = format!("{got:?}").to_lowercase();
         assert!(s.contains("timedout"));
@@ -465,9 +459,8 @@ mod tests {
         };
 
         let job_id = client.send_proof_input(&proof_in, "0xabc").await.unwrap();
-        let JobId(inner) = job_id;
 
-        assert_eq!(inner, "job-42");
+        assert_eq!(job_id, "job-42".into());
     }
 
     #[tokio::test]

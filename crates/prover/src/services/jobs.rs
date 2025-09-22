@@ -1,6 +1,6 @@
 use crate::{job::JobRecord, rpc::ProverRpcContext};
 use guest_program::input::ProgramInput;
-use mojave_client::types::{ProofResponse, ProverData};
+use mojave_client::types::{JobId, ProofResponse, ProverData};
 use mojave_utils::rpc::error::{Error, Result};
 use reqwest::Url;
 use tiny_keccak::{Hasher, Keccak};
@@ -9,7 +9,7 @@ pub async fn enqueue_proof_input(
     ctx: &ProverRpcContext,
     prover_data: ProverData,
     sequencer_addr: Url,
-) -> Result<String> {
+) -> Result<JobId> {
     let job_id = calculate_job_id(&prover_data.input)?;
     tracing::debug!(%job_id, sequencer = %sequencer_addr, "Parsed proof input");
     if ctx.job_store.already_requested(&job_id).await {
@@ -22,7 +22,7 @@ pub async fn enqueue_proof_input(
         prover_data,
         sequencer_url: sequencer_addr,
     };
-    ctx.job_store.insert_job(&record.job_id).await;
+    ctx.job_store.insert_job(job_id.clone()).await;
     ctx.sender
         .send(record)
         .await
@@ -31,11 +31,11 @@ pub async fn enqueue_proof_input(
 }
 
 #[inline]
-pub async fn get_pending_job_ids(ctx: &ProverRpcContext) -> Result<Vec<String>> {
+pub async fn get_pending_job_ids(ctx: &ProverRpcContext) -> Result<Vec<JobId>> {
     Ok(ctx.job_store.get_pending_jobs().await)
 }
 
-pub async fn get_proof(ctx: &ProverRpcContext, job_id: &str) -> Result<ProofResponse> {
+pub async fn get_proof(ctx: &ProverRpcContext, job_id: &JobId) -> Result<ProofResponse> {
     ctx.job_store
         .get_proof_by_id(job_id)
         .await
@@ -44,7 +44,7 @@ pub async fn get_proof(ctx: &ProverRpcContext, job_id: &str) -> Result<ProofResp
         )))
 }
 
-fn calculate_job_id(prover_input: &ProgramInput) -> Result<String> {
+fn calculate_job_id(prover_input: &ProgramInput) -> Result<JobId> {
     let mut block_hashes: Vec<String> = prover_input
         .blocks
         .iter()
@@ -60,7 +60,7 @@ fn calculate_job_id(prover_input: &ProgramInput) -> Result<String> {
     hasher.finalize(&mut hash);
     let job_id = hex::encode(hash);
     tracing::trace!(%job_id, "Calculated job_id");
-    Ok(job_id)
+    Ok(job_id.into())
 }
 
 #[cfg(test)]
@@ -135,12 +135,14 @@ mod tests {
             batch_number: 1,
             result: ProofResult::Error("dummy".into()),
         };
-        ctx.job_store.upsert_proof("job-1", expected.clone()).await;
+        ctx.job_store
+            .upsert_proof(&"job-1".into(), expected.clone())
+            .await;
 
-        let ok = get_proof(&ctx, "job-1").await.unwrap();
+        let ok = get_proof(&ctx, &"job-1".into()).await.unwrap();
         assert_eq!(ok.job_id, expected.job_id);
 
-        let err = get_proof(&ctx, "nope").await.unwrap_err();
+        let err = get_proof(&ctx, &"nope".into()).await.unwrap_err();
         let s = format!("{err:?}").to_lowercase();
         assert!(s.contains("no proof"));
     }

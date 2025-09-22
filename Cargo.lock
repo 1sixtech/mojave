@@ -4369,7 +4369,6 @@ dependencies = [
 name = "mojave-client"
 version = "0.1.0"
 dependencies = [
- "axum",
  "ethrex-common",
  "ethrex-l2-common",
  "ethrex-rpc",
@@ -4384,7 +4383,6 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.16",
  "tokio",
- "tokio-util",
  "tracing",
 ]
 

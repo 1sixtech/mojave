@@ -1,3 +1,5 @@
+use mojave_client::types::JobId;
+
 use crate::{
     rpc::{ProverRpcContext, types::SendProofInputParam},
     services::jobs::{
@@ -37,7 +39,7 @@ pub async fn send_proof_input(
 #[mojave_rpc_macros::rpc(namespace = "moj", method = "getProof")]
 pub async fn get_proof(
     ctx: Arc<ProverRpcContext>,
-    job_id: String,
+    job_id: JobId,
 ) -> Result<serde_json::Value, mojave_rpc_core::RpcErr> {
     let proof = get_proof_by_id(&ctx, &job_id).await?;
     let proof = serde_json::to_value(proof)
@@ -146,9 +148,9 @@ mod tests {
     #[tokio::test]
     async fn get_pending_job_ids_returns_json_array_of_ids() {
         let (ctx, _rx) = make_ctx(1);
-        ctx.job_store.insert_job("abbaa12").await;
-        ctx.job_store.insert_job("baa2b1b").await;
-        ctx.job_store.insert_job("cac3c3c").await;
+        ctx.job_store.insert_job("abbaa12".into()).await;
+        ctx.job_store.insert_job("baa2b1b".into()).await;
+        ctx.job_store.insert_job("cac3c3c".into()).await;
 
         let val = super::get_pending_job_ids(ctx, ()).await.unwrap();
 
@@ -165,13 +167,15 @@ mod tests {
     async fn get_proof_serializes_proof_to_json() {
         let (ctx, _rx) = make_ctx(1);
         let expected = ProofResponse {
-            job_id: "job-1".to_string(),
+            job_id: "job-1".into(),
             batch_number: 7,
             result: ProofResult::Error("dummy".to_string()),
         };
-        ctx.job_store.upsert_proof("job-1", expected.clone()).await;
+        ctx.job_store
+            .upsert_proof(&"job-1".into(), expected.clone())
+            .await;
 
-        let val = super::get_proof(ctx, "job-1".to_string()).await.unwrap();
+        let val = super::get_proof(ctx, "job-1".into()).await.unwrap();
 
         assert_eq!(val, serde_json::to_value(&expected).unwrap());
     }
