@@ -1,5 +1,5 @@
 ---
-name: Task - Build & Test
+name: Task - Build & Test (Development)
 on:
   workflow_dispatch:
     inputs:
@@ -41,7 +41,8 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: ${{ inputs.run_coverage && 'coverage' || 'test' }}
+          shared-key: ci
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       # coverage mode
       - name: Install cargo-llvm-cov
