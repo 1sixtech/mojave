@@ -1,16 +1,22 @@
 use crate::{error::Error, traits::Task};
 use tokio::sync::{mpsc, oneshot};
 
+pub type RequestSignal<T> = (
+    <T as Task>::Request,
+    oneshot::Sender<Result<<T as Task>::Response, <T as Task>::Error>>,
+);
+pub type ShutdownSignal<T> = oneshot::Sender<Result<(), <T as Task>::Error>>;
+
 pub struct TaskRunner<T: Task + 'static> {
-    request: mpsc::Receiver<(T::Request, oneshot::Sender<Result<T::Response, T::Error>>)>,
-    shutdown: mpsc::Receiver<oneshot::Sender<Result<(), T::Error>>>,
+    request: mpsc::Receiver<RequestSignal<T>>,
+    shutdown: mpsc::Receiver<ShutdownSignal<T>>,
     task: T,
 }
 
 impl<T: Task + 'static> TaskRunner<T> {
     pub fn new(
-        request: mpsc::Receiver<(T::Request, oneshot::Sender<Result<T::Response, T::Error>>)>,
-        shutdown: mpsc::Receiver<oneshot::Sender<Result<(), T::Error>>>,
+        request: mpsc::Receiver<RequestSignal<T>>,
+        shutdown: mpsc::Receiver<ShutdownSignal<T>>,
         task: T,
     ) -> Self {
         Self {

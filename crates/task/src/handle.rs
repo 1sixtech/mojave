@@ -1,12 +1,16 @@
-use crate::{Error, Task};
+use crate::{
+    error::Error,
+    runner::{RequestSignal, ShutdownSignal},
+    traits::Task,
+};
 use tokio::sync::{mpsc, oneshot};
 
 pub struct TaskHandle<T>
 where
     T: Task,
 {
-    request: mpsc::Sender<(T::Request, oneshot::Sender<Result<T::Response, T::Error>>)>,
-    shutdown: mpsc::Sender<oneshot::Sender<Result<(), T::Error>>>,
+    request: mpsc::Sender<RequestSignal<T>>,
+    shutdown: mpsc::Sender<ShutdownSignal<T>>,
 }
 
 impl<T: Task> Clone for TaskHandle<T> {
@@ -23,8 +27,8 @@ where
     T: Task,
 {
     pub(crate) fn new(
-        request: mpsc::Sender<(T::Request, oneshot::Sender<Result<T::Response, T::Error>>)>,
-        shutdown: mpsc::Sender<oneshot::Sender<Result<(), T::Error>>>,
+        request: mpsc::Sender<RequestSignal<T>>,
+        shutdown: mpsc::Sender<ShutdownSignal<T>>,
     ) -> Self {
         Self { request, shutdown }
     }
