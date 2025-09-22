@@ -29,10 +29,10 @@ impl<T: Task> Drop for TaskHandle<T> {
         tokio::spawn(async move {
             // If the receiver is closed, self.shutdown() has already taken place.
             // Therefore we only deal with successful send.
-            if let Ok(()) = shutdown.send(sender).await {
-                if let Err(error) = receiver.await.unwrap() {
-                    tracing::error!("{error}");
-                }
+            if let Ok(()) = shutdown.send(sender).await
+                && let Err(error) = receiver.await.unwrap()
+            {
+                tracing::error!("{error}");
             }
         });
     }
