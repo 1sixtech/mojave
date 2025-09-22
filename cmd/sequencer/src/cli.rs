@@ -1,23 +1,21 @@
 use clap::{ArgAction, ArgGroup, Parser, Subcommand};
-use mojave_block_producer::types::BlockProducerOptions;
 use mojave_node_lib::types::{Node, SyncMode};
-use mojave_proof_coordinator::types::ProofCoordinatorOptions;
 use mojave_utils::network::Network;
-use tracing::Level;
 
-#[derive(Parser)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Parser, Debug, Serialize, Deserialize, Clone)]
 pub struct Options {
     #[arg(
         long = "network",
-        default_value_t = Network::default(),
         value_name = "GENESIS_FILE_PATH",
         help = "Receives a `Genesis` struct in json format. This is the only argument which is required. You can look at some example genesis files at `test_data/genesis*`.",
         long_help = "Alternatively, the name of a known network can be provided instead to use its preset genesis file and include its preset bootnodes. The networks currently supported include holesky, sepolia, hoodi and mainnet.",
         help_heading = "Node options",
-        env = "ETHREX_NETWORK",
         value_parser = clap::value_parser!(Network),
     )]
-    pub network: Network,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub network: Option<Network>,
 
     #[arg(
     	long = "bootnodes",
@@ -28,17 +26,18 @@ pub struct Options {
         help = "Comma separated enode URLs for P2P discovery bootstrap.",
         help_heading = "P2P options"
     )]
-    pub bootnodes: Vec<Node>,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub bootnodes: Option<Vec<Node>>,
 
     #[arg(
         long = "syncmode",
-        default_value = "full",
         value_enum,
         value_name = "SYNC_MODE",
         help = "The way in which the node will sync its state.",
         long_help = "Can be either \"full\" or \"snap\" with \"full\" as default value.",
         help_heading = "P2P options"
     )]
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub syncmode: Option<SyncMode>,
 
     #[arg(
@@ -56,24 +55,24 @@ pub struct Options {
         action = clap::ArgAction::SetTrue,
         help_heading = "Node options"
     )]
-    pub force: bool,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub force: Option<bool>,
 
     #[arg(
         long = "metrics.addr",
         value_name = "ADDRESS",
-        default_value = "0.0.0.0",
         help_heading = "Node options"
     )]
-    pub metrics_addr: String,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub metrics_addr: Option<String>,
 
     #[arg(
         long = "metrics.port",
         value_name = "PROMETHEUS_METRICS_PORT",
-        default_value = "9090", // Default Prometheus port (https://prometheus.io/docs/tutorials/getting_started/#show-me-how-it-is-done).
-        help_heading = "Node options",
-        env = "ETHREX_METRICS_PORT"
+        help_heading = "Node options"
     )]
-    pub metrics_port: String,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub metrics_port: Option<String>,
 
     #[arg(
         long = "metrics",
@@ -81,139 +80,105 @@ pub struct Options {
         help = "Enable metrics collection and exposition",
         help_heading = "Node options"
     )]
-    pub metrics_enabled: bool,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub metrics_enabled: Option<bool>,
 
     #[arg(
         long = "http.addr",
-        default_value = "0.0.0.0",
         value_name = "ADDRESS",
         help = "Listening address for the http rpc server.",
-        help_heading = "RPC options",
-        env = "ETHREX_HTTP_ADDR"
+        help_heading = "RPC options"
     )]
-    pub http_addr: String,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub http_addr: Option<String>,
 
     #[arg(
         long = "http.port",
-        default_value = "8545",
         value_name = "PORT",
         help = "Listening port for the http rpc server.",
-        help_heading = "RPC options",
-        env = "ETHREX_HTTP_PORT"
+        help_heading = "RPC options"
     )]
-    pub http_port: String,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub http_port: Option<String>,
 
     #[arg(
         long = "authrpc.addr",
-        default_value = "localhost",
         value_name = "ADDRESS",
         help = "Listening address for the authenticated rpc server.",
         help_heading = "RPC options"
     )]
-    pub authrpc_addr: String,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub authrpc_addr: Option<String>,
 
     #[arg(
         long = "authrpc.port",
-        default_value = "8551",
         value_name = "PORT",
         help = "Listening port for the authenticated rpc server.",
         help_heading = "RPC options"
     )]
-    pub authrpc_port: String,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub authrpc_port: Option<String>,
 
     #[arg(
         long = "authrpc.jwtsecret",
-        default_value = "jwt.hex",
         value_name = "JWTSECRET_PATH",
         help = "Receives the jwt secret used for authenticated rpc requests.",
         help_heading = "RPC options"
     )]
-    pub authrpc_jwtsecret: String,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub authrpc_jwtsecret: Option<String>,
 
-    #[arg(
-    	long = "p2p.enabled",
-     	default_value = "true",
-      	value_name = "P2P_ENABLED",
-       	action = ArgAction::SetTrue,
-        help_heading = "P2P options"
-    )]
-    pub p2p_enabled: bool,
+    #[arg(long = "p2p.enabled", value_name = "P2P_ENABLED", action = ArgAction::SetTrue, help_heading = "P2P options")]
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub p2p_enabled: Option<bool>,
 
     #[arg(
         long = "p2p.addr",
-        default_value = "0.0.0.0",
         value_name = "ADDRESS",
         help_heading = "P2P options"
     )]
-    pub p2p_addr: String,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub p2p_addr: Option<String>,
 
-    #[arg(
-        long = "p2p.port",
-        default_value = "30303",
-        value_name = "PORT",
-        help_heading = "P2P options"
-    )]
-    pub p2p_port: String,
+    #[arg(long = "p2p.port", value_name = "PORT", help_heading = "P2P options")]
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub p2p_port: Option<String>,
 
     #[arg(
         long = "discovery.addr",
-        default_value = "0.0.0.0",
         value_name = "ADDRESS",
         help = "UDP address for P2P discovery.",
         help_heading = "P2P options"
     )]
-    pub discovery_addr: String,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub discovery_addr: Option<String>,
 
     #[arg(
         long = "discovery.port",
-        default_value = "30303",
         value_name = "PORT",
         help = "UDP port for P2P discovery.",
         help_heading = "P2P options"
     )]
-    pub discovery_port: String,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub discovery_port: Option<String>,
+
     #[arg(
         long = "no-daemon",
-        help = "If set, the sequencer will run in the foreground (not as a daemon). By default, the sequencer runs as a daemon.",
+        help = "If set, the node will run in the foreground (not as a daemon). By default, the node runs as a daemon.",
         help_heading = "Daemon Options",
         action = clap::ArgAction::SetTrue
     )]
-    pub no_daemon: bool,
-}
-
-impl From<&Options> for mojave_node_lib::types::NodeOptions {
-    fn from(options: &Options) -> Self {
-        Self {
-            http_addr: options.http_addr.clone(),
-            http_port: options.http_port.clone(),
-            authrpc_addr: options.authrpc_addr.clone(),
-            authrpc_port: options.authrpc_port.clone(),
-            authrpc_jwtsecret: options.authrpc_jwtsecret.clone(),
-            p2p_enabled: options.p2p_enabled,
-            p2p_addr: options.p2p_addr.clone(),
-            p2p_port: options.p2p_port.clone(),
-            discovery_addr: options.discovery_addr.clone(),
-            discovery_port: options.discovery_port.clone(),
-            network: options.network.clone(),
-            bootnodes: options.bootnodes.clone(),
-            datadir: Default::default(),
-            syncmode: options.syncmode.unwrap_or(SyncMode::Full),
-            sponsorable_addresses_file_path: options.sponsorable_addresses_file_path.clone(),
-            metrics_addr: options.metrics_addr.clone(),
-            metrics_port: options.metrics_port.clone(),
-            metrics_enabled: options.metrics_enabled,
-            force: options.force,
-        }
-    }
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub no_daemon: Option<bool>,
 }
 
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Parser)]
+#[derive(Parser, Serialize, Deserialize, Debug, Clone)]
 #[command(
-    name = "mojave-sequencer",
+    name = "mojave-node",
     author,
     version,
-    about = "Mojave is a blockchain node implementation for the Mojave network",
+    about = "mojave-node is the node implementation for the Mojave network.",
     arg_required_else_help = true
 )]
 pub struct Cli {
@@ -224,18 +189,18 @@ pub struct Cli {
         long_help = "Possible values: info, debug, trace, warn, error",
         help_heading = "Node options"
     )]
-    pub log_level: Option<Level>,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub log_level: Option<String>,
     #[arg(
         long = "datadir",
         value_name = "DATABASE_DIRECTORY",
         help = "If the datadir is the word `memory`, ethrex will use the InMemory Engine",
-        default_value = ".mojave/sequencer",
         help = "Receives the name of the directory where the Database is located.",
         long_help = "If the datadir is the word `memory`, ethrex will use the `InMemory Engine`.",
-        help_heading = "Node options",
-        env = "ETHREX_DATADIR"
+        help_heading = "Node options"
     )]
-    pub datadir: String,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub datadir: Option<String>,
     #[command(subcommand)]
     pub command: Command,
 }
@@ -247,13 +212,16 @@ impl Cli {
 }
 
 #[allow(clippy::large_enum_variant)]
-#[derive(Subcommand)]
+#[derive(Subcommand, Serialize, Deserialize, Debug, Clone)]
+#[serde(untagged)]
 pub enum Command {
     #[command(name = "init", about = "Run the sequencer")]
     Start {
         #[command(flatten)]
+        #[serde(flatten)]
         options: Options,
         #[command(flatten)]
+        #[serde(flatten)]
         sequencer_options: SequencerOptions,
     },
     #[command(name = "stop", about = "Stop the sequencer")]
@@ -262,24 +230,22 @@ pub enum Command {
     GetPubKey,
 }
 
-#[derive(Parser)]
+#[derive(Parser, Serialize, Deserialize, Clone)]
 #[clap(group(ArgGroup::new("mojave::SequencerOptions")))]
 pub struct SequencerOptions {
     #[arg(
         long = "prover.address",
         help = "Allowed domain(s) and port(s) for the prover in the form 'domain:port'",
-        help_heading = "Prover Options",
-        default_value = "http://0.0.0.0:3900"
+        help_heading = "Prover Options"
     )]
-    pub prover_address: String,
-    #[arg(
-        long = "block_time",
-        help = "Block creation interval in milliseconds",
-        default_value = "1000"
-    )]
-    pub block_time: u64,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub prover_address: Option<String>,
+    #[arg(long = "block_time", help = "Block creation interval in milliseconds")]
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub block_time: Option<u64>,
     #[arg(long = "private_key", help = "Private key used for signing blocks")]
-    pub private_key: String,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub private_key: Option<String>,
 }
 
 impl std::fmt::Debug for SequencerOptions {
@@ -287,22 +253,5 @@ impl std::fmt::Debug for SequencerOptions {
         f.debug_struct("SequencerOptions")
             .field("block_time", &self.block_time)
             .finish()
-    }
-}
-
-impl From<&SequencerOptions> for BlockProducerOptions {
-    fn from(value: &SequencerOptions) -> Self {
-        Self {
-            block_time: value.block_time,
-            private_key: value.private_key.clone(),
-        }
-    }
-}
-
-impl From<&SequencerOptions> for ProofCoordinatorOptions {
-    fn from(value: &SequencerOptions) -> Self {
-        Self {
-            prover_address: value.prover_address.clone(),
-        }
     }
 }
