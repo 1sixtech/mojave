@@ -1,0 +1,28 @@
+[package]
+name = "mojave-task"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+readme.workspace = true
+keywords.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = [
+    "macros",
+    "signal",
+    "sync",
+    "rt",
+    "rt-multi-thread",
+    "time",
+] }
+
+[dependencies]
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["macros", "sync", "rt"] }
+tracing = { workspace = true }
+trait-variant = "0.1.2"

@@ -32,7 +32,7 @@ members = [
   "crates/rpc/core",
   "crates/rpc/macros",
   "crates/rpc/server",
-  "crates/signature",
+  "crates/signature", "crates/task",
   "crates/tests",
   "crates/utils",
 ]
