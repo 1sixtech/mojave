@@ -11,18 +11,18 @@ documentation.workspace = true
 readme.workspace = true
 keywords.workspace = true
 
-[dev-dependencies]
-tokio = { workspace = true, features = [
-    "macros",
-    "signal",
-    "sync",
-    "rt",
-    "rt-multi-thread",
-    "time",
-] }
-
 [dependencies]
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["macros", "sync", "rt"] }
 tracing = { workspace = true }
 trait-variant = "0.1.2"
+
+[dev-dependencies]
+tokio = { workspace = true, features = [
+  "macros",
+  "signal",
+  "sync",
+  "rt",
+  "rt-multi-thread",
+  "time",
+] }
