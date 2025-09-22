@@ -187,8 +187,7 @@ mod tests {
                                 Ok(val)
                             } else {
                                 Err(RpcErr::Internal(format!(
-                                    "Method '{}' did not match expected '{}'",
-                                    method, matcher
+                                    "Method '{method}' did not match expected '{matcher}'",
                                 )))
                             }
                         }
@@ -198,8 +197,7 @@ mod tests {
                                 Ok(val)
                             } else {
                                 Err(RpcErr::Internal(format!(
-                                    "Method '{}' did not match expected '{}'",
-                                    method, matcher
+                                    "Method '{method}' did not match expected '{matcher}'",
                                 )))
                             }
                         }

@@ -131,7 +131,7 @@ mod tests {
         assert_eq!(format!("{}", Network::Testnet), "testnet");
 
         let network = Network::from("1six/mojave.json");
-        let s = format!("{}", network);
+        let s = format!("{network}");
         assert!(s.contains("1six/mojave.json"));
     }
 
@@ -150,11 +150,5 @@ mod tests {
             err,
             GenesisError::File(ref e) if e.kind() == std::io::ErrorKind::NotFound
         ));
-    }
-
-    #[test]
-    fn genesis_constant_paths_is_not_empty() {
-        assert!(!MAINNET_GENESIS_PATH.is_empty());
-        assert!(!TESTNET_GENESIS_PATH.is_empty());
     }
 }

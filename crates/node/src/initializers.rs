@@ -106,7 +106,7 @@ mod tests {
 
         let key_path_str = key_file_path.to_str().unwrap();
         let secret_key1 = get_signer(test_dir.to_str().unwrap()).await.unwrap();
-        let key_bytes = fs::read(&key_path_str).unwrap();
+        let key_bytes = fs::read(key_path_str).unwrap();
         assert_eq!(key_bytes.len(), 32);
 
         // Check permission 0600 on Unix(Owner can read and write, others have no permission)
@@ -115,18 +115,18 @@ mod tests {
             use std::os::unix::fs::PermissionsExt;
             // Trim to last 3 octal digits:
             // mask out file type and special bits (setuid/setgid/sticky), keeping only the 9 permission bits (rwxrwxrwx).
-            let mode = fs::metadata(&key_path_str).unwrap().permissions().mode() & 0o777;
+            let mode = fs::metadata(key_path_str).unwrap().permissions().mode() & 0o777;
             assert_eq!(mode, 0o600);
         }
 
-        let mtime_before = fs::metadata(&key_path_str).unwrap().modified().unwrap();
+        let mtime_before = fs::metadata(key_path_str).unwrap().modified().unwrap();
 
         let secret_key2 = get_signer(test_dir.to_str().unwrap())
             .await
             .expect("reuse key");
         assert_eq!(secret_key1.secret_bytes(), secret_key2.secret_bytes());
 
-        let mtime_after = fs::metadata(&key_path_str).unwrap().modified().unwrap();
+        let mtime_after = fs::metadata(key_path_str).unwrap().modified().unwrap();
 
         assert_eq!(mtime_before, mtime_after);
 
@@ -160,7 +160,7 @@ mod tests {
         fs::create_dir_all(test_dir.clone()).unwrap();
 
         // Write an invalid key (wrong size)
-        fs::write(&key_path, &[0u8; 16]).unwrap();
+        fs::write(&key_path, [0u8; 16]).unwrap();
 
         let err = get_signer(test_dir.to_str().unwrap())
             .await
@@ -189,7 +189,7 @@ mod tests {
         let uncompressed = pub_kehy.serialize_uncompressed();
         let pubkey_hex = hex::encode(&uncompressed[1..]); // drop 0x04
 
-        let enode = format!("enode://{}@127.0.0.1:30303", pubkey_hex);
+        let enode = format!("enode://{pubkey_hex}@127.0.0.1:30303");
         let local = Node::from_str(&enode).expect("valid local enode");
 
         let rec = get_local_node_record(dir.to_str().unwrap(), &local, &signer)
