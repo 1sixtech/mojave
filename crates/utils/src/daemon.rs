@@ -177,8 +177,7 @@ where
 {
     let rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
-        .build()
-        .unwrap();
+        .build()?;
 
     rt.block_on(async move {
         tokio::select! {
@@ -187,7 +186,7 @@ where
                     tracing::error!("Process stopped unexpectedly: {}", err);
                 }
             },
-            _ = tokio::signal::ctrl_c() => {
+            _ = crate::signal::wait_for_shutdown_signal() => {
                 tracing::info!("Shutting down...");
             }
         }
