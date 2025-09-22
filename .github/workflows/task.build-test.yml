@@ -2,12 +2,21 @@
 name: Task - Build & Test
 on:
   workflow_dispatch:
-  workflow_call:
     inputs:
       run_coverage:
         description: "Run coverage gate"
         type: boolean
         default: true
+      coverage_threshold:
+        description: "Fail if line coverage below this value (used only when run_coverage=true)"
+        type: number
+        default: 50
+  workflow_call:
+    inputs:
+      run_coverage:
+        description: "Run coverage gate"
+        type: boolean
+        default: false
       coverage_threshold:
         description: "Fail if line coverage below this value (used only when run_coverage=true)"
         type: number
