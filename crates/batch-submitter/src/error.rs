@@ -18,6 +18,8 @@ pub enum Error {
     Secp256k1Error(#[from] bitcoin::secp256k1::Error),
     #[error("Sighash taproot error: {0}")]
     SighashTaprootError(#[from] bitcoin::sighash::TaprootError),
-    #[error("Error building taproot")]
+    #[error("Error building taproot: {0}")]
     TaprootError(#[from] bitcoin::taproot::TaprootBuilderError),
+    #[error("Push bytes error: {0}")]
+    PushBytesError(#[from] bitcoin::script::PushBytesError),
 }

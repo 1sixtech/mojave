@@ -142,10 +142,8 @@ fn build_reveal_script(taproot_public_key: &XOnlyPublicKey, payload: &[u8]) -> R
         .push_opcode(bitcoin::opcodes::all::OP_IF);
 
     for chunk in payload.chunks(MAX_PUSH_SIZE) {
-        script_builder = script_builder.push_slice(
-            script::PushBytesBuf::try_from(chunk.to_vec())
-                .map_err(|e| Error::Internal(e.to_string()))?,
-        );
+        let data = script::PushBytesBuf::try_from(chunk.to_vec())?;
+        script_builder = script_builder.push_slice(data);
     }
     script_builder = script_builder.push_opcode(bitcoin::opcodes::all::OP_ENDIF);
 
