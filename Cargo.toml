@@ -41,7 +41,6 @@ default-members = ["cmd/node", "cmd/prover", "cmd/sequencer"]
 resolver = "2"
 
 [workspace.dependencies]
-mojave-task = { path = "crates/task" }
 mojave-batch-submitter = { path = "crates/batch-submitter" }
 mojave-block-producer = { path = "crates/block-producer" }
 mojave-client = { path = "crates/client" }
