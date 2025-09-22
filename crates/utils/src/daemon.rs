@@ -43,7 +43,10 @@ pub enum DaemonError {
     ParsePid(String),
 }
 
-pub fn run_daemonized<F, Fut>(opts: DaemonOptions, proc: F) -> Result<()>
+pub fn run_daemonized<F, Fut>(
+    opts: DaemonOptions,
+    proc: F,
+) -> Result<(), Box<dyn std::error::Error>>
 where
     F: FnOnce() -> Fut,
     Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
@@ -170,7 +173,7 @@ fn is_pid_running(pid: Pid) -> bool {
     System::new_all().process(pid).is_some()
 }
 
-fn run_main_task<F, Fut>(proc: F) -> Result<()>
+fn run_main_task<F, Fut>(proc: F) -> Result<(), Box<dyn std::error::Error>>
 where
     F: FnOnce() -> Fut,
     Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
@@ -184,15 +187,16 @@ where
             res = proc() => {
                 if let Err(err) = res {
                     tracing::error!("Process stopped unexpectedly: {}", err);
+                    return Err(err);
                 }
             },
             _ = crate::signal::wait_for_shutdown_signal() => {
                 tracing::info!("Shutting down...");
+                return Ok(());
             }
         }
-    });
-
-    Ok(())
+        Ok(())
+    })
 }
 
 #[cfg(test)]
