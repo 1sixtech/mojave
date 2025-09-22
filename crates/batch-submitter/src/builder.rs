@@ -292,13 +292,13 @@ mod tests {
 
         let script = build_reveal_script(&public_key, &[]).unwrap();
         let expected_script = ScriptBuf::from_hex(
-            "204aa2ea0baac4158535936264f2027a3e7dc31bf1966c8f48b8a5087f256582f7ac6368",
+            "204aa2ea0baac4158535936264f2027a3e7dc31bf1966c8f48b8a5087f256582f7ac006368",
         )
         .unwrap();
         assert_eq!(script, expected_script);
 
         let script = build_reveal_script(&public_key, b"Hello, world!").unwrap();
-        let expected_script = ScriptBuf::from_hex("204aa2ea0baac4158535936264f2027a3e7dc31bf1966c8f48b8a5087f256582f7ac630d48656c6c6f2c20776f726c642168").unwrap();
+        let expected_script = ScriptBuf::from_hex("204aa2ea0baac4158535936264f2027a3e7dc31bf1966c8f48b8a5087f256582f7ac00630d48656c6c6f2c20776f726c642168").unwrap();
         assert_eq!(script, expected_script);
     }
 
@@ -314,6 +314,7 @@ mod tests {
         let mut expected_script_builder = script::Builder::new()
             .push_x_only_key(&public_key)
             .push_opcode(opcodes::all::OP_CHECKSIG)
+            .push_opcode(opcodes::OP_FALSE)
             .push_opcode(opcodes::all::OP_IF);
 
         const MAX_PUSH_SIZE: usize = 520;
