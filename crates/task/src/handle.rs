@@ -22,6 +22,22 @@ impl<T: Task> Clone for TaskHandle<T> {
     }
 }
 
+impl<T: Task> Drop for TaskHandle<T> {
+    fn drop(&mut self) {
+        let (sender, receiver) = oneshot::channel();
+        let shutdown = self.shutdown.clone();
+        tokio::spawn(async move {
+            // If the receiver is closed, self.shutdown() has already taken place.
+            // Therefore we only deal with successful send.
+            if let Ok(()) = shutdown.send(sender).await {
+                if let Err(error) = receiver.await.unwrap() {
+                    tracing::error!("{error}");
+                }
+            }
+        });
+    }
+}
+
 impl<T> TaskHandle<T>
 where
     T: Task,

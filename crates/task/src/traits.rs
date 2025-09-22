@@ -21,9 +21,7 @@ pub trait Task: Sized + 'static {
 
         let mut runner = TaskRunner::new(request_receiver, shutdown_receiver, self);
         tokio::spawn(async move {
-            if let Err(error) = runner.listen().await {
-                tracing::error!("{error}");
-            }
+            runner.listen().await;
         });
         TaskHandle::new(request_sender, shutdown_sender)
     }

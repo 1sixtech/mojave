@@ -1,4 +1,4 @@
-use crate::{error::Error, traits::Task};
+use crate::traits::Task;
 use tokio::sync::{mpsc, oneshot};
 
 pub type RequestSignal<T> = (
@@ -26,24 +26,20 @@ impl<T: Task + 'static> TaskRunner<T> {
         }
     }
 
-    pub async fn listen(&mut self) -> Result<(), Error> {
+    pub async fn listen(&mut self) {
         loop {
             tokio::select! {
                 request = self.request.recv() => {
                     if let Some((request, sender)) = request {
                         let response = self.task.handle_request(request).await;
                         let _ = sender.send(response);
-                    } else {
-                        return Err(Error::TaskHandleDropped(std::any::type_name::<T>()));
                     }
                 }
                 shutdown = self.shutdown.recv() => {
                     if let Some(sender) = shutdown {
                         let response = self.task.on_shutdown().await;
                         let _ = sender.send(response);
-                        return Ok(());
-                    } else {
-                        return Err(Error::TaskHandleDropped(std::any::type_name::<T>()));
+                        return;
                     }
                 }
             }
