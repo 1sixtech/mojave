@@ -4,6 +4,6 @@ pub enum Error {
     Send(String),
     #[error("Failed to receive a response: {0}")]
     Receive(#[from] tokio::sync::oneshot::error::RecvError),
-    #[error("Task handle for {0} dropped..")]
-    TaskHandleDropped(&'static str),
+    #[error("Task error: {0}")]
+    Task(Box<dyn std::error::Error>),
 }
