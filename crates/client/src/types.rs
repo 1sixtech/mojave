@@ -30,7 +30,7 @@ pub struct SignedProofResponse {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct JobId(String);
+pub struct JobId(pub String);
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
