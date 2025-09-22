@@ -8,9 +8,7 @@ use bitcoin::{
     consensus::Encodable,
     hashes::Hash,
     key::UntweakedKeypair,
-    secp256k1::{
-        Message, SECP256K1, XOnlyPublicKey, constants::SCHNORR_SIGNATURE_SIZE,
-    },
+    secp256k1::{Message, SECP256K1, XOnlyPublicKey, constants::SCHNORR_SIGNATURE_SIZE},
     sighash::{Prevouts, SighashCache},
     taproot::{ControlBlock, LeafVersion, TapLeafHash, TaprootBuilder},
     transaction::Version,
