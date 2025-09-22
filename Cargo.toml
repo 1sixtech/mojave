@@ -32,7 +32,8 @@ members = [
   "crates/rpc/core",
   "crates/rpc/macros",
   "crates/rpc/server",
-  "crates/signature", "crates/task",
+  "crates/signature",
+  "crates/task",
   "crates/tests",
   "crates/utils",
 ]
@@ -40,6 +41,7 @@ default-members = ["cmd/node", "cmd/prover", "cmd/sequencer"]
 resolver = "2"
 
 [workspace.dependencies]
+mojave-task = { path = "crates/task" }
 mojave-batch-submitter = { path = "crates/batch-submitter" }
 mojave-block-producer = { path = "crates/block-producer" }
 mojave-client = { path = "crates/client" }
