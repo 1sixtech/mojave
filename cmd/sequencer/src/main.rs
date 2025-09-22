@@ -48,7 +48,6 @@ fn main() -> Result<()> {
 
                 let mut block_producer_task = Box::pin(mojave_block_producer::run(
                     node.clone(),
-                    &node_options,
                     &block_producer_options,
                 ));
 
