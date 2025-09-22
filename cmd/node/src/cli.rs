@@ -213,7 +213,8 @@ pub struct Cli {
         value_name = "LOG_LEVEL",
         help = "The verbosity level used for logs.",
         long_help = "Possible values: info, debug, trace, warn, error",
-        help_heading = "Node options"
+        help_heading = "Node options",
+        global = true
     )]
     pub log_level: Option<Level>,
     #[arg(
@@ -224,7 +225,8 @@ pub struct Cli {
         help = "Receives the name of the directory where the Database is located.",
         long_help = "If the datadir is the word `memory`, ethrex will use the `InMemory Engine`.",
         help_heading = "Node options",
-        env = "ETHREX_DATADIR"
+        env = "ETHREX_DATADIR",
+        global = true
     )]
     pub datadir: String,
     #[command(subcommand)]
@@ -249,4 +251,175 @@ pub enum Command {
     Stop,
     #[command(name = "get-pub-key", about = "Display the public key of the node")]
     GetPubKey,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::{CommandFactory, Parser};
+    use mojave_node_lib::types::NodeOptions;
+    use tracing::Level;
+
+    #[test]
+    fn help_and_version_render() {
+        // --help
+        let mut cmd = Cli::command();
+        let mut buf = Vec::new();
+        cmd.write_help(&mut buf).unwrap();
+        let help = String::from_utf8(buf).unwrap();
+        assert!(help.contains("mojave-node"));
+        assert!(help.to_lowercase().contains("node options"));
+
+        // --version
+        let version = Cli::command().render_version();
+        assert!(!version.is_empty());
+    }
+
+    #[test]
+    fn parse_start_with_defaults() {
+        let cli = Cli::try_parse_from(["mojave-node", "init"]).unwrap();
+
+        assert_eq!(cli.datadir, ".mojave/node");
+        assert!(cli.log_level.is_none());
+
+        let Command::Start { ref options } = cli.command else {
+            panic!("expected Start")
+        };
+
+        assert!(matches!(options.network, Network::DefaultNet));
+        assert!(options.bootnodes.is_empty());
+        assert!(options.syncmode.is_none());
+        assert!(options.sponsorable_addresses_file_path.is_none());
+        assert!(!options.force);
+        assert_eq!(options.metrics_addr, "0.0.0.0");
+        assert_eq!(options.metrics_port, "9090");
+        assert!(!options.metrics_enabled);
+        assert_eq!(options.http_addr, "0.0.0.0");
+        assert_eq!(options.http_port, "8545");
+        assert_eq!(options.authrpc_addr, "localhost");
+        assert_eq!(options.authrpc_port, "8551");
+        assert_eq!(options.authrpc_jwtsecret, "jwt.hex");
+        assert!(options.p2p_enabled);
+        assert_eq!(options.p2p_addr, "0.0.0.0");
+        assert_eq!(options.p2p_port, "30303");
+        assert_eq!(options.discovery_addr, "0.0.0.0");
+        assert_eq!(options.discovery_port, "30303");
+        assert!(options.syncmode.is_none());
+        assert!(!options.no_daemon);
+        assert!(options.sponsorable_addresses_file_path.is_none());
+        assert_eq!(options.metrics_addr, "0.0.0.0");
+        assert_eq!(options.metrics_port, "9090");
+        assert!(!options.metrics_enabled);
+        assert!(!options.force);
+        assert_eq!(cli.datadir, ".mojave/node");
+
+        let node_opts: NodeOptions = options.into();
+        assert_eq!(node_opts.http_addr, options.http_addr);
+        assert_eq!(node_opts.http_port, options.http_port);
+        assert_eq!(node_opts.authrpc_addr, options.authrpc_addr);
+        assert_eq!(node_opts.authrpc_port, options.authrpc_port);
+        assert_eq!(node_opts.authrpc_jwtsecret, options.authrpc_jwtsecret);
+        assert_eq!(node_opts.p2p_enabled, options.p2p_enabled);
+        assert_eq!(node_opts.p2p_addr, options.p2p_addr);
+        assert_eq!(node_opts.p2p_port, options.p2p_port);
+        assert_eq!(node_opts.discovery_addr, options.discovery_addr);
+        assert_eq!(node_opts.discovery_port, options.discovery_port);
+        assert!(matches!(node_opts.network, Network::DefaultNet));
+        assert_eq!(node_opts.bootnodes, options.bootnodes);
+        assert!(matches!(node_opts.syncmode, SyncMode::Full)); // syncmode is not set from Options. Override to default
+        assert_eq!(
+            node_opts.sponsorable_addresses_file_path,
+            options.sponsorable_addresses_file_path
+        );
+        assert_eq!(node_opts.metrics_addr, options.metrics_addr);
+        assert_eq!(node_opts.metrics_port, options.metrics_port);
+        assert_eq!(node_opts.metrics_enabled, options.metrics_enabled);
+        assert_eq!(node_opts.force, options.force);
+        assert_eq!(node_opts.datadir, "".to_string()); // datadir is not set from Options. Override to default
+    }
+
+    #[test]
+    fn parse_start_with_overrides() {
+        let cli = Cli::try_parse_from([
+            "mojave-node",
+            "init",
+            "--log.level",
+            "debug",
+            "--datadir",
+            "/tmp/mojave-node",
+            "--http.addr",
+            "127.0.0.1",
+            "--http.port",
+            "18545",
+            "--authrpc.addr",
+            "127.0.0.1",
+            "--authrpc.port",
+            "18551",
+            "--authrpc.jwtsecret",
+            "custom.jwt",
+            "--metrics.addr",
+            "127.0.0.1",
+            "--metrics.port",
+            "19090",
+            "--metrics",
+            "--p2p.addr",
+            "0.0.0.0",
+            "--p2p.port",
+            "30304",
+            "--discovery.addr",
+            "0.0.0.0",
+            "--discovery.port",
+            "30305",
+            "--syncmode",
+            "snap",
+            "--force",
+            "--no-daemon",
+        ])
+        .unwrap();
+
+        match cli.command {
+            Command::Start { options } => {
+                assert_eq!(cli.log_level, Some(Level::DEBUG));
+                assert_eq!(cli.datadir, "/tmp/mojave-node");
+                assert_eq!(options.http_addr, "127.0.0.1");
+                assert_eq!(options.http_port, "18545");
+                assert_eq!(options.authrpc_addr, "127.0.0.1");
+                assert_eq!(options.authrpc_port, "18551");
+                assert_eq!(options.authrpc_jwtsecret, "custom.jwt");
+                assert_eq!(options.metrics_addr, "127.0.0.1");
+                assert_eq!(options.metrics_port, "19090");
+                assert!(options.metrics_enabled);
+                assert_eq!(options.p2p_addr, "0.0.0.0");
+                assert_eq!(options.p2p_port, "30304");
+                assert_eq!(options.discovery_addr, "0.0.0.0");
+                assert_eq!(options.discovery_port, "30305");
+                assert!(matches!(options.syncmode, Some(SyncMode::Snap)));
+                assert!(options.force);
+                assert!(options.no_daemon);
+            }
+            _ => panic!("expected Start"),
+        }
+    }
+
+    #[test]
+    fn parse_stop_and_get_pub_key() {
+        let cli = Cli::try_parse_from(["mojave-node", "stop"]).unwrap();
+        assert!(matches!(cli.command, Command::Stop));
+
+        let cli = Cli::try_parse_from(["mojave-node", "get-pub-key"]).unwrap();
+        assert!(matches!(cli.command, Command::GetPubKey));
+    }
+
+    #[test]
+    fn invalid_bootnodes_string_rejected() {
+        let res = Cli::try_parse_from(["mojave-node", "init", "--bootnodes", "not-enode-url"]);
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn parse_log_level() {
+        let cli = Cli::try_parse_from(["mojave-node", "--log.level", "debug", "init"]).unwrap();
+
+        assert!(cli.log_level.is_some());
+    }
 }
