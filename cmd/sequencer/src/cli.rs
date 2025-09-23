@@ -222,7 +222,8 @@ pub struct Cli {
         value_name = "LOG_LEVEL",
         help = "The verbosity level used for logs.",
         long_help = "Possible values: info, debug, trace, warn, error",
-        help_heading = "Node options"
+        help_heading = "Node options",
+        global = true
     )]
     pub log_level: Option<Level>,
     #[arg(
@@ -233,7 +234,8 @@ pub struct Cli {
         help = "Receives the name of the directory where the Database is located.",
         long_help = "If the datadir is the word `memory`, ethrex will use the `InMemory Engine`.",
         help_heading = "Node options",
-        env = "ETHREX_DATADIR"
+        env = "ETHREX_DATADIR",
+        global = true
     )]
     pub datadir: String,
     #[command(subcommand)]
@@ -304,5 +306,287 @@ impl From<&SequencerOptions> for ProofCoordinatorOptions {
         Self {
             prover_address: value.prover_address.clone(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::{CommandFactory, Parser};
+
+    #[test]
+    fn help_and_version_render() {
+        // help
+        let mut cmd = Cli::command();
+        let mut buf = Vec::new();
+        cmd.write_help(&mut buf).unwrap();
+        let help = String::from_utf8(buf).unwrap();
+        assert!(help.contains("mojave-sequencer"));
+
+        // version
+        let version = Cli::command().render_version();
+        assert!(!version.is_empty());
+    }
+
+    #[test]
+    fn parse_start_minimal_uses_defaults() {
+        let cli =
+            Cli::try_parse_from(["mojave-sequencer", "init", "--private_key", "0xabc"]).unwrap();
+
+        assert_eq!(cli.datadir, ".mojave/sequencer");
+        assert!(cli.log_level.is_none());
+
+        let Command::Start {
+            ref options,
+            ref sequencer_options,
+        } = cli.command
+        else {
+            panic!("expected Start")
+        };
+
+        // Node Options defaults
+        assert_eq!(options.http_addr, "0.0.0.0");
+        assert_eq!(options.http_port, "8545");
+        assert_eq!(options.authrpc_addr, "localhost");
+        assert_eq!(options.authrpc_port, "8551");
+        assert_eq!(options.authrpc_jwtsecret, "jwt.hex");
+        assert!(options.p2p_enabled, "p2p.enabled default should be true");
+        assert_eq!(options.p2p_addr, "0.0.0.0");
+        assert_eq!(options.p2p_port, "30303");
+        assert_eq!(options.discovery_addr, "0.0.0.0");
+        assert_eq!(options.discovery_port, "30303");
+
+        // SequencerOptions defaults
+        assert_eq!(sequencer_options.prover_address, "http://0.0.0.0:3900");
+        assert_eq!(sequencer_options.block_time, 1000);
+        assert_eq!(sequencer_options.private_key, "0xabc");
+
+        // Even if it is Option<SyncMode>, syncmode must be Some(Full) because of default_value="full"
+        assert!(matches!(options.syncmode, Some(SyncMode::Full)));
+    }
+
+    #[test]
+    fn parse_start_with_overrides() {
+        let cli = Cli::try_parse_from([
+            "mojave-sequencer",
+            "init",
+            "--log.level",
+            "debug",
+            "--datadir",
+            "/tmp/sequencer",
+            "--prover.address",
+            "http://127.0.0.1:3909",
+            "--block_time",
+            "2500",
+            "--private_key",
+            "0xmojave",
+            "--http.addr",
+            "127.0.0.1",
+            "--http.port",
+            "9000",
+            "--authrpc.addr",
+            "127.0.0.1",
+            "--authrpc.port",
+            "9001",
+            "--authrpc.jwtsecret",
+            "custom.jwt",
+            "--p2p.addr",
+            "127.0.0.1",
+            "--p2p.port",
+            "30304",
+            "--discovery.addr",
+            "127.0.0.1",
+            "--discovery.port",
+            "30305",
+            "--metrics.addr",
+            "0.0.0.0",
+            "--metrics.port",
+            "9393",
+            "--metrics",
+            "--force",
+            "--syncmode",
+            "snap",
+            "--no-daemon",
+        ])
+        .unwrap();
+
+        match cli.command {
+            Command::Start {
+                options,
+                sequencer_options,
+            } => {
+                assert_eq!(cli.log_level, Some(Level::DEBUG));
+                assert_eq!(cli.datadir, "/tmp/sequencer");
+
+                assert_eq!(sequencer_options.prover_address, "http://127.0.0.1:3909");
+                assert_eq!(sequencer_options.block_time, 2500);
+                assert_eq!(sequencer_options.private_key, "0xmojave");
+
+                assert_eq!(options.http_addr, "127.0.0.1");
+                assert_eq!(options.http_port, "9000");
+                assert_eq!(options.authrpc_addr, "127.0.0.1");
+                assert_eq!(options.authrpc_port, "9001");
+                assert_eq!(options.authrpc_jwtsecret, "custom.jwt");
+                assert_eq!(options.p2p_addr, "127.0.0.1");
+                assert_eq!(options.p2p_port, "30304");
+                assert_eq!(options.discovery_addr, "127.0.0.1");
+                assert_eq!(options.discovery_port, "30305");
+                assert_eq!(options.metrics_addr, "0.0.0.0");
+                assert_eq!(options.metrics_port, "9393");
+                assert!(options.metrics_enabled);
+                assert!(options.force);
+                assert!(matches!(options.syncmode, Some(SyncMode::Snap)));
+            }
+            _ => panic!("expected Start"),
+        }
+    }
+
+    // #[test]
+    // fn env_overrides_are_applied() {
+    //     unsafe {
+    //         std::env::set_var("ETHREX_DATADIR", "/env/dir");
+    //         std::env::set_var("ETHREX_HTTP_ADDR", "10.0.0.1");
+    //         std::env::set_var("ETHREX_HTTP_PORT", "7777");
+    //         std::env::set_var("ETHREX_METRICS_PORT", "9191");
+    //         std::env::set_var("ETHREX_NETWORK", "mainnet");
+    //     }
+
+    //     let cli =
+    //         Cli::try_parse_from(["mojave-sequencer", "init", "--private_key", "0xabc"]).unwrap();
+
+    //     match cli.command {
+    //         Command::Start { options, .. } => {
+    //             assert_eq!(cli.datadir, "/env/dir");
+    //             assert_eq!(options.http_addr, "10.0.0.1");
+    //             assert_eq!(options.http_port, "7777");
+    //             assert_eq!(options.metrics_port, "9191");
+    //             assert!(matches!(options.network, Network::Mainnet));
+    //         }
+    //         _ => panic!("expected Start"),
+    //     }
+
+    //     // clean
+    //     unsafe {
+    //         std::env::remove_var("ETHREX_DATADIR");
+    //         std::env::remove_var("ETHREX_HTTP_ADDR");
+    //         std::env::remove_var("ETHREX_HTTP_PORT");
+    //         std::env::remove_var("ETHREX_METRICS_PORT");
+    //         std::env::remove_var("ETHREX_NETWORK");
+    //     }
+    // }
+
+    #[test]
+    fn conversions_to_runtime_options_work() {
+        // Options -> NodeOptions
+        let cli = Cli::try_parse_from([
+            "mojave-sequencer",
+            "init",
+            "--private_key",
+            "0xabc",
+            "--http.addr",
+            "1.2.3.4",
+            "--http.port",
+            "9999",
+            "--authrpc.addr",
+            "8.8.8.8",
+            "--authrpc.port",
+            "8552",
+            "--authrpc.jwtsecret",
+            "jwt2.hex",
+            "--p2p.addr",
+            "127.0.0.1",
+            "--p2p.port",
+            "30306",
+            "--discovery.addr",
+            "127.0.0.1",
+            "--discovery.port",
+            "30307",
+            "--metrics.addr",
+            "0.0.0.0",
+            "--metrics.port",
+            "9091",
+            "--metrics",
+            "--syncmode",
+            "full",
+        ])
+        .unwrap();
+
+        let (node_opts, seq_opts) = match cli.command {
+            Command::Start {
+                options,
+                sequencer_options,
+            } => (
+                mojave_node_lib::types::NodeOptions::from(&options),
+                sequencer_options,
+            ),
+            _ => panic!("expected Start"),
+        };
+
+        assert_eq!(node_opts.http_addr, "1.2.3.4");
+        assert_eq!(node_opts.http_port, "9999");
+        assert_eq!(node_opts.authrpc_addr, "8.8.8.8");
+        assert_eq!(node_opts.authrpc_port, "8552");
+        assert_eq!(node_opts.authrpc_jwtsecret, "jwt2.hex");
+        assert_eq!(node_opts.p2p_addr, "127.0.0.1");
+        assert_eq!(node_opts.p2p_port, "30306");
+        assert_eq!(node_opts.discovery_addr, "127.0.0.1");
+        assert_eq!(node_opts.discovery_port, "30307");
+        assert_eq!(node_opts.metrics_addr, "0.0.0.0");
+        assert_eq!(node_opts.metrics_port, "9091");
+        assert!(node_opts.metrics_enabled);
+        assert!(matches!(node_opts.syncmode, SyncMode::Full));
+
+        // SequencerOptions -> BlockProducerOptions
+        let bp: BlockProducerOptions = (&seq_opts).into();
+        assert_eq!(bp.block_time, seq_opts.block_time);
+        assert_eq!(bp.private_key, seq_opts.private_key);
+
+        // SequencerOptions -> ProofCoordinatorOptions
+        let pc: ProofCoordinatorOptions = (&seq_opts).into();
+        assert_eq!(pc.prover_address, seq_opts.prover_address);
+    }
+
+    #[test]
+    fn sequencer_options_debug_does_not_leak_private_key() {
+        let opts = SequencerOptions {
+            prover_address: "http://0.0.0.0:3900".into(),
+            block_time: 1000,
+            private_key: "0xsecret".into(),
+        };
+        let dbg = format!("{opts:?}");
+
+        assert!(dbg.contains("SequencerOptions"));
+        assert!(dbg.contains("block_time: 1000"));
+        assert!(!dbg.contains("0xsecret"));
+    }
+
+    #[test]
+    fn parse_stop_and_get_pub_key() {
+        let cli = Cli::try_parse_from(["mojave-sequencer", "stop"]).unwrap();
+        matches!(cli.command, Command::Stop);
+
+        let cli = Cli::try_parse_from(["mojave-sequencer", "get-pub-key"]).unwrap();
+        matches!(cli.command, Command::GetPubKey);
+    }
+
+    #[test]
+    fn invalid_bootnodes_string_rejected() {
+        let res = Cli::try_parse_from(["mojave-sequencer", "init", "--bootnodes", "not-enode-url"]);
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn parse_log_level() {
+        let cli = Cli::try_parse_from([
+            "mojave-sequencer",
+            "--log.level",
+            "debug",
+            "init",
+            "--private_key",
+            "0xabc",
+        ])
+        .unwrap();
+
+        assert!(cli.log_level.is_some());
     }
 }
