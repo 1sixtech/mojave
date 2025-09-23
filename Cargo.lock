@@ -4369,6 +4369,7 @@ dependencies = [
 name = "mojave-client"
 version = "0.1.0"
 dependencies = [
+ "axum",
  "ethrex-common",
  "ethrex-l2-common",
  "ethrex-rpc",
