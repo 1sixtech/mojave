@@ -30,7 +30,7 @@ pub(crate) fn generate_blobs_bundle(state_diff: &StateDiff) -> Result<(BlobsBund
     let blob_size = blob_data.len();
     let blob = blobs_bundle::blob_from_bytes(blob_data).map_err(Error::from)?;
     Ok((
-        BlobsBundle::create_from_blobs(&vec![blob]).map_err(Error::from)?,
+        BlobsBundle::create_from_blobs(&[blob]).map_err(Error::from)?,
         blob_size,
     ))
 }
