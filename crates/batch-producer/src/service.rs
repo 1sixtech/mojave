@@ -29,6 +29,11 @@ struct BatchData {
     blobs_bundle: BlobsBundle,
 }
 
+struct BlockData {
+    block: Block,
+    header: BlockHeader,
+}
+
 pub struct BatchProducer {
     // TODO: replace that with a real batch counter (getting the batch counter from the context/l1)
     // dummy batch counter for the moment
@@ -47,44 +52,27 @@ impl BatchProducer {
     }
 
     pub async fn build_batch(&mut self, ctx: &BatchProducerContext) -> Result<Option<Batch>> {
-        let last_commited_batch_number = self.batch_counter;
-        let batch_to_commit = self.batch_counter + 1;
+        let batch_number = self.batch_counter + 1;
 
         debug!(
-            last_commited_batch_number,
-            batch_to_commit, "Building batch"
+            last_commited_batch_number = self.batch_counter,
+            batch_number, "Building batch"
         );
 
         // TODO: add a check if we already have the batch in the rollup_store ?
 
-        let last_block = get_last_committed_block(ctx, last_commited_batch_number).await?;
-        let first_block_of_batch = last_block + 1;
-        let (
-            blobs_bundle,
-            new_state_root,
-            message_hashes,
-            privileged_transactions_hash,
-            last_block_of_batch,
-        ) = self
-            .prepare_batch_from_block(ctx, last_block, first_block_of_batch, batch_to_commit)
+        let last_block = get_last_committed_block(ctx, self.batch_counter).await?;
+        let first_block = last_block + 1;
+        let batch_data = self
+            .prepare_batch_from_block(ctx, last_block, first_block, batch_number)
             .await?;
 
-        if last_block == last_block_of_batch {
-            debug!("No new block to commit, skipping...");
+        let Some(batch_data) = batch_data else {
+            debug!("No new blocks to commit, skipping batch creation");
             return Ok(None);
-        }
-
-        let batch = Batch {
-            number: batch_to_commit,
-            first_block: first_block_of_batch,
-            last_block: last_block_of_batch,
-            state_root: new_state_root,
-            privileged_transactions_hash,
-            message_hashes,
-            blobs_bundle,
-            commit_tx: None,
-            verify_tx: None,
         };
+
+        let batch = self.create_batch(batch_number, first_block, batch_data)?;
 
         ctx.rollup_store.seal_batch(batch.clone()).await?;
 
@@ -113,8 +101,7 @@ impl BatchProducer {
             .get_block_header(first_block)?
             .ok_or_else(|| {
                 Error::FailedToGetInformationFromStorage(format!(
-                    "Failed to get block header for block {}",
-                    first_block
+                    "Failed to get block header for block {first_block}"
                 ))
             })?
             .parent_hash;
@@ -157,90 +144,77 @@ impl BatchProducer {
         })
     }
 
-    pub async fn prepare_batch_from_block(
+    async fn get_block_data(
+        &self,
+        ctx: &BatchProducerContext,
+        block_number: BlockNumber,
+    ) -> Result<Option<BlockData>> {
+        let Some(body) = ctx.store.get_block_body(block_number).await? else {
+            return Ok(None);
+        };
+
+        let header = ctx
+            .store
+            .get_block_header(block_number)
+            .map_err(Error::from)?
+            .ok_or_else(|| {
+                Error::FailedToGetInformationFromStorage(format!(
+                    "Missing block header for block {block_number} after body was found"
+                ))
+            })?;
+
+        let block = Block::new(header.clone(), body);
+
+        Ok(Some(BlockData { block, header }))
+    }
+
+    async fn process_block(
+        &self,
+        ctx: &BatchProducerContext,
+        block_data: &BlockData,
+    ) -> Result<(
+        Vec<L1Message>,
+        Vec<PrivilegedL2Transaction>,
+        Vec<AccountUpdate>,
+    )> {
+        let messages = get_block_l1_messages();
+        let privileged_txs = get_privileged_transactions();
+        let account_updates =
+            load_or_execute_updates(ctx, &block_data.block, block_data.header.number).await?;
+
+        Ok((messages, privileged_txs, account_updates))
+    }
+
+    async fn prepare_batch_from_block(
         &mut self,
         ctx: &BatchProducerContext,
-        mut last_added_block: BlockNumber,
-        first_block_of_batch: BlockNumber,
+        last_committed_block: BlockNumber,
+        first_block: BlockNumber,
         batch_number: u64,
-    ) -> Result<(BlobsBundle, H256, Vec<H256>, H256, BlockNumber)> {
+    ) -> Result<Option<BatchData>> {
+        info!(first_block, batch_number, "Preparing batch");
+
+        let parent_db = self.create_parent_database(ctx, first_block).await?;
+        let mut accumulator = BatchAccumulator::default();
         let mut blobs_bundle = BlobsBundle::default();
-        let mut new_state_root = H256::default();
-
-        // TODO: extract this in some struct that will hold all this data that we return in the end
-        let mut acc_messages = vec![];
-        let mut acc_privileged_txs = vec![];
-        let mut acc_account_updates: HashMap<Address, AccountUpdate> = HashMap::new();
-        let mut message_hashes = vec![];
-        let mut privileged_transactions_hashes: Vec<H256> = vec![];
-
-        info!(
-            first_block_of_batch,
-            batch_number = batch_number,
-            "Preparing batch"
-        );
-
-        let parent_block_hash = ctx
-            .store
-            .get_block_header(first_block_of_batch)?
-            .ok_or(Error::FailedToGetInformationFromStorage(
-                "Failed to get_block_header() of the last added block".to_owned(),
-            ))?
-            .parent_hash;
-        let parent_db = StoreVmDatabase::new(ctx.store.clone(), parent_block_hash);
+        let mut state_root = H256::default();
+        let mut current_block = first_block;
 
         loop {
-            let block_number = last_added_block + 1;
+            let block_number = current_block;
+
             // get body and header of current block we wish to add to the batch
-            let Some(block_body) = ctx.store.get_block_body(block_number).await? else {
-                debug!("No new block to add to batch, skipping...");
+            let Some(block_data) = self.get_block_data(ctx, block_number).await? else {
+                debug!("No more blocks available for batch");
                 break;
             };
-            let block_header = ctx
-                .store
-                .get_block_header(block_number)
-                .map_err(Error::from)?
-                .ok_or_else(|| {
-                    Error::FailedToGetInformationFromStorage(
-                        "Failed to get_block_header() after get_block_body()".to_owned(),
-                    )
-                })?;
 
             // TODO: add gas check
 
-            let mut txs = Vec::with_capacity(block_body.transactions.len());
-            let mut receipts = Vec::with_capacity(block_body.transactions.len());
-            for (idx, tx) in block_body.transactions.iter().enumerate() {
-                let receipt = ctx
-                    .store
-                    .get_receipt(block_number, idx.try_into()?)
-                    .await?
-                    .ok_or(Error::RetrievalError(
-                        "Transactions in a block should have a receipt".to_owned(),
-                    ));
-                txs.push(tx.clone());
-                receipts.push(receipt);
-            }
+            let (messages, privileged_txs, account_updates) =
+                self.process_block(ctx, &block_data).await?;
 
-            // TODO: replace by something that really does something
-            let messages = get_block_l1_messages();
-            let privileged_transactions = get_privileged_transactions();
-
-            let block = Block::new(block_header.clone(), block_body);
-            let account_updates = load_or_execute_updates(ctx, &block, block_number).await?;
-
-            acc_messages.extend(messages.clone());
-            acc_privileged_txs.extend(privileged_transactions.clone());
-            for account in account_updates {
-                match acc_account_updates.entry(account.address) {
-                    Entry::Occupied(mut e) => {
-                        e.get_mut().merge(account);
-                    }
-                    Entry::Vacant(v) => {
-                        v.insert(account);
-                    }
-                }
-            }
+            accumulator.add_block_data(messages, privileged_txs, account_updates);
 
             // TODO: this is taken from ethrex let check if we need this
             // let acc_privileged_txs_len: u64 = acc_privileged_txs.len().try_into()?;
@@ -252,19 +226,16 @@ impl BatchProducer {
             //     break;
             // }
 
-            let account_updates_vec: Vec<AccountUpdate> =
-                acc_account_updates.values().cloned().collect();
-
             let state_diff = prepare_state_diff(
-                block_header,
+                block_data.header,
                 &parent_db,
-                &acc_messages,
-                &acc_privileged_txs,
-                account_updates_vec,
+                &accumulator.messages,
+                &accumulator.privileged_txs,
+                accumulator.get_account_updates_vec(),
             )?;
 
             let Ok((bundle, _latest_blob_size)) = generate_blobs_bundle(&state_diff) else {
-                if block_number == first_block_of_batch {
+                if block_number == first_block {
                     return Err(Error::Unreachable(
                         "Not enough blob space for a single block batch. This means a block was incorrectly produced.".to_string(),
                     ));
@@ -278,40 +249,26 @@ impl BatchProducer {
 
             // assigning the new values
             blobs_bundle = bundle;
-            privileged_transactions_hashes.extend(
-                privileged_transactions
-                    .iter()
-                    .filter_map(|tx| tx.get_privileged_hash())
-                    .collect::<Vec<H256>>(),
-            );
-            message_hashes.extend(messages.iter().map(get_l1_message_hash));
-            new_state_root = ctx
-                .store
-                .state_trie(block.hash())?
-                .ok_or(Error::FailedToGetInformationFromStorage(
-                    "Failed to get state root from storage".to_owned(),
-                ))?
-                .hash_no_commit();
-            last_added_block += 1;
+            state_root = self.get_block_state_root(ctx, &block_data.block)?;
+            current_block = block_number;
+        }
 
-            // TODO: update gas used
+        if current_block == last_committed_block {
+            return Ok(None);
         }
 
         info!(
-            length = privileged_transactions_hashes.len(),
-            "Added privileged transactions to the batch"
+            privileged_tx_count = accumulator.privileged_tx_hashes.len(),
+            "Added privileged transactions to batch"
         );
 
-        let privileged_transactions_hash =
-            compute_privileged_transactions_hash(privileged_transactions_hashes)?;
-
-        Ok((
+        Ok(Some(BatchData {
+            last_block: current_block,
+            state_root,
+            message_hashes: accumulator.message_hashes,
+            privileged_tx_hashes: accumulator.privileged_tx_hashes,
             blobs_bundle,
-            new_state_root,
-            message_hashes,
-            privileged_transactions_hash,
-            last_added_block,
-        ))
+        }))
     }
 }
 
