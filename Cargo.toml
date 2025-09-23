@@ -22,6 +22,7 @@ members = [
   "cmd/node",
   "cmd/prover",
   "cmd/sequencer",
+  "crates/batch-producer",
   "crates/batch-submitter",
   "crates/block-producer",
   "crates/btc-watcher",
@@ -41,6 +42,7 @@ default-members = ["cmd/node", "cmd/prover", "cmd/sequencer"]
 resolver = "2"
 
 [workspace.dependencies]
+mojave-batch-producer = { path = "crates/batch-producer" }
 mojave-batch-submitter = { path = "crates/batch-submitter" }
 mojave-block-producer = { path = "crates/block-producer" }
 mojave-client = { path = "crates/client" }

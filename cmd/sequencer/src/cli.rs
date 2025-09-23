@@ -275,7 +275,7 @@ pub struct SequencerOptions {
     #[arg(
         long = "block_time",
         help = "Block creation interval in milliseconds",
-        default_value = "1000"
+        default_value = "10000"
     )]
     pub block_time: u64,
     #[arg(long = "private_key", help = "Private key used for signing blocks")]

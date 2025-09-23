@@ -9,6 +9,7 @@ repository = { workspace = true }
 documentation = { workspace = true }
 
 [dependencies]
+mojave-batch-producer = { workspace = true }
 mojave-client = { workspace = true }
 mojave-node-lib = { workspace = true }
 mojave-rpc-core = { workspace = true }

@@ -1,5 +1,4 @@
 use ethrex_blockchain::error::{ChainError, InvalidForkChoice};
-use ethrex_common::types::BlobsBundleError;
 use ethrex_l2::sequencer::errors::BlockProducerError;
 use ethrex_l2_common::{
     privileged_transactions::PrivilegedTransactionError, state_diff::StateDiffError,
@@ -52,10 +51,6 @@ pub enum Error {
     RetrievalError(String),
     #[error("Committer failed to get information from storage")]
     FailedToGetInformationFromStorage(String),
-    #[error("Committer failed to generate blobs bundle: {0}")]
-    FailedToGenerateBlobsBundle(#[from] BlobsBundleError),
-    #[error("Unreachable code reached: {0}")]
-    Unreachable(String),
     #[error("Privileged Transaction error: {0}")]
     PrivilegedTransactionError(#[from] PrivilegedTransactionError),
 }

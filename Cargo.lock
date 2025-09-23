@@ -4316,6 +4316,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "mojave-batch-producer"
+version = "0.1.0"
+dependencies = [
+ "ethrex-blockchain",
+ "ethrex-common",
+ "ethrex-l2-common",
+ "ethrex-storage",
+ "ethrex-storage-rollup",
+ "ethrex-vm",
+ "thiserror 2.0.16",
+ "tracing",
+]
+
+[[package]]
 name = "mojave-batch-submitter"
 version = "0.1.0"
 dependencies = [
@@ -4338,6 +4352,7 @@ dependencies = [
  "ethrex-storage",
  "ethrex-storage-rollup",
  "ethrex-vm",
+ "mojave-batch-producer",
  "mojave-client",
  "mojave-node-lib",
  "mojave-rpc-core",
