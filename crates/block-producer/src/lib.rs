@@ -4,7 +4,7 @@ mod block_producer;
 
 pub mod types;
 
-pub use block_producer::{BlockProducer, run};
+pub use block_producer::run;
 pub use context::BlockProducerContext;
 
 pub mod prelude {

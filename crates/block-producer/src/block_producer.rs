@@ -16,43 +16,37 @@ pub async fn run(node: MojaveNode, block_producer_options: &BlockProducerOptions
         node.genesis.coinbase,
     );
     let block_time = block_producer_options.block_time;
-    let block_producer = BlockProducer::new(context).spawn_with_capacity(100);
+    let handle = context.spawn_with_capacity(100);
 
-    let block_producer_for_loop = block_producer.clone();
+    let block_producer_for_loop = handle.clone();
     tokio::spawn(async move {
         loop {
-            let response = block_producer_for_loop.request(Request::BuildBlock).await.unwrap();
-            tracing::info!("Block built: {response:?}");
+            match block_producer_for_loop.request(Request::BuildBlock).await {
+                Ok(response) => tracing::info!("Block built: {response:?}"),
+                Err(error) => {
+                    tracing::error!("Failed to build a block: {}", error);
+                    break;
+                }
+            }
             tokio::time::sleep(Duration::from_millis(block_time)).await;
         }
     });
 
-    mojave_utils::signal::wait_for_shutdown_signal().await.unwrap();
-    block_producer.shutdown().await.unwrap();
+    mojave_utils::signal::wait_for_shutdown_signal().await?;
+    if let Err(error) = handle.shutdown().await {
+        tracing::warn!(error = ?error, "Failed to shutdown block producer");
+    }
     Ok(())
 }
 
-pub struct BlockProducer {
-    context: BlockProducerContext, // TODO: do we need this?
-}
-
-impl BlockProducer {
-    pub fn new(context: BlockProducerContext) -> Self {
-        Self {
-            context,
-        }
-    }
-}
-
-
-impl mojave_task::Task for BlockProducer {
+impl mojave_task::Task for BlockProducerContext {
     type Request = Request;
     type Response = Response;
     type Error = crate::error::Error;
 
     async fn handle_request(&self, request: Request) -> Result<Self::Response> {
         match request {
-            Request::BuildBlock => Ok(Response::Block(self.context.build_block().await?)),
+            Request::BuildBlock => Ok(Response::Block(self.build_block().await?)),
         }
     }
 
@@ -61,8 +55,6 @@ impl mojave_task::Task for BlockProducer {
         Ok(())
     }
 }
-
-
 
 pub enum Request {
     BuildBlock,
