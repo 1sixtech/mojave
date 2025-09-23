@@ -59,7 +59,7 @@ mod tests {
     use super::*;
     use mojave_client::types::{ProofResponse, ProofResult};
 
-    fn mk_proof(job_id: JobId) -> ProofResponse {
+    fn make_proof(job_id: JobId) -> ProofResponse {
         ProofResponse {
             job_id,
             batch_number: 1,
@@ -71,36 +71,43 @@ mod tests {
     async fn already_requested_checks_pending_then_proofs() {
         let store = JobStore::default();
 
-        store.insert_job("aa".into()).await;
-        assert!(store.already_requested(&"aa".into()).await);
+        let job1 = JobId::from("aa");
+        let job2 = JobId::from("bb");
+
+        store.insert_job(job1.clone()).await;
+        assert!(store.already_requested(&job1).await);
 
         // if it’s in proofs set, also returns true
-        store.upsert_proof(&"bb".into(), mk_proof("b".into())).await;
-        assert!(store.already_requested(&"bb".into()).await);
+        store.upsert_proof(&job2, make_proof(job2.clone())).await;
+        assert!(store.already_requested(&job2).await);
     }
 
     #[tokio::test]
-    async fn insert_and_get_pending_jobs() {
+    async fn insert_and_get_pending_jobs_dedups() {
         let store = JobStore::default();
-        store.insert_job("abbaa12".into()).await;
-        store.insert_job("baa2b1b".into()).await;
-        store.insert_job("cac3c3c".into()).await;
+
+        let job1 = JobId::from("abbaa12");
+        let job2 = JobId::from("baa2b1b");
+        let job3 = JobId::from("cac3c3c");
+
+        store.insert_job(job1.clone()).await;
+        store.insert_job(job2.clone()).await;
+        store.insert_job(job3.clone()).await;
+        // duplicate insert. should be no effect
+        store.insert_job(job2.clone()).await;
 
         let mut got = store.get_pending_jobs().await;
-        got.sort();
-        assert_eq!(
-            got,
-            vec!["abbaa12".into(), "baa2b1b".into(), "cac3c3c".into()]
-        );
+        got.sort_unstable();
+        assert_eq!(got, vec![job1, job2, job3]);
     }
 
     #[tokio::test]
     async fn upsert_proof_moves_from_pending_to_proofs() {
         let store = JobStore::default();
-        store.insert_job("job-1".into()).await;
-        store
-            .upsert_proof(&"job-1".into(), mk_proof("job-1".into()))
-            .await;
+
+        let job = JobId::from("job-1");
+        store.insert_job(job.clone()).await;
+        store.upsert_proof(&job, make_proof(job.clone())).await;
 
         // removed from pending
         let mut pending = store.get_pending_jobs().await;
@@ -108,11 +115,8 @@ mod tests {
         assert!(pending.is_empty());
 
         // available in proofs
-        let p = store
-            .get_proof_by_id(&"job-1".into())
-            .await
-            .expect("proof exists");
-        assert_eq!(p.job_id, "job-1".into());
+        let proof_response = store.get_proof_by_id(&job).await.expect("proof exists");
+        assert_eq!(proof_response.job_id, job);
     }
 
     #[tokio::test]

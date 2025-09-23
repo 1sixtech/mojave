@@ -30,9 +30,7 @@ pub async fn send_proof_input(
         Object(obj) => (obj.prover_data, obj.sequencer_addr),
         Tuple((pd, url)) => (pd, url),
     };
-    let job_id = enqueue_proof_input(&ctx, prover_data, sequencer_addr)
-        .await
-        .map_err(|e| mojave_rpc_core::RpcErr::Internal(e.to_string()))?;
+    let job_id = enqueue_proof_input(&ctx, prover_data, sequencer_addr).await?;
     Ok(serde_json::json!(job_id))
 }
 
@@ -80,32 +78,31 @@ mod tests {
     #[tokio::test]
     async fn send_proof_input_accepts_tuple_and_emits_record() {
         let (ctx, mut rx) = make_ctx(8);
+        let url = Url::parse("http://localhost:1234").unwrap();
 
         super::send_proof_input(
             ctx.clone(),
-            SendProofInputParam::Tuple((
-                dummy_prover_data(),
-                Url::parse("http://localhost:1234").unwrap(),
-            )),
+            SendProofInputParam::Tuple((dummy_prover_data(), url.clone())),
         )
         .await
         .unwrap();
 
         let rec = rx.recv().await.expect("record sent");
 
-        assert_eq!(rec.sequencer_url.as_str(), "http://localhost:1234/");
+        assert_eq!(rec.sequencer_url, url);
         assert!(!rec.job_id.is_empty());
     }
 
     #[tokio::test]
     async fn send_proof_input_accepts_object_and_emits_record() {
         let (ctx, mut rx) = make_ctx(8);
+        let url = Url::parse("http://localhost:4321").unwrap();
 
         super::send_proof_input(
             ctx.clone(),
             SendProofInputParam::Object(SendProofInputRequest {
                 prover_data: dummy_prover_data(),
-                sequencer_addr: Url::parse("http://localhost:4321").unwrap(),
+                sequencer_addr: url.clone(),
             }),
         )
         .await
@@ -113,36 +110,39 @@ mod tests {
 
         let rec = rx.recv().await.expect("record sent");
 
-        assert_eq!(rec.sequencer_url.as_str(), "http://localhost:4321/");
+        assert_eq!(rec.sequencer_url, url);
         assert!(!rec.job_id.is_empty());
     }
 
     #[tokio::test]
-    async fn send_proof_input_rejects_duplicate_job_in_same_context() {
-        let (ctx, mut _rx) = make_ctx(8);
+    async fn send_proof_input_idempotency_scoped_by_context() {
+        let (ctx_a, _rx_a) = make_ctx(8);
+        let (ctx_b, _rx_b) = make_ctx(8);
+        let url = Url::parse("http://localhost:1234").unwrap();
 
         super::send_proof_input(
-            ctx.clone(),
-            SendProofInputParam::Tuple((
-                dummy_prover_data(),
-                Url::parse("http://localhost:1234").unwrap(),
-            )),
+            ctx_a.clone(),
+            SendProofInputParam::Tuple((dummy_prover_data(), url.clone())),
         )
         .await
         .unwrap();
 
-        let err = super::send_proof_input(
-            ctx.clone(),
-            SendProofInputParam::Tuple((
-                dummy_prover_data(),
-                Url::parse("http://localhost:1234").unwrap(),
-            )),
+        let duplicated_req_result = super::send_proof_input(
+            ctx_a.clone(),
+            SendProofInputParam::Tuple((dummy_prover_data(), url.clone())),
         )
-        .await
-        .unwrap_err();
+        .await;
+        assert!(matches!(
+            duplicated_req_result.unwrap_err(),
+            mojave_rpc_core::RpcErr::BadParams(_)
+        ));
 
-        let s = format!("{err:#}");
-        assert!(s.to_lowercase().contains("already requested"));
+        let different_ctx_req_res = super::send_proof_input(
+            ctx_b.clone(),
+            SendProofInputParam::Tuple((dummy_prover_data(), url)),
+        )
+        .await;
+        assert!(different_ctx_req_res.is_ok());
     }
 
     #[tokio::test]
@@ -152,31 +152,34 @@ mod tests {
         ctx.job_store.insert_job("baa2b1b".into()).await;
         ctx.job_store.insert_job("cac3c3c".into()).await;
 
-        let val = super::get_pending_job_ids(ctx, ()).await.unwrap();
+        let val1 = super::get_pending_job_ids(ctx.clone(), ()).await.unwrap();
+        let arr1 = val1.as_array().unwrap();
+        assert!(arr1.iter().all(|v| v.is_string()));
 
-        let mut arr = val.as_array().unwrap().clone();
-        assert_eq!(arr.len(), 3);
+        let val2 = super::get_pending_job_ids(ctx, ()).await.unwrap();
+        let arr2 = val2.as_array().unwrap();
 
-        arr.sort_by(|x, y| x.as_str().cmp(&y.as_str()));
-        let got: Vec<&str> = arr.iter().map(|v| v.as_str().unwrap()).collect();
+        let mut got1: Vec<&str> = arr1.iter().map(|v| v.as_str().unwrap()).collect();
+        let mut got2: Vec<&str> = arr2.iter().map(|v| v.as_str().unwrap()).collect();
+        got1.sort_unstable();
+        got2.sort_unstable();
 
-        assert_eq!(got, vec!["abbaa12", "baa2b1b", "cac3c3c"]);
+        assert_eq!(got1, got2);
+        assert_eq!(got1, vec!["abbaa12", "baa2b1b", "cac3c3c"]);
     }
 
     #[tokio::test]
     async fn get_proof_serializes_proof_to_json() {
         let (ctx, _rx) = make_ctx(1);
+        let job_id = JobId::from("job-1");
         let expected = ProofResponse {
-            job_id: "job-1".into(),
+            job_id: job_id.clone(),
             batch_number: 7,
             result: ProofResult::Error("dummy".to_string()),
         };
-        ctx.job_store
-            .upsert_proof(&"job-1".into(), expected.clone())
-            .await;
+        ctx.job_store.upsert_proof(&job_id, expected.clone()).await;
 
-        let val = super::get_proof(ctx, "job-1".into()).await.unwrap();
-
+        let val = super::get_proof(ctx, job_id).await.unwrap();
         assert_eq!(val, serde_json::to_value(&expected).unwrap());
     }
 }

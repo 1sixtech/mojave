@@ -11,9 +11,9 @@ pub async fn enqueue_proof_input(
     sequencer_addr: Url,
 ) -> Result<JobId> {
     let job_id = calculate_job_id(&prover_data.input)?;
-    tracing::debug!(%job_id, sequencer = %sequencer_addr, "Parsed proof input");
+    tracing::debug!(job_id = %job_id, sequencer = %sequencer_addr, "Parsed proof input");
     if ctx.job_store.already_requested(&job_id).await {
-        tracing::warn!(%job_id, "Duplicate batch requested");
+        tracing::warn!(job_id = %job_id, "Duplicate batch requested");
         return Err(Error::BadParams("This batch already requested".to_owned()));
     }
 
@@ -59,7 +59,7 @@ fn calculate_job_id(prover_input: &ProgramInput) -> Result<JobId> {
     let mut hash = [0_u8; 32];
     hasher.finalize(&mut hash);
     let job_id = hex::encode(hash);
-    tracing::trace!(%job_id, "Calculated job_id");
+    tracing::trace!(job_id = %job_id, "Calculated job_id");
     Ok(job_id.into())
 }
 
@@ -115,35 +115,33 @@ mod tests {
         let (ctx, _rx) = make_ctx(8);
         let url = Url::parse("http://localhost:1234").unwrap();
 
-        enqueue_proof_input(&ctx, dummy_data(), url.clone())
-            .await
-            .unwrap();
-        let err = enqueue_proof_input(&ctx, dummy_data(), url)
-            .await
-            .unwrap_err();
+        let _enqueue = enqueue_proof_input(&ctx, dummy_data(), url.clone()).await;
+        let enqueue_duplicate = enqueue_proof_input(&ctx, dummy_data(), url).await;
 
-        let s = format!("{err:?}").to_lowercase();
-        assert!(s.contains("already requested"));
+        assert!(
+            matches!(enqueue_duplicate.unwrap_err(), Error::BadParams(ref msg) if msg == "This batch already requested")
+        );
     }
 
     #[tokio::test]
     async fn get_proof_returns_existing_or_err() {
         let (ctx, _rx) = make_ctx(8);
+        let job_id = JobId::from("job-1");
 
         let expected = ProofResponse {
-            job_id: "job-1".into(),
+            job_id: job_id.clone(),
             batch_number: 1,
             result: ProofResult::Error("dummy".into()),
         };
-        ctx.job_store
-            .upsert_proof(&"job-1".into(), expected.clone())
-            .await;
+        ctx.job_store.upsert_proof(&job_id, expected.clone()).await;
 
-        let ok = get_proof(&ctx, &"job-1".into()).await.unwrap();
+        let ok = get_proof(&ctx, &job_id).await.unwrap();
         assert_eq!(ok.job_id, expected.job_id);
 
         let err = get_proof(&ctx, &"nope".into()).await.unwrap_err();
         let s = format!("{err:?}").to_lowercase();
+
+        // need to explicit Error instead of using Internal(String) (e.g. NotFound or BadParams?)
         assert!(s.contains("no proof"));
     }
 
