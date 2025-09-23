@@ -1,5 +1,3 @@
-use core::result::Result::Ok;
-
 use bitcoin::{
     Address, Amount, FeeRate, Network, OutPoint, ScriptBuf, Sequence, Transaction, TxIn, TxOut,
     Txid, Witness,
