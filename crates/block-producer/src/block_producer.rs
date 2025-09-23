@@ -22,7 +22,7 @@ pub async fn run(node: MojaveNode, block_producer_options: &BlockProducerOptions
     tokio::spawn(async move {
         loop {
             match block_producer_for_loop.request(Request::BuildBlock).await {
-                Ok(response) => tracing::info!("Block built: {response:?}"),
+                Ok(Response::Block(block)) => tracing::info!("Block built: {}", block.header.number),
                 Err(error) => {
                     tracing::error!("Failed to build a block: {}", error);
                     break;
