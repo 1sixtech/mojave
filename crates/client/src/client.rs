@@ -212,10 +212,13 @@ mod tests {
 
             let port = pick_free_port().unwrap_or(0);
             let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), port);
-
-            let service = service.clone();
+            let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
             let task = tokio::spawn(async move {
-                let _ = service.serve(addr).await;
+                let app = service.router();
+                axum::serve(listener, app)
+                    .with_graceful_shutdown(ethrex_rpc::shutdown_signal())
+                    .await
+                    .unwrap()
             });
 
             let base_url = format!("http://{}:{}", addr.ip(), addr.port());

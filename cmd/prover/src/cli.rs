@@ -214,7 +214,7 @@ mod tests {
     #[test]
     fn parse_stop() {
         let cli = Cli::try_parse_from(["mojave-prover", "stop"]).unwrap();
-        matches!(cli.command, Command::Stop);
+        assert!(matches!(cli.command, Command::Stop));
     }
 
     #[test]
