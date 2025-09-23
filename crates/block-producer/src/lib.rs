@@ -1,6 +1,6 @@
+mod block_producer;
 mod context;
 mod error;
-mod block_producer;
 
 pub mod types;
 

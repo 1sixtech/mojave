@@ -1,12 +1,8 @@
-use crate::{
-    BlockProducerContext,
-    error::{Result},
-    types::BlockProducerOptions,
-};
-use std::time::Duration;
-use mojave_task::Task;
-use mojave_node_lib::types::MojaveNode;
+use crate::{BlockProducerContext, error::Result, types::BlockProducerOptions};
 use ethrex_common::types::Block;
+use mojave_node_lib::types::MojaveNode;
+use mojave_task::Task;
+use std::time::Duration;
 
 pub async fn run(node: MojaveNode, block_producer_options: &BlockProducerOptions) -> Result<()> {
     let context = BlockProducerContext::new(
@@ -22,7 +18,9 @@ pub async fn run(node: MojaveNode, block_producer_options: &BlockProducerOptions
     tokio::spawn(async move {
         loop {
             match block_producer_for_loop.request(Request::BuildBlock).await {
-                Ok(Response::Block(block)) => tracing::info!("Block built: {}", block.header.number),
+                Ok(Response::Block(block)) => {
+                    tracing::info!("Block built: {}", block.header.number)
+                }
                 Err(error) => {
                     tracing::error!("Failed to build a block: {}", error);
                     break;
