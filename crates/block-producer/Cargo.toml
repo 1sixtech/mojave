@@ -15,6 +15,7 @@ mojave-rpc-core = { workspace = true }
 mojave-rpc-server = { workspace = true }
 mojave-signature = { workspace = true }
 mojave-utils = { workspace = true }
+mojave-task = { workspace = true }
 
 ethrex-blockchain = { workspace = true }
 ethrex-common = { workspace = true }
