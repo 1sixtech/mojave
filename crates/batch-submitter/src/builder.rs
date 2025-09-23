@@ -16,6 +16,8 @@ use rand::{RngCore, rngs::OsRng};
 
 use crate::error::{Error, Result};
 
+const MAX_PUSH_SIZE: usize = 520;
+
 pub struct BuilderContext {
     pub rpc_client: BitcoinRPCClient,
     pub fee_rate: FeeRate,
@@ -137,12 +139,9 @@ fn build_reveal_script(taproot_public_key: &XOnlyPublicKey, payload: &[u8]) -> R
         .push_opcode(bitcoin::opcodes::OP_FALSE)
         .push_opcode(bitcoin::opcodes::all::OP_IF);
 
-    const MAX_PUSH_SIZE: usize = 520;
     for chunk in payload.chunks(MAX_PUSH_SIZE) {
-        script_builder = script_builder.push_slice(
-            script::PushBytesBuf::try_from(chunk.to_vec())
-                .map_err(|e| Error::Internal(e.to_string()))?,
-        );
+        let data = script::PushBytesBuf::try_from(chunk.to_vec())?;
+        script_builder = script_builder.push_slice(data);
     }
     script_builder = script_builder.push_opcode(bitcoin::opcodes::all::OP_ENDIF);
 
@@ -315,7 +314,6 @@ mod tests {
             .push_opcode(opcodes::OP_FALSE)
             .push_opcode(opcodes::all::OP_IF);
 
-        const MAX_PUSH_SIZE: usize = 520;
         for chunk in long_payload.chunks(MAX_PUSH_SIZE) {
             expected_script_builder =
                 expected_script_builder.push_slice(PushBytesBuf::try_from(chunk.to_vec()).unwrap());

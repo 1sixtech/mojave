@@ -5,7 +5,7 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use daemonize::Daemonize;
 use sysinfo::{Pid, System};
 use thiserror::Error;
@@ -48,40 +48,30 @@ where
     F: FnOnce() -> Fut,
     Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
 {
-    let rt = tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()
-        .context("failed to build Tokio runtime")?;
-    rt.block_on(run_daemonized_async(opts, proc))
-}
-
-pub async fn run_daemonized_async<F, Fut>(opts: DaemonOptions, proc: F) -> Result<()>
-where
-    F: FnOnce() -> Fut,
-    Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
-{
     if opts.no_daemon {
-        return run_main_task_async(proc, None::<PathBuf>).await;
+        return run_main_task(proc);
     }
 
     let log_path = resolve_path(&opts.log_file_path)?;
     let pid_path = resolve_path(&opts.pid_file_path)?;
 
-    match read_pid_from_file(&pid_path) {
-        std::result::Result::Ok(pid) if is_pid_running(pid) => {
-            return Err(DaemonError::AlreadyRunning(pid).into());
-        }
-        _ => {
-            if let Err(e) = std::fs::remove_file(&pid_path) {
-                tracing::warn!(
-                    ?pid_path,
-                    error = %e,
-                    "Failed to remove stale pid file while preparing daemon"
-                );
-            }
-        }
+    if let Some(pid) = read_pid_from_file(&pid_path)
+        .ok()
+        .filter(|pid| is_pid_running(pid.to_owned()))
+    {
+        return Err(DaemonError::AlreadyRunning(pid).into());
     }
 
+    match std::fs::remove_file(&pid_path) {
+        Err(e) if e.kind() != std::io::ErrorKind::NotFound => {
+            tracing::warn!(
+                ?pid_path,
+                error = %e,
+                "Failed to remove stale pid file while preparing daemon"
+            );
+        }
+        _ => {}
+    }
     let log_file = OpenOptions::new()
         .append(true)
         .create(true)
@@ -108,7 +98,7 @@ where
         .stderr(log_file_err);
     daemon.start()?;
 
-    if let Err(e) = run_main_task_async(proc, Some(pid_path)).await {
+    if let Err(e) = run_main_task(proc) {
         tracing::error!("run_main_task failed: {e}");
         return Err(e);
     }
@@ -180,25 +170,27 @@ fn is_pid_running(pid: Pid) -> bool {
     System::new_all().process(pid).is_some()
 }
 
-async fn run_main_task_async<F, Fut, P>(proc: F, pid_file: Option<P>) -> Result<()>
+fn run_main_task<F, Fut>(proc: F) -> Result<()>
 where
     F: FnOnce() -> Fut,
     Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
-    P: AsRef<Path>,
 {
-    let res = proc().await;
+    let rt = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()?;
 
-    if let Some(pid_file) = pid_file
-        && let Err(e) = std::fs::remove_file(pid_file)
-    {
-        tracing::warn!(error = %e, "Failed to remove pid file during shutdown");
-    }
-
-    match res {
-        Ok(()) => Ok(()),
-        Err(err) => {
-            tracing::error!("Process stopped unexpectedly: {}", err);
-            Err(anyhow::anyhow!("{}", err))
+    rt.block_on(async move {
+        tokio::select! {
+            res = proc() => {
+                if let Err(err) = res {
+                    tracing::error!("Process stopped unexpectedly: {}", err);
+                }
+            },
+            _ = crate::signal::wait_for_shutdown_signal() => {
+                tracing::info!("Shutting down...");
+            }
         }
-    }
+    });
+
+    Ok(())
 }

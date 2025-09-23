@@ -8,7 +8,8 @@ use mojave_block_producer::types::BlockProducerOptions;
 use mojave_node_lib::{initializers::get_signer, types::MojaveNode};
 use mojave_proof_coordinator::types::ProofCoordinatorOptions;
 use mojave_utils::{
-    daemon::{DaemonOptions, run_daemonized_async, stop_daemonized},
+    block_on::block_on_current_thread,
+    daemon::{DaemonOptions, run_daemonized, stop_daemonized},
     p2p::public_key_from_signing_key,
 };
 use std::path::PathBuf;
@@ -16,8 +17,7 @@ use std::path::PathBuf;
 const PID_FILE_NAME: &str = "sequencer.pid";
 const LOG_FILE_NAME: &str = "sequencer.log";
 
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
     mojave_utils::logging::init();
     let cli = cli::Cli::run();
 
@@ -39,7 +39,7 @@ async fn main() -> Result<()> {
                 log_file_path: PathBuf::from(cli.datadir).join(LOG_FILE_NAME),
             };
 
-            run_daemonized_async(daemon_opts, || async move {
+            run_daemonized(daemon_opts, || async move {
                 let node = MojaveNode::init(&node_options)
                     .await
                     .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
@@ -48,7 +48,6 @@ async fn main() -> Result<()> {
 
                 let mut block_producer_task = Box::pin(mojave_block_producer::run(
                     node.clone(),
-                    &node_options,
                     &block_producer_options,
                 ));
 
@@ -83,11 +82,13 @@ async fn main() -> Result<()> {
                     }
                 }
             })
-            .await?;
+            .unwrap_or_else(|err| tracing::error!("Failed to start daemonized sequencer: {}", err));
         }
         Command::Stop => stop_daemonized(PathBuf::from(cli.datadir.clone()).join(PID_FILE_NAME))?,
         Command::GetPubKey => {
-            let signer = get_signer(&cli.datadir).await?;
+            let signer = block_on_current_thread(|| async move {
+                get_signer(&cli.datadir).await.map_err(anyhow::Error::from)
+            })?;
             let public_key = public_key_from_signing_key(&signer);
             let public_key = hex::encode(public_key);
             println!("{public_key}");
