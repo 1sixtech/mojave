@@ -31,7 +31,7 @@ async fn works() {
         type Error = Error;
 
         async fn handle_request(
-            &self,
+            &mut self,
             request: Self::Request,
         ) -> Result<Self::Response, Self::Error> {
             match request {

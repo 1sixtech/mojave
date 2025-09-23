@@ -1,28 +1,36 @@
-use crate::{
-    BatchProducerContext,
-    error::{Error, Result},
+use ethrex_common::types::{
+    AccountUpdate, BlobsBundle, BlockHeader, PrivilegedL2Transaction, blobs_bundle,
 };
+use ethrex_l2_common::{l1_messages::L1Message, state_diff::StateDiff};
+use ethrex_vm::VmDatabase;
 
-/// Get the last block number part of the given batch number
-pub(crate) async fn get_last_committed_block(
-    ctx: &BatchProducerContext,
-    batch_number: u64,
-) -> Result<u64> {
-    let last_committed_blocks = ctx
-           .rollup_store
-           .get_block_numbers_by_batch(batch_number)
-           .await?
-           .ok_or_else(|| {
-               Error::RetrievalError(format!(
-                   "Failed to get batch with batch number {batch_number}. Batch is missing when it should be present. This is a bug",
-               ))
-           })?;
+use crate::error::{Error, Result};
 
-    let last_committed_block = last_committed_blocks.last().ok_or_else(|| {
-        Error::RetrievalError(format!(
-            "Last committed batch ({batch_number}) doesn't have any blocks. This is probably a bug.",
-        ))
-    })?;
+/// Prepare the state diff for the block.
+pub(crate) fn prepare_state_diff(
+    _last_header: BlockHeader,
+    _db: &impl VmDatabase,
+    _l1messages: &[L1Message],
+    _privileged_transactions: &[PrivilegedL2Transaction],
+    _account_updates: Vec<AccountUpdate>,
+) -> Result<StateDiff> {
+    Ok(StateDiff::default())
+}
 
-    Ok(*last_committed_block)
+pub(crate) fn get_privileged_transactions() -> Vec<PrivilegedL2Transaction> {
+    vec![]
+}
+
+pub(crate) fn get_block_l1_messages() -> Vec<L1Message> {
+    vec![]
+}
+
+pub(crate) fn generate_blobs_bundle(state_diff: &StateDiff) -> Result<(BlobsBundle, usize)> {
+    let blob_data = state_diff.encode().map_err(Error::from)?;
+    let blob_size = blob_data.len();
+    let blob = blobs_bundle::blob_from_bytes(blob_data).map_err(Error::from)?;
+    Ok((
+        BlobsBundle::create_from_blobs(&vec![blob]).map_err(Error::from)?,
+        blob_size,
+    ))
 }

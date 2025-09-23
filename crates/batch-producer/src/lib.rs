@@ -1,10 +1,10 @@
-mod context;
+mod batch_accumulator;
+mod batch_producer;
 mod error;
-mod service;
+pub mod types;
 mod utils;
 
-pub use context::BatchProducerContext;
-pub use service::BatchProducer;
+pub use batch_producer::BatchProducer;
 
 pub mod prelude {
     pub use crate::error::{Error, Result};

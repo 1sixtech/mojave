@@ -9,11 +9,15 @@ repository = { workspace = true }
 documentation = { workspace = true }
 
 [dependencies]
+mojave-node-lib = { workspace = true }
+mojave-task = { workspace = true }
+
 ethrex-blockchain = { workspace = true, default-features = false }
 ethrex-common = { workspace = true }
 ethrex-l2-common = { workspace = true, default-features = false }
 ethrex-storage = { workspace = true }
 ethrex-storage-rollup = { workspace = true, default-features = false }
 ethrex-vm = { workspace = true, default-features = false }
+
 thiserror = { workspace = true }
 tracing = { workspace = true }
