@@ -17,7 +17,7 @@ pub trait Task: Sized + 'static {
         request: Self::Request,
     ) -> Result<Self::Response, Self::Error>;
 
-    async fn on_shutdown(&self) -> Result<(), Self::Error>;
+    async fn on_shutdown(&mut self) -> Result<(), Self::Error>;
 
     fn spawn_with_capacity(self, capacity: usize) -> TaskHandle<Self> {
         let (request_sender, request_receiver) = mpsc::channel::<(

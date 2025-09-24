@@ -42,7 +42,7 @@ async fn works() {
             }
         }
 
-        async fn on_shutdown(&self) -> Result<(), Self::Error> {
+        async fn on_shutdown(&mut self) -> Result<(), Self::Error> {
             println!("Shutting down the block producer..");
             Ok(())
         }

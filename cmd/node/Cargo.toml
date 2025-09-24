@@ -13,6 +13,6 @@ mojave-node-lib = { workspace = true }
 mojave-utils = { workspace = true }
 
 anyhow = { workspace = true }
-clap = { workspace = true }
+clap = { workspace = true, features = ["derive", "env"] }
 hex = { workspace = true }
 tracing = { workspace = true }
