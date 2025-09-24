@@ -17,7 +17,10 @@ ethrex-l2-common = { workspace = true }
 ethrex-rpc = { workspace = true }
 guest_program = { workspace = true }
 
+axum = { workspace = true }
 futures = { workspace = true }
+mojave-rpc-core = { workspace = true }
+mojave-rpc-server = { workspace = true }
 reqwest = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
