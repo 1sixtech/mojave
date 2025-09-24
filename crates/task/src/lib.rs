@@ -31,7 +31,7 @@ async fn works() {
         type Error = Error;
 
         async fn handle_request(
-            &self,
+            &mut self,
             request: Self::Request,
         ) -> Result<Self::Response, Self::Error> {
             match request {
@@ -42,7 +42,7 @@ async fn works() {
             }
         }
 
-        async fn on_shutdown(&self) -> Result<(), Self::Error> {
+        async fn on_shutdown(&mut self) -> Result<(), Self::Error> {
             println!("Shutting down the block producer..");
             Ok(())
         }
