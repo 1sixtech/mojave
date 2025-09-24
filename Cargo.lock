@@ -4343,6 +4343,7 @@ dependencies = [
  "mojave-rpc-core",
  "mojave-rpc-server",
  "mojave-signature",
+ "mojave-task",
  "mojave-utils",
  "thiserror 2.0.16",
  "tokio",
