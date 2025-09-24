@@ -42,13 +42,13 @@ impl mojave_task::Task for BlockProducer {
     type Response = Response;
     type Error = crate::error::Error;
 
-    async fn handle_request(&self, request: Request) -> Result<Self::Response> {
+    async fn handle_request(&mut self, request: Request) -> Result<Self::Response> {
         match request {
             Request::BuildBlock => Ok(Response::Block(self.build_block().await?)),
         }
     }
 
-    async fn on_shutdown(&self) -> Result<()> {
+    async fn on_shutdown(&mut self) -> Result<()> {
         tracing::info!("Shutting down block producer");
         Ok(())
     }

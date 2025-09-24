@@ -56,7 +56,6 @@ mojave-signature = { path = "crates/signature" }
 mojave-task = { path = "crates/task" }
 mojave-tests = { path = "crates/tests" }
 mojave-utils = { path = "crates/utils" }
-mojave-task = { path = "crates/task" }
 
 ethrex-blockchain = { git = "https://github.com/1sixtech/ethrex", rev = "c356adc73e2ae50a465cdb1f0090d3d3e1b86323", default-features = false }
 ethrex-common = { git = "https://github.com/1sixtech/ethrex", rev = "c356adc73e2ae50a465cdb1f0090d3d3e1b86323" }

@@ -47,7 +47,7 @@ impl Task for BatchProducer {
         }
     }
 
-    async fn on_shutdown(&self) -> Result<()> {
+    async fn on_shutdown(&mut self) -> Result<()> {
         info!("Shutting down batch producer");
         Ok(())
     }
