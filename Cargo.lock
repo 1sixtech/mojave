@@ -4467,6 +4467,7 @@ dependencies = [
  "guest_program",
  "mojave-client",
  "mojave-node-lib",
+ "mojave-task",
  "thiserror 2.0.16",
  "tokio",
  "tracing",
