@@ -102,7 +102,7 @@ impl mojave_task::Task for ProofCoordinator {
     type Response = Response;
     type Error = Error;
 
-    async fn handle_request(&self, request: Self::Request) -> Result<Self::Response> {
+    async fn handle_request(&mut self, request: Self::Request) -> Result<Self::Response> {
         match request {
             Request::ProcessBatch(batch_number) => {
                 let input = match self.context.create_prover_input(batch_number).await {
@@ -126,7 +126,7 @@ impl mojave_task::Task for ProofCoordinator {
         }
     }
 
-    async fn on_shutdown(&self) -> Result<()> {
+    async fn on_shutdown(&mut self) -> Result<()> {
         tracing::info!("Shutting down proof coordinator");
         Ok(())
     }
