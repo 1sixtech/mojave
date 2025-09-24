@@ -32,7 +32,6 @@ pub async fn run(
         "http://{}:{}",
         node_options.http_addr, node_options.http_port
     );
-
     let context = ProofCoordinatorContext::new(
         node.rollup_store,
         node.store,
@@ -41,9 +40,7 @@ pub async fn run(
     );
     let coordinator =
         ProofCoordinator::new(options.prover_address.clone(), sequencer_address, context)?;
-
-    let coordinator_handle = coordinator.spawn();
-    let handle = coordinator_handle.clone();
+    let handle = coordinator.spawn();
 
     let cancel_token = node.cancel_token.clone();
 
