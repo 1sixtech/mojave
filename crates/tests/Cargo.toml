@@ -9,29 +9,5 @@ repository = { workspace = true }
 documentation = { workspace = true }
 
 [dependencies]
-mojave-block-producer = { workspace = true }
-mojave-client = { workspace = true }
-mojave-node-lib = { workspace = true }
-mojave-utils = { workspace = true }
-
-ethrex-blockchain = { workspace = true }
-ethrex-common = { workspace = true }
-ethrex-l2-rpc = { workspace = true }
-ethrex-p2p = { workspace = true }
-ethrex-rlp = { workspace = true }
-ethrex-rpc = { workspace = true }
-ethrex-storage = { workspace = true }
-ethrex-storage-rollup = { workspace = true }
-
-axum = { workspace = true }
-k256 = { workspace = true }
-rand = { workspace = true }
-secp256k1 = { workspace = true }
-serde_json = { workspace = true }
-tokio = { workspace = true }
-tokio-util = { workspace = true }
-tower-http = { workspace = true }
 
 [dev-dependencies]
-ctor = "0.4.2"
-once_cell = { workspace = true }
