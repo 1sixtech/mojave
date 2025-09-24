@@ -37,6 +37,7 @@ members = [
   "crates/task",
   "crates/tests",
   "crates/utils",
+  "crates/p2p",
 ]
 default-members = ["cmd/node", "cmd/prover", "cmd/sequencer"]
 resolver = "2"
