@@ -61,10 +61,8 @@ ethrex-blockchain = { git = "https://github.com/1sixtech/ethrex", rev = "c356adc
 ethrex-common = { git = "https://github.com/1sixtech/ethrex", rev = "c356adc73e2ae50a465cdb1f0090d3d3e1b86323" }
 ethrex-l2 = { git = "https://github.com/1sixtech/ethrex", rev = "c356adc73e2ae50a465cdb1f0090d3d3e1b86323", default-features = false }
 ethrex-l2-common = { git = "https://github.com/1sixtech/ethrex", rev = "c356adc73e2ae50a465cdb1f0090d3d3e1b86323", default-features = false }
-ethrex-l2-rpc = { git = "https://github.com/1sixtech/ethrex", rev = "c356adc73e2ae50a465cdb1f0090d3d3e1b86323", default-features = false }
 ethrex-p2p = { git = "https://github.com/1sixtech/ethrex", rev = "c356adc73e2ae50a465cdb1f0090d3d3e1b86323" }
 ethrex-prover = { git = "https://github.com/1sixtech/ethrex", rev = "c356adc73e2ae50a465cdb1f0090d3d3e1b86323" }
-ethrex-rlp = { git = "https://github.com/1sixtech/ethrex", rev = "c356adc73e2ae50a465cdb1f0090d3d3e1b86323" }
 ethrex-rpc = { git = "https://github.com/1sixtech/ethrex", rev = "c356adc73e2ae50a465cdb1f0090d3d3e1b86323", default-features = false }
 ethrex-storage = { git = "https://github.com/1sixtech/ethrex", rev = "c356adc73e2ae50a465cdb1f0090d3d3e1b86323" }
 ethrex-storage-rollup = { git = "https://github.com/1sixtech/ethrex", rev = "c356adc73e2ae50a465cdb1f0090d3d3e1b86323", default-features = false }
@@ -81,10 +79,8 @@ daemonize = "0.5"
 ed25519-dalek = { version = "2.1.1", features = ["rand_core", "serde"] }
 futures = "0.3"
 hex = "0.4.3"
-k256 = { version = "0.13.3", features = ["ecdh"] }
 lazy_static = "1.5.0"
 local-ip-address = { version = "0.6" }
-once_cell = "1.20"
 proc-macro2 = "1"
 quote = "1"
 rand = { version = "0.8.5", default-features = false }
@@ -99,7 +95,6 @@ sysinfo = "0.37"
 thiserror = "2"
 tiny-keccak = "2.0.0"
 tokio = { version = "1", default-features = false }
-tokio-stream = { version = "0.1.17" }
 tokio-util = { version = "0.7", default-features = false }
 tower-http = { version = "0.6.2", default-features = false }
 tracing = "0.1"
