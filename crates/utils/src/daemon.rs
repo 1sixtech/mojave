@@ -183,17 +183,10 @@ where
         .build()?;
 
     rt.block_on(async move {
-        tokio::select! {
-            res = proc() => {
-                if let Err(err) = res {
-                    tracing::error!("Process stopped unexpectedly: {}", err);
-                    return Err(err);
-                }
-            },
-            _ = crate::signal::wait_for_shutdown_signal() => {
-                tracing::info!("Shutting down...");
-                return Ok(());
-            }
+        let res = proc().await;
+        if let Err(err) = res {
+            tracing::error!("Process stopped unexpectedly: {}", err);
+            return Err(err);
         }
         Ok(())
     })
