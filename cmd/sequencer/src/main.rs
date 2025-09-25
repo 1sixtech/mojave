@@ -9,7 +9,7 @@ use mojave_block_producer::{
     BlockProducer,
     types::{BlockProducerOptions, Request as BlockProducerRequest},
 };
-use mojave_node_lib::{initializers::get_signer, types::MojaveNode};
+use mojave_node_lib::{initializers::get_signer, types::{MojaveNode, NodeConfigFile}, utils::store_node_config_file};
 use mojave_proof_coordinator::types::ProofCoordinatorOptions;
 use mojave_task::Task;
 use mojave_utils::{
@@ -57,7 +57,7 @@ fn main() -> Result<()> {
                 let (batch_tx, batch_rx) = tokio::sync::mpsc::channel(16);
 
                 let coordinator_task = Box::pin(mojave_proof_coordinator::run(
-                    node,
+                    node.clone(),
                     &node_options,
                     &proof_coordinator_options,
                     batch_rx,
@@ -84,7 +84,22 @@ fn main() -> Result<()> {
                             .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
                         batch_submitter_task
                             .await
-                            .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
+                            .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
+
+                        let node_config_path = PathBuf::from(node.data_dir).join("node_config.json");
+                        tracing::info!("Storing config at {:?}...", node_config_path);
+
+                        let node_config = NodeConfigFile::new(node.peer_table.clone(), node.local_node_record.lock().await.clone()).await;
+                        store_node_config_file(node_config, node_config_path).await;
+
+                        // TODO: wait for api to stop here
+                        // if let Err(_elapsed) = tokio::time::timeout(std::time::Duration::from_secs(10), api_task).await {
+                        //     tracing::warn!("Timed out waiting for API to stop");
+                        // }
+
+                        tracing::info!("Successfully shut down the sequencer.");
+                        Ok(())
+                        
                     }
                 }
             })
