@@ -9,7 +9,11 @@ use mojave_block_producer::{
     BlockProducer,
     types::{BlockProducerOptions, Request as BlockProducerRequest},
 };
-use mojave_node_lib::{initializers::get_signer, types::{MojaveNode, NodeConfigFile}, utils::store_node_config_file};
+use mojave_node_lib::{
+    initializers::get_signer,
+    types::{MojaveNode, NodeConfigFile},
+    utils::store_node_config_file,
+};
 use mojave_proof_coordinator::types::ProofCoordinatorOptions;
 use mojave_task::Task;
 use mojave_utils::{
@@ -99,7 +103,6 @@ fn main() -> Result<()> {
 
                         tracing::info!("Successfully shut down the sequencer.");
                         Ok(())
-                        
                     }
                 }
             })
