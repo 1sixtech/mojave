@@ -54,6 +54,26 @@ jobs:
             name: prod-bins
             path: ${{ runner.temp }}/prod-bins
 
+      - name: Restore prod bins into target/release
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p target/release
+          shopt -s nullglob
+
+          if compgen -G "$RUNNER_TEMP/prod-bins/target/release/*" > /dev/null; then
+            cp -f "$RUNNER_TEMP/prod-bins/target/release/"* target/release/
+          fi
+
+          for dir in "$RUNNER_TEMP/prod-bins" "$RUNNER_TEMP/prod-bins/prod-bins"; do
+            if compgen -G "$dir/mojave-*" > /dev/null; then
+              cp -f "$dir"/mojave-* target/release/
+            fi
+          done
+
+          ls -la target/release || true
+          chmod +x target/release/mojave-* || true
+
       - name: Decide BIN_DIR or fallback
         id: decide
         shell: bash
