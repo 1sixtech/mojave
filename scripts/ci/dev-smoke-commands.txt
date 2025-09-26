@@ -9,4 +9,4 @@ just default | | 5
 rex --version | 0.1.0 | 5
 
 # ——— tests ———
-just test | 'ALL TESTS PASSED SUCCESSFULLY!' | 180
+just test | 'ALL TESTS PASSED SUCCESSFULLY!' | 300

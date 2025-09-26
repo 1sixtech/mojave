@@ -8,10 +8,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: dev-smoke-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
-  cancel-in-progress: true
-
 jobs:
   smoke:
     runs-on: ubuntu-latest
@@ -51,39 +47,37 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y jq just
 
-      - name: Download prod bins (if present)
-        id: download
-        continue-on-error: true
+      - name: Download prod bins
+        id: dl
         uses: actions/download-artifact@v4
         with:
-          name: prod-bins
-          path: .
+            name: prod-bins
+            path: ${{ runner.temp }}/prod-bins
 
-      - name: Resolve BIN_DIR (dist → release)
-        id: resolve
+      - name: Decide BIN_DIR or fallback
+        id: decide
         shell: bash
         run: |
           set -euo pipefail
-          for d in target/release; do
-            if [[ -x "$d/mojave-node" && -x "$d/mojave-sequencer" && -x "$d/mojave-prover" ]]; then
-              echo "BIN_DIR=$d" >> "$GITHUB_ENV"
-              echo "Found binaries in: $d"
-              chmod +x "$d"/mojave-*
-              exit 0
-            fi
-          done
-          echo "BIN_DIR=" >> "$GITHUB_ENV"
-          echo "No ready-made binaries found in dist/target."
+          if [[ -f target/release/mojave-node && -f target/release/mojave-sequencer && -f target/release/mojave-prover ]]; then
+            echo "BIN_DIR=target/release" >> "$GITHUB_ENV"
+            echo "have_bins=true" >> "$GITHUB_OUTPUT"
+            echo "Using binaries in: target/release"
+          else
+            echo "have_bins=false" >> "$GITHUB_OUTPUT"
+            echo "No ready-made binaries in target/release (will fallback build)"
+          fi
 
       - name: Build bins (fallback)
-        if: ${{ env.BIN_DIR == '' }}
+        if: ${{ steps.decide.outputs.have_bins == 'false' }}
         run: cargo build --bins --release --locked --quiet
 
-      - name: Set BIN_DIR to target/release (after fallback)
-        if: ${{ env.BIN_DIR == '' }}
+      - name: Set BIN_DIR after fallback
+        if: ${{ steps.decide.outputs.have_bins == 'false' }}
         run: |
           echo "BIN_DIR=target/release" >> "$GITHUB_ENV"
-          chmod +x target/release/mojave-*
+          chmod +x target/release/mojave-* || true
+          echo "Using binaries in: target/release"
 
       - name: Sanity check binary targets exist
         shell: bash
@@ -101,7 +95,6 @@ jobs:
           make -C /tmp/rex cli
           echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
           rex --version
-
 
       - name: Run dev command smoke
         run: |
