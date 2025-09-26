@@ -51,27 +51,20 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y jq just
 
-      - name: Download prod bins
-        uses: actions/download-artifact@v4
-        with:
-          name: prod-bins
-          path: dist
-
       - name: Download prod bins (if present)
         id: download
         continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: prod-bins
-          path: dist
+          path: .
 
       - name: Resolve BIN_DIR (dist → release)
         id: resolve
         shell: bash
         run: |
           set -euo pipefail
-          candidates=( "dist" "target/release" )
-          for d in "${candidates[@]}"; do
+          for d in target/release; do
             if [[ -x "$d/mojave-node" && -x "$d/mojave-sequencer" && -x "$d/mojave-prover" ]]; then
               echo "BIN_DIR=$d" >> "$GITHUB_ENV"
               echo "Found binaries in: $d"
@@ -100,6 +93,15 @@ jobs:
           for b in mojave-node mojave-sequencer mojave-prover; do
             echo "$bins" | grep -x "$b" >/dev/null || { echo "Missing bin target: $b"; exit 1; }
           done
+
+      - name: Install rex CLI
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/lambdaclass/rex /tmp/rex
+          make -C /tmp/rex cli
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          rex --version
+
 
       - name: Run dev command smoke
         run: |
