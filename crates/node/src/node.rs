@@ -114,7 +114,11 @@ impl MojaveNode {
         })
     }
 
-    pub async fn run(self, options: &NodeOptions, registry: RpcRegistry<RpcApiContext>) -> Result<()> {
+    pub async fn run(
+        self,
+        options: &NodeOptions,
+        registry: RpcRegistry<RpcApiContext>,
+    ) -> Result<()> {
         let rpc_shutdown = self.cancel_token.child_token();
         let jwt_secret = read_jwtsecret_file(&options.authrpc_jwtsecret).await?;
         let api_task = start_api(

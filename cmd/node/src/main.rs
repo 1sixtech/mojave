@@ -38,10 +38,12 @@ fn main() -> Result<()> {
                         std::process::exit(1);
                     });
 
-                let registry = RpcRegistry::new()
-                    .with_fallback(mojave_rpc_core::types::Namespace::Eth, |req, ctx: RpcApiContext| {
+                let registry = RpcRegistry::new().with_fallback(
+                    mojave_rpc_core::types::Namespace::Eth,
+                    |req, ctx: RpcApiContext| {
                         Box::pin(ethrex_rpc::map_eth_requests(req, ctx.l1_context))
-                    });
+                    },
+                );
 
                 node.run(&node_options, registry)
                     .await
