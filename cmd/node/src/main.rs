@@ -2,7 +2,8 @@ pub mod cli;
 
 use crate::cli::Command;
 use anyhow::Result;
-use mojave_node_lib::{initializers::get_signer, types::MojaveNode};
+use mojave_node_lib::{initializers::get_signer, rpc::context::RpcApiContext, types::MojaveNode};
+use mojave_rpc_server::RpcRegistry;
 use mojave_utils::{
     block_on::block_on_current_thread,
     daemon::{DaemonOptions, run_daemonized, stop_daemonized},
@@ -37,7 +38,14 @@ fn main() -> Result<()> {
                         std::process::exit(1);
                     });
 
-                node.run(&node_options)
+                let registry = RpcRegistry::new().with_fallback(
+                    mojave_rpc_core::types::Namespace::Eth,
+                    |req, ctx: RpcApiContext| {
+                        Box::pin(ethrex_rpc::map_eth_requests(req, ctx.l1_context))
+                    },
+                );
+
+                node.run(&node_options, registry)
                     .await
                     .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
             })
