@@ -2,7 +2,7 @@ use crate::{
     error::{Error, Result},
     initializers::{get_local_node_record, get_signer, init_blockchain, init_store},
     p2p::network::start_network,
-    rpc::start_api,
+    rpc::{context::RpcApiContext, start_api},
     types::{MojaveNode, NodeConfigFile, NodeOptions},
     utils::{
         get_authrpc_socket_addr, get_http_socket_addr, get_local_p2p_node, read_jwtsecret_file,
@@ -15,6 +15,7 @@ use ethrex_p2p::{
     sync_manager::SyncManager,
 };
 use ethrex_storage_rollup::{EngineTypeRollup, StoreRollup};
+use mojave_rpc_server::RpcRegistry;
 use mojave_utils::unique_heap::AsyncUniqueHeap;
 use std::{path::PathBuf, sync::Arc};
 use tokio::sync::Mutex;
@@ -113,7 +114,7 @@ impl MojaveNode {
         })
     }
 
-    pub async fn run(self, options: &NodeOptions) -> Result<()> {
+    pub async fn run(self, options: &NodeOptions, registry: RpcRegistry<RpcApiContext>) -> Result<()> {
         let rpc_shutdown = self.cancel_token.child_token();
         let jwt_secret = read_jwtsecret_file(&options.authrpc_jwtsecret).await?;
         let api_task = start_api(
@@ -130,6 +131,7 @@ impl MojaveNode {
             self.rollup_store.clone(),
             AsyncUniqueHeap::new(),
             rpc_shutdown.clone(),
+            registry,
         );
         tokio::pin!(api_task);
         tokio::select! {
