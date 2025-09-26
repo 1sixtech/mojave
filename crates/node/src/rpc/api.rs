@@ -12,7 +12,6 @@ use ethrex_p2p::{
 use ethrex_rpc::{GasTipEstimator, NodeData, RpcApiContext as L1Context, RpcErr};
 use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
-use mojave_rpc_core::types::Namespace;
 use mojave_rpc_server::{RpcRegistry, RpcService};
 use mojave_utils::{ordered_block::OrderedBlock, rpc::error::Result, unique_heap::AsyncUniqueHeap};
 use std::{
@@ -39,6 +38,7 @@ pub async fn start_api(
     rollup_store: StoreRollup,
     block_queue: AsyncUniqueHeap<OrderedBlock, u64>,
     shutdown_token: CancellationToken,
+    registry: RpcRegistry<RpcApiContext>,
 ) -> Result<()> {
     let active_filters = Arc::new(Mutex::new(HashMap::new()));
     let context = RpcApiContext {
@@ -65,11 +65,12 @@ pub async fn start_api(
     // Periodically clean up the active filters for the filters endpoints.
     let filter_handle = spawn_filter_cleanup_task(active_filters.clone(), shutdown_token.clone());
 
-    // Build RPC registry and service
-    let registry: RpcRegistry<RpcApiContext> = RpcRegistry::new()
-        .with_fallback(Namespace::Eth, |req, ctx: RpcApiContext| {
-            Box::pin(ethrex_rpc::map_eth_requests(req, ctx.l1_context))
-        });
+    // // Build RPC registry and service
+    // let registry: RpcRegistry<RpcApiContext> = RpcRegistry::new()
+    //     .with_fallback(Namespace::Eth, |req, ctx: RpcApiContext| {
+    //         Box::pin(ethrex_rpc::map_eth_requests(req, ctx.l1_context))
+    //     });
+    // Passing registry instead of building here to avoid bloating this function
     let service = RpcService::new(context.clone(), registry).with_permissive_cors();
     let http_router = service.router();
     let http_listener = TcpListener::bind(http_addr)

@@ -4360,8 +4360,11 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "ethrex-rpc",
  "hex",
  "mojave-node-lib",
+ "mojave-rpc-core",
+ "mojave-rpc-server",
  "mojave-utils",
  "tracing",
 ]
