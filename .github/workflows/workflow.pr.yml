@@ -18,22 +18,15 @@ jobs:
   #   name: Enforce PR title
   #   uses: ./.github/workflows/task.pr-title.yml
 
-  dev-smoke:
-    name: Dev Command Smoke
-    uses: ./.github/workflows/task.dev-smoke.yml
-    needs: []
-    with:
-      save_cache: false
-
   linters:
     name: Run linters
     uses: ./.github/workflows/task.linters.yml
-    needs: [dev-smoke]
+    needs: []
 
   cargo-linters:
     name: Run Cargo linters
     uses: ./.github/workflows/task.linters-cargo.yml
-    needs: [dev-smoke]
+    needs: []
 
   build-test:
     name: Build & Tests
@@ -47,6 +40,11 @@ jobs:
     name: Build Production
     uses: ./.github/workflows/task.build-prod.yml
     needs: [linters, cargo-linters]
+
+  dev-smoke:
+    name: Dev Command Smoke
+    uses: ./.github/workflows/task.dev-smoke.yml
+    needs: [build-prod]
 
   unlock-pr:
     name: Unlock PR

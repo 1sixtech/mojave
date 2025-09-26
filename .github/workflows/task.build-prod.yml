@@ -17,3 +17,12 @@ jobs:
           shared-key: ci
 
       - run: cargo build --workspace --release
+
+      - name: Upload prod bins
+        uses: actions/upload-artifact@v4
+        with:
+          name: prod-bins
+          path: |
+            target/release/mojave-node
+            target/release/mojave-sequencer
+            target/release/mojave-prover

@@ -3,25 +3,7 @@ name: Task - Dev Command Smoke
 
 on:
   workflow_dispatch:
-    inputs:
-      run_on:
-        description: "Runner OS"
-        type: string
-        default: "ubuntu-latest"
-      save_cache:
-        description: "Save Rust cache (use true on main pushes)"
-        type: boolean
-        default: false
   workflow_call:
-    inputs:
-      run_on:
-        description: "Runner OS"
-        type: string
-        default: "ubuntu-latest"
-      save_cache:
-        description: "Save Rust cache (use true on main pushes)"
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -32,7 +14,7 @@ concurrency:
 
 jobs:
   smoke:
-    runs-on: ${{ inputs.run_on }}
+    runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
@@ -62,38 +44,62 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: ci
-          save-if: ${{ inputs.save_cache }}
+          save-if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
       - name: Install tools
         run: |
           sudo apt-get update
           sudo apt-get install -y jq just
 
-      - name: Sanity check binary targets exist
-        run: |
-          set -euo pipefail
-          bins=$(cargo metadata -q --format-version=1 | jq -r '.packages[].targets[] | select(.kind[]=="bin") | .name')
-          echo "$bins" | grep -x "mojave-node"
-          echo "$bins" | grep -x "mojave-sequencer"
-          echo "$bins" | grep -x "mojave-prover"
+      - name: Download prod bins
+        uses: actions/download-artifact@v4
+        with:
+          name: prod-bins
+          path: dist
 
-      - name: Build bins if missing (fast)
+      - name: Download prod bins (if present)
+        id: download
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: prod-bins
+          path: dist
+
+      - name: Resolve BIN_DIR (dist → release)
+        id: resolve
         shell: bash
         run: |
           set -euo pipefail
-          need_build=0
-          for b in mojave-node mojave-sequencer mojave-prover; do
-            if [[ ! -x "target/release/$b" ]]; then
-              echo "missing target/release/$b"
-              need_build=1
+          candidates=( "dist" "target/release" )
+          for d in "${candidates[@]}"; do
+            if [[ -x "$d/mojave-node" && -x "$d/mojave-sequencer" && -x "$d/mojave-prover" ]]; then
+              echo "BIN_DIR=$d" >> "$GITHUB_ENV"
+              echo "Found binaries in: $d"
+              chmod +x "$d"/mojave-*
+              exit 0
             fi
           done
-          if [[ "$need_build" -eq 1 ]]; then
-            echo "Building bins once..."
-            cargo build --bins --release --locked --quiet
-          else
-            echo "All bins exist in cache. Skip build."
-          fi
+          echo "BIN_DIR=" >> "$GITHUB_ENV"
+          echo "No ready-made binaries found in dist/target."
+
+      - name: Build bins (fallback)
+        if: ${{ env.BIN_DIR == '' }}
+        run: cargo build --bins --release --locked --quiet
+
+      - name: Set BIN_DIR to target/release (after fallback)
+        if: ${{ env.BIN_DIR == '' }}
+        run: |
+          echo "BIN_DIR=target/release" >> "$GITHUB_ENV"
+          chmod +x target/release/mojave-*
+
+      - name: Sanity check binary targets exist
+        shell: bash
+        run: |
+          set -euo pipefail
+          bins=$(cargo metadata -q --format-version=1 | jq -r '.packages[].targets[] | select(.kind[]=="bin") | .name')
+          for b in mojave-node mojave-sequencer mojave-prover; do
+            echo "$bins" | grep -x "$b" >/dev/null || { echo "Missing bin target: $b"; exit 1; }
+          done
 
       - name: Run dev command smoke
         run: |
