@@ -1,4 +1,7 @@
-use crate::error::{Error, Result};
+use crate::{
+    error::{Error, Result},
+    types::Request,
+};
 use ethrex_blockchain::{
     Blockchain,
     constants::TX_GAS_COST,
@@ -30,6 +33,8 @@ use ethrex_l2_common::{
 use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
 use ethrex_vm::BlockExecutionResult;
+use mojave_node_lib::types::MojaveNode;
+use mojave_task::Task;
 use std::{
     collections::{BTreeMap, HashMap},
     ops::Div,
@@ -46,18 +51,30 @@ pub struct BlockProducer {
     coinbase_address: Address,
 }
 
+impl Task for BlockProducer {
+    type Request = Request;
+    type Response = Block;
+    type Error = crate::error::Error;
+
+    async fn handle_request(&mut self, request: Request) -> Result<Self::Response> {
+        match request {
+            Request::BuildBlock => self.build_block().await,
+        }
+    }
+
+    async fn on_shutdown(&mut self) -> Result<()> {
+        tracing::info!("Shutting down block producer");
+        Ok(())
+    }
+}
+
 impl BlockProducer {
-    pub fn new(
-        store: Store,
-        blockchain: Arc<Blockchain>,
-        rollup_store: StoreRollup,
-        coinbase_address: Address,
-    ) -> Self {
-        Self {
-            store,
-            blockchain,
-            rollup_store,
-            coinbase_address,
+    pub fn new(node: MojaveNode) -> Self {
+        BlockProducer {
+            store: node.store.clone(),
+            blockchain: node.blockchain.clone(),
+            rollup_store: node.rollup_store.clone(),
+            coinbase_address: node.genesis.coinbase,
         }
     }
 

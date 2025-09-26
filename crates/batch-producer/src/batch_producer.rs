@@ -253,7 +253,7 @@ impl BatchProducer {
             // assigning the new values
             blobs_bundle = bundle;
             state_root = self.get_block_state_root(&block_data.block)?;
-            current_block = block_number;
+            current_block = block_number + 1;
         }
 
         if current_block == last_committed_block {
