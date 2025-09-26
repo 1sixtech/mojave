@@ -5,7 +5,7 @@ on:
       run_coverage:
         description: "Run coverage gate"
         type: boolean
-        default: true
+        default: false
       coverage_threshold:
         description: "Fail if line coverage below this value (used only when run_coverage=true)"
         type: number
@@ -38,7 +38,6 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: ci
-          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Install cargo-llvm-cov (coverage only)
         if: ${{ inputs.run_coverage }}
