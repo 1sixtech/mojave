@@ -9,8 +9,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
+      - uses: dtolnay/rust-toolchain@nightly
         with:
           toolchain: nightly
       - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ci
+
       - run: cargo build --workspace --release
