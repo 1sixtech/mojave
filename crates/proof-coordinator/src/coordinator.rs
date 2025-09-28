@@ -1,13 +1,12 @@
 use crate::{
     error::{Error, Result},
-    types::ProofCoordinatorOptions,
+    types::{ProofCoordinatorOptions, Request, Response},
 };
 use mojave_client::{
     MojaveClient,
     types::{ProofResponse, ProofResult, ProverData, Strategy},
 };
 use mojave_node_lib::types::{MojaveNode, NodeOptions};
-use mojave_task::Task;
 
 use ethrex_blockchain::Blockchain;
 use ethrex_common::types::{BlobsBundle, Block};
@@ -15,70 +14,11 @@ use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
 
 use guest_program::input::ProgramInput;
-use tokio::sync::mpsc::Receiver;
+use mojave_task::TaskHandle;
+use tokio::{sync::mpsc::Receiver, task::JoinHandle};
+use tokio_util::sync::CancellationToken;
 
 use std::sync::Arc;
-
-pub enum Request {
-    ProcessBatch(u64),
-    StoreProof(ProofResponse, u64),
-}
-
-#[derive(Debug)]
-pub enum Response {
-    Ack,
-}
-
-pub async fn run(
-    node: MojaveNode,
-    node_options: &NodeOptions,
-    options: &ProofCoordinatorOptions,
-    mut batch_receiver: Receiver<u64>,
-) -> Result<()> {
-    const DEFAULT_ELASTICITY: u64 = 2;
-    let sequencer_address = format!(
-        "http://{}:{}",
-        node_options.http_addr, node_options.http_port
-    );
-
-    let coordinator = ProofCoordinator::new(
-        options.prover_address.clone(),
-        sequencer_address,
-        node.rollup_store,
-        node.store,
-        node.blockchain.clone(),
-        DEFAULT_ELASTICITY,
-    )?;
-    let handle = coordinator.spawn();
-
-    let cancel_token = node.cancel_token.clone();
-
-    tokio::spawn(async move {
-        loop {
-            tokio::select! {
-                batch = batch_receiver.recv() => {
-                    match batch {
-                        Some(batch_number) => {
-                           if let Err(err) = handle.request(Request::ProcessBatch(batch_number)).await{
-                            tracing::error!("Error processing batch {batch_number}: {err}")
-                           }
-                        },
-                        None => {
-                            tracing::info!("Batch channel closed; coordinator forwarder exiting");
-                            return;
-                        }
-                    }
-                }
-                _ = cancel_token.cancelled() => {
-                    let _ = handle.shutdown().await;
-                    return;
-                }
-            }
-        }
-    });
-
-    Ok(())
-}
 
 pub struct ProofCoordinator {
     client: MojaveClient,
@@ -89,16 +29,53 @@ pub struct ProofCoordinator {
     elasticity_multiplier: u64,
 }
 
+pub fn spawn_forwarder(
+    mut batch_rx: Receiver<u64>,
+    task_handle: TaskHandle<ProofCoordinator>,
+    cancel: CancellationToken,
+) -> JoinHandle<()> {
+    tokio::spawn(async move {
+        loop {
+            tokio::select! {
+                maybe = batch_rx.recv() => {
+                    match maybe {
+                        Some(batch_number) => {
+                            if let Err(err) = task_handle
+                                .request(Request::ProcessBatch(batch_number))
+                                .await
+                            {
+                                tracing::error!("Error processing batch {batch_number}: {err}");
+                            }
+                        }
+                        None => {
+                            tracing::info!("Batch channel closed; coordinator forwarder exiting");
+                            return;
+                        }
+                    }
+                }
+                _ = cancel.cancelled() => {
+                    let _ = task_handle.shutdown().await;
+                    return;
+                }
+            }
+        }
+    })
+}
+
 impl ProofCoordinator {
     pub fn new(
-        prover_address: String,
-        sequencer_address: String,
-        rollup_store: StoreRollup,
-        store: Store,
-        blockchain: Arc<Blockchain>,
-        elasticity_multiplier: u64,
+        node: MojaveNode,
+        node_options: &NodeOptions,
+        options: &ProofCoordinatorOptions,
     ) -> Result<Self> {
-        let prover_url = vec![prover_address];
+        const DEFAULT_ELASTICITY: u64 = 2;
+
+        let sequencer_address = format!(
+            "http://{}:{}",
+            node_options.http_addr, node_options.http_port
+        );
+
+        let prover_url = vec![options.prover_address.clone()];
         let client = MojaveClient::builder()
             .prover_urls(&prover_url)
             .build()
@@ -107,10 +84,10 @@ impl ProofCoordinator {
         Ok(Self {
             client,
             sequencer_address,
-            rollup_store,
-            store,
-            blockchain,
-            elasticity_multiplier,
+            rollup_store: node.rollup_store,
+            store: node.store,
+            blockchain: node.blockchain,
+            elasticity_multiplier: DEFAULT_ELASTICITY,
         })
     }
 

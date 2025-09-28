@@ -4441,7 +4441,6 @@ dependencies = [
  "hex",
  "local-ip-address",
  "mojave-client",
- "mojave-rpc-core",
  "mojave-rpc-server",
  "mojave-signature",
  "mojave-utils",
@@ -4470,6 +4469,7 @@ dependencies = [
  "mojave-task",
  "thiserror 2.0.16",
  "tokio",
+ "tokio-util",
  "tracing",
 ]
 
