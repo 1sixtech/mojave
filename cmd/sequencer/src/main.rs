@@ -84,7 +84,7 @@ fn main() -> Result<()> {
                         batch_submitter_task
                             .await
                             .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
-                        let _ = proof_coordinator_forwarder.await;
+                        proof_coordinator_forwarder.await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
 
                         let node_config_path = PathBuf::from(node.data_dir).join("node_config.json");
                         tracing::info!("Storing config at {:?}...", node_config_path);
