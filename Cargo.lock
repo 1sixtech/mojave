@@ -4469,7 +4469,6 @@ dependencies = [
  "mojave-task",
  "thiserror 2.0.16",
  "tokio",
- "tokio-util",
  "tracing",
 ]
 
@@ -4551,7 +4550,6 @@ dependencies = [
  "clap",
  "hex",
  "mojave-batch-producer",
- "mojave-batch-submitter",
  "mojave-block-producer",
  "mojave-node-lib",
  "mojave-proof-coordinator",

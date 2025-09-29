@@ -4,7 +4,6 @@ use crate::cli::Command;
 use anyhow::Result;
 
 use mojave_batch_producer::{BatchProducer, types::Request as BatchProducerRequest};
-use mojave_batch_submitter::{committer::Committer, notifier::Notifier};
 use mojave_block_producer::{
     BlockProducer,
     types::{BlockProducerOptions, Request as BlockProducerRequest},
