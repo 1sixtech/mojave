@@ -22,7 +22,7 @@ cleanup_orphans() {
   pkill -f 'mojave-node'       >/dev/null 2>&1 || true
   pkill -f 'mojave-sequencer'  >/dev/null 2>&1 || true
   pkill -f 'mojave-prover'     >/dev/null 2>&1 || true
-  pkill -f '^rex(\s|$)'        >/dev/null 2>&1 || pkill -f '/rex ' >/dev/null 2>&1 || true
+  pkill -f '^rex([[:space:]]|$)'        >/dev/null 2>&1 || pkill -f '/rex ' >/dev/null 2>&1 || true
 }
 
 run_one() {
