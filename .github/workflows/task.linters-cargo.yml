@@ -12,6 +12,7 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@nightly
         with:
+          toolchain: nightly
           components: clippy, rustfmt
 
       - uses: Swatinem/rust-cache@v2
