@@ -233,7 +233,28 @@ if port_in_use "$NODE_HOST" "$NODE_PORT"; then
 fi
 
 start_loggers
-build_binaries
+
+{
+  SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+  REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+  TARGET_DIR="${CARGO_TARGET_DIR:-$REPO_ROOT/target}/release"
+
+  BINS=(mojave-node mojave-prover mojave-sequencer)
+  missing=()
+
+  for b in "${BINS[@]}"; do
+    [[ -f "$TARGET_DIR/$b" ]] || missing+=("$b")
+  done
+
+  if (( ${#missing[@]} == 0 )); then
+    printf "%b[BUILD]%b Release binaries present at %s. Skipping build.\n" "$GREEN" "$NC" "$TARGET_DIR"
+  else
+    printf "%b[BUILD]%b Missing binaries: %s → building…\n" "$YELLOW" "$NC" "${missing[*]}"
+    build_binaries
+  fi
+}
+
 
 echo -e "${BLUE}[SEQUENCER]${NC} Starting sequencer…"
 (
