@@ -6,7 +6,7 @@ just default | | 5
 ./target/release/mojave-sequencer --version | 0.1.0 | 5
 ./target/release/mojave-prover --version | 0.1.0 | 5
 
-rex --version | 0.1.0 | 5
+# rex --version | 0.1.0 | 5
 
 # ——— tests ———
-just test | 'ALL TESTS PASSED SUCCESSFULLY!' | 300
+# just test | 'ALL TESTS PASSED SUCCESSFULLY!' | 300

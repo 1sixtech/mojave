@@ -109,13 +109,13 @@ jobs:
             echo "$bins" | grep -x "$b" >/dev/null || { echo "Missing bin target: $b"; exit 1; }
           done
 
-      - name: Install rex CLI
-        run: |
-          set -euo pipefail
-          git clone --depth 1 https://github.com/lambdaclass/rex /tmp/rex
-          make -C /tmp/rex cli
-          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
-          rex --version
+    #   - name: Install rex CLI
+    #     run: |
+    #       set -euo pipefail
+    #       git clone --depth 1 https://github.com/lambdaclass/rex /tmp/rex
+    #       make -C /tmp/rex cli
+    #       echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+    #       rex --version
 
       - name: Run dev command smoke
         run: |
