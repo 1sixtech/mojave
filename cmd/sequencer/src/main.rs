@@ -4,7 +4,6 @@ use crate::cli::Command;
 use anyhow::Result;
 
 use mojave_batch_producer::{BatchProducer, types::Request as BatchProducerRequest};
-use mojave_batch_submitter::{committer::Committer, notifier::Notifier};
 use mojave_block_producer::{
     BlockProducer,
     types::{BlockProducerOptions, Request as BlockProducerRequest},
@@ -14,7 +13,7 @@ use mojave_node_lib::{
     types::{MojaveNode, NodeConfigFile},
     utils::store_node_config_file,
 };
-use mojave_proof_coordinator::types::ProofCoordinatorOptions;
+use mojave_proof_coordinator::{ProofCoordinator, types::ProofCoordinatorOptions};
 use mojave_task::Task;
 use mojave_utils::{
     block_on::block_on_current_thread,
@@ -57,15 +56,7 @@ fn main() -> Result<()> {
 
                 let batch_producer = BatchProducer::new(node.clone(), 0);
                 let block_producer = BlockProducer::new(node.clone());
-
-                let (batch_tx, batch_rx) = tokio::sync::mpsc::channel(16);
-
-                let coordinator_task = Box::pin(mojave_proof_coordinator::run(
-                    node.clone(),
-                    &node_options,
-                    &proof_coordinator_options,
-                    batch_rx,
-                ));
+                let proof_coordinator = ProofCoordinator::new(node.clone(), &node_options, &proof_coordinator_options)?;
 
                 let batch_producer_task = batch_producer
                     .spawn_periodic(Duration::from_millis(10_000), || BatchProducerRequest::BuildBatch);
@@ -73,7 +64,9 @@ fn main() -> Result<()> {
                 let block_producer_task = block_producer
                     .spawn_with_capacity_periodic(BLOCK_PRODUCER_CAPACITY, Duration::from_millis(block_producer_options.block_time), || BlockProducerRequest::BuildBlock);
 
-                let batch_submitter_task = Box::pin(Committer::<Notifier>::run(batch_tx));
+                // TODO: add batch submitter handle here
+
+                let proof_coordinator_task = proof_coordinator.spawn();
 
                 tokio::select! {
                     // TODO: replace with api task
@@ -83,12 +76,7 @@ fn main() -> Result<()> {
                         cancel_token.cancel();
                         batch_producer_task.shutdown().await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
                         block_producer_task.shutdown().await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
-                        coordinator_task
-                            .await
-                            .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
-                        batch_submitter_task
-                            .await
-                            .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
+                        proof_coordinator_task.shutdown().await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
 
                         let node_config_path = PathBuf::from(node.data_dir).join("node_config.json");
                         tracing::info!("Storing config at {:?}...", node_config_path);
