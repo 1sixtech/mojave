@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+
 use ethrex_common::types::Block;
 use ethrex_l2_common::prover::BatchProof;
 use guest_program::input::ProgramInput;
@@ -29,8 +31,44 @@ pub struct SignedProofResponse {
     pub verifying_key: VerifyingKey,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Serialize, Deserialize)]
 pub struct JobId(String);
+
+impl JobId {
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
+
+impl Borrow<str> for JobId {
+    fn borrow(&self) -> &str {
+        &self.0
+    }
+}
+
+impl AsRef<str> for JobId {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
+impl From<String> for JobId {
+    fn from(s: String) -> Self {
+        JobId(s)
+    }
+}
+
+impl From<&str> for JobId {
+    fn from(s: &str) -> Self {
+        JobId(s.to_owned())
+    }
+}
+
+impl std::fmt::Display for JobId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -42,7 +80,7 @@ pub struct ProverData {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ProofResponse {
-    pub job_id: String,
+    pub job_id: JobId,
     pub batch_number: u64,
     pub result: ProofResult,
 }
