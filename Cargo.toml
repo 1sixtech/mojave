@@ -28,6 +28,7 @@ members = [
   "crates/btc-watcher",
   "crates/client",
   "crates/node",
+  "crates/p2p",
   "crates/proof-coordinator",
   "crates/prover",
   "crates/rpc/core",
@@ -37,7 +38,6 @@ members = [
   "crates/task",
   "crates/tests",
   "crates/utils",
-  "crates/p2p",
 ]
 default-members = ["cmd/node", "cmd/prover", "cmd/sequencer"]
 resolver = "2"
@@ -64,9 +64,11 @@ ethrex-l2 = { git = "https://github.com/1sixtech/ethrex", rev = "c356adc73e2ae50
 ethrex-l2-common = { git = "https://github.com/1sixtech/ethrex", rev = "c356adc73e2ae50a465cdb1f0090d3d3e1b86323", default-features = false }
 ethrex-p2p = { git = "https://github.com/1sixtech/ethrex", rev = "c356adc73e2ae50a465cdb1f0090d3d3e1b86323" }
 ethrex-prover = { git = "https://github.com/1sixtech/ethrex", rev = "c356adc73e2ae50a465cdb1f0090d3d3e1b86323" }
+ethrex-rlp = { git = "https://github.com/1sixtech/ethrex", rev = "c356adc73e2ae50a465cdb1f0090d3d3e1b86323", default-features = false }
 ethrex-rpc = { git = "https://github.com/1sixtech/ethrex", rev = "c356adc73e2ae50a465cdb1f0090d3d3e1b86323", default-features = false }
 ethrex-storage = { git = "https://github.com/1sixtech/ethrex", rev = "c356adc73e2ae50a465cdb1f0090d3d3e1b86323" }
 ethrex-storage-rollup = { git = "https://github.com/1sixtech/ethrex", rev = "c356adc73e2ae50a465cdb1f0090d3d3e1b86323", default-features = false }
+ethrex-trie = { git = "https://github.com/1sixtech/ethrex", rev = "c356adc73e2ae50a465cdb1f0090d3d3e1b86323", default-features = false }
 ethrex-vm = { git = "https://github.com/1sixtech/ethrex", rev = "c356adc73e2ae50a465cdb1f0090d3d3e1b86323", default-features = false }
 guest_program = { git = "https://github.com/1sixtech/ethrex", rev = "c356adc73e2ae50a465cdb1f0090d3d3e1b86323", default-features = false }
 
