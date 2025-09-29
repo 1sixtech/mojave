@@ -23,7 +23,7 @@ on:
 
 jobs:
   test:
-    name: Build & Tests${{ inputs.run_coverage && ' (coverage)' || '' }}
+    name: test ${{ inputs.run_coverage && ' (coverage)' || '' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
