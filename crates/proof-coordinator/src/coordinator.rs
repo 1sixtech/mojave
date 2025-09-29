@@ -14,9 +14,6 @@ use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
 
 use guest_program::input::ProgramInput;
-use mojave_task::TaskHandle;
-use tokio::{sync::mpsc::Receiver, task::JoinHandle};
-use tokio_util::sync::CancellationToken;
 
 use std::sync::Arc;
 
@@ -27,39 +24,6 @@ pub struct ProofCoordinator {
     store: Store,
     blockchain: Arc<Blockchain>,
     elasticity_multiplier: u64,
-}
-
-pub fn spawn_forwarder(
-    mut batch_rx: Receiver<u64>,
-    task_handle: TaskHandle<ProofCoordinator>,
-    cancel: CancellationToken,
-) -> JoinHandle<()> {
-    tokio::spawn(async move {
-        loop {
-            tokio::select! {
-                maybe = batch_rx.recv() => {
-                    match maybe {
-                        Some(batch_number) => {
-                            if let Err(err) = task_handle
-                                .request(Request::ProcessBatch(batch_number))
-                                .await
-                            {
-                                tracing::error!("Error processing batch {batch_number}: {err}");
-                            }
-                        }
-                        None => {
-                            tracing::info!("Batch channel closed; coordinator forwarder exiting");
-                            return;
-                        }
-                    }
-                }
-                _ = cancel.cancelled() => {
-                    let _ = task_handle.shutdown().await;
-                    return;
-                }
-            }
-        }
-    })
 }
 
 impl ProofCoordinator {
@@ -172,6 +136,7 @@ impl ProofCoordinator {
 
     async fn fetch_blocks(&self, block_numbers: Vec<u64>) -> Result<Vec<Block>> {
         let mut blocks = vec![];
+        // TODO: if we see a bottle neck here parallelize the workload here
         for block_number in block_numbers {
             let header = self
                 .store
