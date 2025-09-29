@@ -33,7 +33,9 @@ jobs:
         run: echo "No relevant changes for dev smoke. Skipping." && exit 0
 
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@nightly
+        uses: dtolnay/rust-toolchain@master
+        with: 
+          toolchain: nightly
 
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
