@@ -2,30 +2,15 @@
 name: Task - Build & Test (Development)
 on:
   workflow_dispatch:
-    inputs:
-      run_coverage:
-        description: "Run coverage gate"
-        type: boolean
-        default: true
-      coverage_threshold:
-        description: "Fail if line coverage below this value (used only when run_coverage=true)"
-        type: number
-        default: 50
   workflow_call:
-    inputs:
-      run_coverage:
-        description: "Run coverage gate"
-        type: boolean
-        default: false
-      coverage_threshold:
-        description: "Fail if line coverage below this value (used only when run_coverage=true)"
-        type: number
-        default: 50
 
 jobs:
   test:
-    name: Build & Tests${{ inputs.run_coverage && ' (coverage)' || '' }}
+    name: coverage test
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        fail_under: [60]
 
     steps:
       - uses: actions/checkout@v4
@@ -35,7 +20,6 @@ jobs:
         with:
           toolchain: nightly
       - name: Add llvm-tools (coverage only)
-        if: ${{ inputs.run_coverage }}
         run: rustup component add llvm-tools-preview
 
       - name: Rust Cache
@@ -44,23 +28,15 @@ jobs:
           shared-key: ci
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
-      # coverage mode
       - name: Install cargo-llvm-cov
-        if: ${{ inputs.run_coverage }}
         uses: taiki-e/install-action@v2
         with:
           tool: cargo-llvm-cov
 
       - name: Run coverage (gate)
-        if: ${{ inputs.run_coverage }}
         run: |
           set -euo pipefail
           cargo llvm-cov \
             --workspace \
             --all-features \
-            --fail-under-lines ${{ inputs.coverage_threshold }}
-
-      # normal test mode
-      - name: Run cargo test
-        if: ${{ !inputs.run_coverage }}
-        run: cargo test --workspace
+            --fail-under-lines ${{ matrix.fail_under }}
