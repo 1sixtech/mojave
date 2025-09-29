@@ -19,7 +19,8 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly
-      - name: Add llvm-tools (coverage only)
+
+      - name: Add llvm-tools
         run: rustup component add llvm-tools-preview
 
       - name: Rust Cache
