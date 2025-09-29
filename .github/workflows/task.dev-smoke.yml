@@ -41,6 +41,11 @@ jobs:
           shared-key: ci
           save-if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq just
+
       - name: Download prod bins
         id: dl
         uses: actions/download-artifact@v4
