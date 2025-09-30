@@ -1,21 +1,22 @@
-use crate::rlpx::connection::server::{broadcast_message, send};
-use crate::rlpx::l2::messages::{BatchSealed, L2Message, NewBlock};
-use crate::rlpx::utils::log_peer_error;
-use crate::rlpx::{connection::server::Established, error::RLPxError, message::Message};
-use ethereum_types::Address;
-use ethereum_types::Signature;
-use ethrex_blockchain::error::ChainError;
-use ethrex_blockchain::fork_choice::apply_fork_choice;
+use crate::rlpx::{
+    connection::server::{Established, broadcast_message, send},
+    error::RLPxError,
+    l2::messages::{BatchSealed, L2Message, NewBlock},
+    message::Message,
+    utils::log_peer_error,
+};
+use ethereum_types::{Address, Signature};
+use ethrex_blockchain::{error::ChainError, fork_choice::apply_fork_choice};
 use ethrex_common::types::{Block, recover_address};
 use ethrex_storage_rollup::StoreRollup;
 use secp256k1::{Message as SecpMessage, SecretKey};
-use std::collections::BTreeMap;
-use std::sync::Arc;
+use std::{collections::BTreeMap, sync::Arc};
 use tokio::time::Instant;
 use tracing::{debug, info, warn};
 
-use super::messages::batch_hash;
-use super::{PERIODIC_BATCH_BROADCAST_INTERVAL, PERIODIC_BLOCK_BROADCAST_INTERVAL};
+use super::{
+    PERIODIC_BATCH_BROADCAST_INTERVAL, PERIODIC_BLOCK_BROADCAST_INTERVAL, messages::batch_hash,
+};
 
 #[derive(Debug, Clone)]
 pub struct L2ConnectedState {

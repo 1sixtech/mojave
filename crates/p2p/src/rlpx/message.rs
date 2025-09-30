@@ -2,27 +2,37 @@ use bytes::BufMut;
 use ethrex_rlp::error::{RLPDecodeError, RLPEncodeError};
 use std::fmt::Display;
 
-use crate::rlpx::snap::{
-    AccountRange, ByteCodes, GetAccountRange, GetByteCodes, GetStorageRanges, GetTrieNodes,
-    StorageRanges, TrieNodes,
+use crate::rlpx::{
+    mojave::messages::MojaveMessage,
+    snap::{
+        AccountRange, ByteCodes, GetAccountRange, GetByteCodes, GetStorageRanges, GetTrieNodes,
+        StorageRanges, TrieNodes,
+    },
 };
 
-use super::eth::blocks::{BlockBodies, BlockHeaders, GetBlockBodies, GetBlockHeaders};
-use super::eth::receipts::{GetReceipts, Receipts};
-use super::eth::status::StatusMessage;
-use super::eth::transactions::{
-    GetPooledTransactions, NewPooledTransactionHashes, PooledTransactions, Transactions,
+use super::{
+    eth::{
+        blocks::{BlockBodies, BlockHeaders, GetBlockBodies, GetBlockHeaders},
+        receipts::{GetReceipts, Receipts},
+        status::StatusMessage,
+        transactions::{
+            GetPooledTransactions, NewPooledTransactionHashes, PooledTransactions, Transactions,
+        },
+        update::BlockRangeUpdate,
+    },
+    l2::{
+        self, messages,
+        messages::{BatchSealed, L2Message, NewBlock},
+    },
+    p2p::{DisconnectMessage, HelloMessage, PingMessage, PongMessage},
 };
-use super::eth::update::BlockRangeUpdate;
-use super::l2::messages::{BatchSealed, L2Message, NewBlock};
-use super::l2::{self, messages};
-use super::p2p::{DisconnectMessage, HelloMessage, PingMessage, PongMessage};
 
 use ethrex_rlp::encode::RLPEncode;
 
 const ETH_CAPABILITY_OFFSET: u8 = 0x10;
 const SNAP_CAPABILITY_OFFSET: u8 = 0x21;
 const BASED_CAPABILITY_OFFSET: u8 = 0x30;
+const MOJAVE_CAPABILITY_OFFSET: u8 = 0x40;
 
 pub trait RLPxMessage: Sized {
     const CODE: u8;
@@ -63,6 +73,8 @@ pub enum Message {
     TrieNodes(TrieNodes),
     // based capability
     L2(messages::L2Message),
+    // mojave capability
+    Mojave(MojaveMessage),
 }
 
 impl Message {
@@ -109,6 +121,8 @@ impl Message {
                     }
                 }
             }
+
+            Message::Mojave(_) => MOJAVE_CAPABILITY_OFFSET + MojaveMessage::CODE,
         }
     }
     pub fn decode(msg_id: u8, data: &[u8]) -> Result<Message, RLPDecodeError> {
@@ -166,7 +180,7 @@ impl Message {
                 TrieNodes::CODE => Ok(Message::TrieNodes(TrieNodes::decode(data)?)),
                 _ => Err(RLPDecodeError::MalformedData),
             }
-        } else {
+        } else if msg_id < MOJAVE_CAPABILITY_OFFSET {
             // based capability
             Ok(Message::L2(match msg_id - BASED_CAPABILITY_OFFSET {
                 messages::NewBlock::CODE => {
@@ -179,6 +193,12 @@ impl Message {
                 }
                 _ => return Err(RLPDecodeError::MalformedData),
             }))
+        } else {
+            if msg_id == MOJAVE_CAPABILITY_OFFSET {
+                Ok(Message::Mojave(MojaveMessage::decode(data)?))
+            } else {
+                Err(RLPDecodeError::MalformedData)
+            }
         }
     }
 
@@ -213,6 +233,7 @@ impl Message {
                 L2Message::BatchSealed(msg) => msg.encode(buf),
                 L2Message::NewBlock(msg) => msg.encode(buf),
             },
+            Message::Mojave(msg) => msg.encode(buf),
         }
     }
 }
@@ -248,6 +269,7 @@ impl Display for Message {
                 L2Message::BatchSealed(_) => "based:BatchSealed".fmt(f),
                 L2Message::NewBlock(_) => "based:NewBlock".fmt(f),
             },
+            Message::Mojave(_) => "mojave:MojaveMessage".fmt(f),
         }
     }
 }
