@@ -32,9 +32,6 @@ jobs:
     name: Build & Tests
     uses: ./.github/workflows/task.build-test.yml
     needs: [linters, cargo-linters]
-    # with:
-    #   run_coverage: true
-    #   coverage_threshold: 50
 
   build-prod:
     name: Build Production
