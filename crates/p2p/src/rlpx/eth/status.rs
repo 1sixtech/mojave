@@ -1,13 +1,16 @@
-use super::eth68::status::StatusMessage68;
-use super::eth69::status::StatusMessage69;
-use crate::rlpx::message::RLPxMessage;
-use crate::rlpx::utils::snappy_decompress;
-use crate::rlpx::{error::RLPxError, p2p::Capability};
+use super::{eth68::status::StatusMessage68, eth69::status::StatusMessage69};
+use crate::rlpx::{
+    error::RLPxError, message::RLPxMessage, p2p::Capability, utils::snappy_decompress,
+};
 use bytes::BufMut;
-use ethrex_common::U256;
-use ethrex_common::types::{BlockHash, ForkId};
-use ethrex_rlp::error::{RLPDecodeError, RLPEncodeError};
-use ethrex_rlp::structs::Decoder;
+use ethrex_common::{
+    U256,
+    types::{BlockHash, ForkId},
+};
+use ethrex_rlp::{
+    error::{RLPDecodeError, RLPEncodeError},
+    structs::Decoder,
+};
 use ethrex_storage::Store;
 
 #[derive(Debug, Clone)]

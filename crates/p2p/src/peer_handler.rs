@@ -11,8 +11,7 @@ use ethrex_common::{
     types::{AccountState, BlockBody, BlockHeader, Receipt, validate_block_body},
 };
 use ethrex_rlp::encode::RLPEncode;
-use ethrex_trie::Nibbles;
-use ethrex_trie::{Node, verify_range};
+use ethrex_trie::{Nibbles, Node, verify_range};
 use rand::seq::SliceRandom;
 use tokio::sync::Mutex;
 

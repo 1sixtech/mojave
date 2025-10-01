@@ -1,8 +1,7 @@
 use crate::types::Node;
 use ethrex_common::{H256, H512};
 use ethrex_rlp::error::{RLPDecodeError, RLPEncodeError};
-use secp256k1::ecdh::shared_secret_point;
-use secp256k1::{PublicKey, SecretKey};
+use secp256k1::{PublicKey, SecretKey, ecdh::shared_secret_point};
 use sha3::{Digest, Keccak256};
 use snap::raw::{Decoder as SnappyDecoder, Encoder as SnappyEncoder, max_compress_len};
 use std::array::TryFromSliceError;

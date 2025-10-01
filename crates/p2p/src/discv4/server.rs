@@ -14,7 +14,6 @@ use spawned_concurrency::{
 use tokio::{net::UdpSocket, sync::Mutex};
 use tracing::{debug, error, info, trace, warn};
 
-use crate::utils::{is_msg_expired, unmap_ipv4in6_address};
 use crate::{
     discv4::messages::{
         ENRRequestMessage, ENRResponseMessage, FindNodeMessage, Message, NeighborsMessage, Packet,
@@ -23,7 +22,7 @@ use crate::{
     kademlia::{Contact, Kademlia},
     metrics::METRICS,
     types::{Endpoint, Node, NodeRecord},
-    utils::{get_msg_expiration_from_seconds, node_id},
+    utils::{get_msg_expiration_from_seconds, is_msg_expired, node_id, unmap_ipv4in6_address},
 };
 
 const MAX_DISC_PACKET_SIZE: usize = 1280;

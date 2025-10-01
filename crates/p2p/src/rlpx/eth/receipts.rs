@@ -1,5 +1,4 @@
-use super::eth68::receipts::Receipts68;
-use super::eth69::receipts::Receipts69;
+use super::{eth68::receipts::Receipts68, eth69::receipts::Receipts69};
 use crate::rlpx::{
     error::RLPxError,
     message::RLPxMessage,
@@ -169,14 +168,12 @@ fn has_bloom(msg_data: &[u8]) -> Result<bool, RLPDecodeError> {
 
 #[cfg(test)]
 mod tests {
-    use crate::rlpx::eth::receipts::has_bloom;
     use crate::rlpx::{
-        eth::receipts::{GetReceipts, Receipts},
+        eth::receipts::{GetReceipts, Receipts, has_bloom},
         message::RLPxMessage,
         p2p::Capability,
     };
-    use ethrex_common::types::transaction::TxType;
-    use ethrex_common::types::{BlockHash, Receipt};
+    use ethrex_common::types::{BlockHash, Receipt, transaction::TxType};
 
     #[test]
     fn get_receipts_empty_message() {

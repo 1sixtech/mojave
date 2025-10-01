@@ -63,9 +63,10 @@ pub async fn validate_status(
 #[cfg(test)]
 mod tests {
     use super::validate_status;
-    use crate::rlpx::eth::eth68::status::StatusMessage68;
-    use crate::rlpx::eth::status::StatusMessage;
-    use crate::rlpx::p2p::Capability;
+    use crate::rlpx::{
+        eth::{eth68::status::StatusMessage68, status::StatusMessage},
+        p2p::Capability,
+    };
     use ethrex_common::{
         H256, U256,
         types::{ForkId, Genesis},

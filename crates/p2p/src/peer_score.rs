@@ -1,6 +1,4 @@
-use crate::kademlia;
-use crate::kademlia::PeerChannels;
-use crate::rlpx::p2p::Capability;
+use crate::{kademlia, kademlia::PeerChannels, rlpx::p2p::Capability};
 use ethrex_common::H256;
 use std::collections::BTreeMap;
 

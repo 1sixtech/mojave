@@ -518,10 +518,7 @@ mod tests {
     use super::*;
     use bytes::Bytes;
     use ethrex_common::{H256, H264};
-    use std::fmt::Write;
-    use std::net::IpAddr;
-    use std::num::ParseIntError;
-    use std::str::FromStr;
+    use std::{fmt::Write, net::IpAddr, num::ParseIntError, str::FromStr};
 
     fn to_hex(bytes: &[u8]) -> String {
         bytes.iter().fold(String::new(), |mut buf, b| {

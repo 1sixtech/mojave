@@ -4950,7 +4950,6 @@ dependencies = [
  "hmac",
  "keccak-hash",
  "lazy_static",
- "mojave-task",
  "prometheus",
  "rand 0.8.5",
  "rayon",

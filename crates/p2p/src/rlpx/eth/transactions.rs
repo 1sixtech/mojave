@@ -1,23 +1,22 @@
-use bytes::BufMut;
-use bytes::Bytes;
-use ethrex_blockchain::Blockchain;
-use ethrex_blockchain::error::MempoolError;
-use ethrex_common::types::BlobsBundle;
-use ethrex_common::types::Fork;
-use ethrex_common::types::P2PTransaction;
-use ethrex_common::{H256, types::Transaction};
+use bytes::{BufMut, Bytes};
+use ethrex_blockchain::{Blockchain, error::MempoolError};
+use ethrex_common::{
+    H256,
+    types::{BlobsBundle, Fork, P2PTransaction, Transaction},
+};
 use ethrex_rlp::{
     error::{RLPDecodeError, RLPEncodeError},
     structs::{Decoder, Encoder},
 };
 use ethrex_storage::error::StoreError;
 
-use crate::rlpx::utils::log_peer_warn;
-use crate::rlpx::{
-    message::RLPxMessage,
-    utils::{snappy_compress, snappy_decompress},
+use crate::{
+    rlpx::{
+        message::RLPxMessage,
+        utils::{log_peer_warn, snappy_compress, snappy_decompress},
+    },
+    types::Node,
 };
-use crate::types::Node;
 
 // https://github.com/ethereum/devp2p/blob/master/caps/eth.md#transactions-0x02
 // Broadcast message

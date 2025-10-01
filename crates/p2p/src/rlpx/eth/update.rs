@@ -1,5 +1,5 @@
-use crate::rlpx::error::RLPxError;
 use crate::rlpx::{
+    error::RLPxError,
     message::RLPxMessage,
     utils::{snappy_compress, snappy_decompress},
 };
