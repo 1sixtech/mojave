@@ -105,3 +105,13 @@ zeromq = { version = "0.4", default-features = false }
 # There it is needed to make it come from a fork of 1sixtech as it's a limitation of cargo, cargo do not allow you to patch with the same repo
 # nevertheless this tag is also pushed in 1sixtech/ethrex
 ethrex-p2p = { git = "https://github.com/sfroment/ethrex", tag = "patch-with-mojave-p2p-01-10-2025" }
+ethrex-blockchain = { git = "https://github.com/sfroment/ethrex", tag = "patch-with-mojave-p2p-01-10-2025", default-features = false }
+ethrex-common = { git = "https://github.com/sfroment/ethrex", tag = "patch-with-mojave-p2p-01-10-2025" }
+ethrex-l2 = { git = "https://github.com/sfroment/ethrex", tag = "patch-with-mojave-p2p-01-10-2025", default-features = false }
+ethrex-l2-common = { git = "https://github.com/sfroment/ethrex", tag = "patch-with-mojave-p2p-01-10-2025", default-features = false }
+ethrex-prover = { git = "https://github.com/sfroment/ethrex", tag = "patch-with-mojave-p2p-01-10-2025" }
+ethrex-rpc = { git = "https://github.com/sfroment/ethrex", tag = "patch-with-mojave-p2p-01-10-2025", default-features = false }
+ethrex-storage = { git = "https://github.com/sfroment/ethrex", tag = "patch-with-mojave-p2p-01-10-2025" }
+ethrex-storage-rollup = { git = "https://github.com/sfroment/ethrex", tag = "patch-with-mojave-p2p-01-10-2025", default-features = false }
+ethrex-vm = { git = "https://github.com/sfroment/ethrex", tag = "patch-with-mojave-p2p-01-10-2025", default-features = false }
+guest_program = { git = "https://github.com/sfroment/ethrex", tag = "patch-with-mojave-p2p-01-10-2025", default-features = false }
