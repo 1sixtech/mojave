@@ -48,7 +48,7 @@ use crate::{
                 handle_l2_broadcast,
             },
         },
-        mojave::connection::handle_mojave_capability_message,
+        mojave::connection::{handle_mojave_broadcast, handle_mojave_capability_message},
         p2p::{
             self, Capability, DisconnectMessage, DisconnectReason, PingMessage, PongMessage,
             SUPPORTED_ETH_CAPABILITIES, SUPPORTED_SNAP_CAPABILITIES,
@@ -884,6 +884,9 @@ async fn handle_broadcast(
         match broadcasted_msg.as_ref() {
             l2_msg @ Message::L2(_) => {
                 handle_l2_broadcast(state, l2_msg).await?;
+            }
+            mojave_msg @ Message::Mojave(_) => {
+                handle_mojave_broadcast(state, mojave_msg).await?;
             }
             msg => {
                 let error_message = format!("Non-supported message broadcasted: {msg}");

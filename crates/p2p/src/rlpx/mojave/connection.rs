@@ -1,6 +1,6 @@
 use crate::rlpx::{
     Message,
-    connection::server::Established,
+    connection::server::{Established, send},
     error::RLPxError,
     mojave::messages::{MojaveMessage, MojavePayload},
     utils::log_peer_error,
@@ -31,4 +31,17 @@ async fn broadcast_mojave_message(
         })
         .map_err(|_| RLPxError::BroadcastError("Could not broadcast mojave message".to_owned()))?;
     Ok(())
+}
+
+pub(crate) async fn handle_mojave_broadcast(
+    state: &mut Established,
+    msg: &Message,
+) -> Result<(), RLPxError> {
+    match msg {
+        msg @ Message::Mojave(_) => send(state, msg.clone()).await,
+        _ => Err(RLPxError::BroadcastError(format!(
+            "Message {:?} is not a valid Mojave message for broadcast",
+            msg
+        )))?,
+    }
 }
