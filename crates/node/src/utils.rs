@@ -89,7 +89,7 @@ pub fn generate_jwt_secret() -> String {
     hex::encode(secret)
 }
 
-pub async fn resolve_data_dir(data_dir: &str) -> Result<String> {
+pub async fn resolve_data_dir(data_dir: &str) -> Result<PathBuf> {
     let path = match std::env::home_dir() {
         Some(home) => home.join(data_dir),
         None => PathBuf::from(".").join(data_dir),
@@ -100,10 +100,7 @@ pub async fn resolve_data_dir(data_dir: &str) -> Result<String> {
         tokio::fs::create_dir_all(parent).await?;
     }
 
-    let s = path
-        .to_str()
-        .ok_or_else(|| Error::Custom("Invalid UTF-8 in data directory".to_string()))?;
-    Ok(s.to_owned())
+    Ok(path)
 }
 
 pub async fn get_bootnodes(bootnodes: Vec<Node>, network: &Network, data_dir: &str) -> Vec<Node> {

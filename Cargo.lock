@@ -581,7 +581,7 @@ dependencies = [
  "bitcoin_hashes",
  "hex-conservative",
  "hex_lit",
- "secp256k1",
+ "secp256k1 0.29.1",
  "serde",
 ]
 
@@ -2279,7 +2279,7 @@ dependencies = [
 [[package]]
 name = "ethrex-blockchain"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?rev=c356adc73e2ae50a465cdb1f0090d3d3e1b86323#c356adc73e2ae50a465cdb1f0090d3d3e1b86323"
+source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
  "bytes",
  "cfg-if 1.0.3",
@@ -2288,7 +2288,7 @@ dependencies = [
  "ethrex-rlp",
  "ethrex-storage",
  "ethrex-vm",
- "secp256k1",
+ "secp256k1 0.30.0",
  "sha3",
  "thiserror 2.0.16",
  "tokio",
@@ -2299,7 +2299,7 @@ dependencies = [
 [[package]]
 name = "ethrex-common"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?rev=c356adc73e2ae50a465cdb1f0090d3d3e1b86323#c356adc73e2ae50a465cdb1f0090d3d3e1b86323"
+source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
  "bytes",
  "c-kzg",
@@ -2308,13 +2308,12 @@ dependencies = [
  "ethrex-rlp",
  "ethrex-trie",
  "hex",
- "keccak-hash",
  "kzg-rs",
  "lazy_static",
  "once_cell",
  "rayon",
  "rkyv",
- "secp256k1",
+ "secp256k1 0.30.0",
  "serde",
  "serde_json",
  "sha2",
@@ -2328,24 +2327,24 @@ dependencies = [
 [[package]]
 name = "ethrex-config"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?rev=c356adc73e2ae50a465cdb1f0090d3d3e1b86323#c356adc73e2ae50a465cdb1f0090d3d3e1b86323"
+source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
  "ethrex-common",
  "ethrex-p2p",
  "hex",
- "keccak-hash",
+ "serde",
  "serde_json",
 ]
 
 [[package]]
 name = "ethrex-crypto"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?rev=c356adc73e2ae50a465cdb1f0090d3d3e1b86323#c356adc73e2ae50a465cdb1f0090d3d3e1b86323"
+source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 
 [[package]]
 name = "ethrex-dev"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?rev=c356adc73e2ae50a465cdb1f0090d3d3e1b86323#c356adc73e2ae50a465cdb1f0090d3d3e1b86323"
+source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
  "bytes",
  "envy",
@@ -2353,7 +2352,6 @@ dependencies = [
  "ethrex-rpc",
  "hex",
  "jsonwebtoken 9.3.1",
- "keccak-hash",
  "reqwest 0.12.23",
  "serde",
  "serde_json",
@@ -2366,9 +2364,10 @@ dependencies = [
 [[package]]
 name = "ethrex-l2"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?rev=c356adc73e2ae50a465cdb1f0090d3d3e1b86323#c356adc73e2ae50a465cdb1f0090d3d3e1b86323"
+source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
  "aligned-sdk",
+ "axum",
  "bincode",
  "bytes",
  "cfg-if 1.0.3",
@@ -2396,15 +2395,15 @@ dependencies = [
  "ethrex-storage-rollup",
  "ethrex-trie",
  "ethrex-vm",
+ "futures",
  "guest_program",
  "hex",
  "jsonwebtoken 9.3.1",
- "keccak-hash",
  "lazy_static",
  "rand 0.8.5",
  "ratatui",
  "reqwest 0.12.23",
- "secp256k1",
+ "secp256k1 0.30.0",
  "serde",
  "serde_json",
  "serde_with",
@@ -2424,7 +2423,7 @@ dependencies = [
 [[package]]
 name = "ethrex-l2-common"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?rev=c356adc73e2ae50a465cdb1f0090d3d3e1b86323#c356adc73e2ae50a465cdb1f0090d3d3e1b86323"
+source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
  "bytes",
  "ethereum-types 0.15.1",
@@ -2433,9 +2432,8 @@ dependencies = [
  "ethrex-storage",
  "ethrex-trie",
  "ethrex-vm",
- "keccak-hash",
  "lambdaworks-crypto 0.11.0",
- "secp256k1",
+ "secp256k1 0.30.0",
  "serde",
  "sha3",
  "thiserror 2.0.16",
@@ -2444,7 +2442,7 @@ dependencies = [
 [[package]]
 name = "ethrex-l2-rpc"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?rev=c356adc73e2ae50a465cdb1f0090d3d3e1b86323#c356adc73e2ae50a465cdb1f0090d3d3e1b86323"
+source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
  "axum",
  "bytes",
@@ -2458,10 +2456,9 @@ dependencies = [
  "ethrex-storage",
  "ethrex-storage-rollup",
  "hex",
- "keccak-hash",
  "reqwest 0.12.23",
  "rustc-hex",
- "secp256k1",
+ "secp256k1 0.30.0",
  "serde",
  "serde_json",
  "thiserror 2.0.16",
@@ -2475,7 +2472,7 @@ dependencies = [
 [[package]]
 name = "ethrex-levm"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?rev=c356adc73e2ae50a465cdb1f0090d3d3e1b86323#c356adc73e2ae50a465cdb1f0090d3d3e1b86323"
+source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
  "ark-bn254",
  "ark-ec",
@@ -2488,13 +2485,12 @@ dependencies = [
  "ethrex-crypto",
  "ethrex-rlp",
  "k256",
- "keccak-hash",
  "lambdaworks-math 0.11.0",
  "lazy_static",
  "malachite",
  "p256",
  "ripemd",
- "secp256k1",
+ "secp256k1 0.30.0",
  "serde",
  "serde_json",
  "sha2",
@@ -2507,7 +2503,7 @@ dependencies = [
 [[package]]
 name = "ethrex-metrics"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?rev=c356adc73e2ae50a465cdb1f0090d3d3e1b86323#c356adc73e2ae50a465cdb1f0090d3d3e1b86323"
+source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
  "ethrex-common",
  "serde",
@@ -2519,9 +2515,10 @@ dependencies = [
 [[package]]
 name = "ethrex-p2p"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?rev=c356adc73e2ae50a465cdb1f0090d3d3e1b86323#c356adc73e2ae50a465cdb1f0090d3d3e1b86323"
+source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
  "aes",
+ "async-trait",
  "bytes",
  "concat-kdf",
  "ctr",
@@ -2535,12 +2532,11 @@ dependencies = [
  "futures",
  "hex",
  "hmac",
- "keccak-hash",
  "lazy_static",
  "prometheus",
  "rand 0.8.5",
  "rayon",
- "secp256k1",
+ "secp256k1 0.30.0",
  "serde",
  "serde_json",
  "sha2",
@@ -2558,7 +2554,7 @@ dependencies = [
 [[package]]
 name = "ethrex-prover"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?rev=c356adc73e2ae50a465cdb1f0090d3d3e1b86323#c356adc73e2ae50a465cdb1f0090d3d3e1b86323"
+source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
  "anyhow",
  "bincode",
@@ -2591,7 +2587,7 @@ dependencies = [
 [[package]]
 name = "ethrex-rlp"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?rev=c356adc73e2ae50a465cdb1f0090d3d3e1b86323#c356adc73e2ae50a465cdb1f0090d3d3e1b86323"
+source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
  "bytes",
  "ethereum-types 0.15.1",
@@ -2605,7 +2601,7 @@ dependencies = [
 [[package]]
 name = "ethrex-rpc"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?rev=c356adc73e2ae50a465cdb1f0090d3d3e1b86323#c356adc73e2ae50a465cdb1f0090d3d3e1b86323"
+source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
  "axum",
  "axum-extra",
@@ -2622,10 +2618,9 @@ dependencies = [
  "ethrex-vm",
  "hex",
  "jsonwebtoken 9.3.1",
- "keccak-hash",
  "rand 0.8.5",
  "reqwest 0.12.23",
- "secp256k1",
+ "secp256k1 0.30.0",
  "serde",
  "serde_json",
  "sha2",
@@ -2642,7 +2637,7 @@ dependencies = [
 [[package]]
 name = "ethrex-sdk"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?rev=c356adc73e2ae50a465cdb1f0090d3d3e1b86323#c356adc73e2ae50a465cdb1f0090d3d3e1b86323"
+source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
  "bytes",
  "ethereum-types 0.15.1",
@@ -2655,10 +2650,9 @@ dependencies = [
  "eyre",
  "hex",
  "itertools 0.13.0",
- "keccak-hash",
  "lazy_static",
  "reqwest 0.12.23",
- "secp256k1",
+ "secp256k1 0.30.0",
  "serde",
  "serde_json",
  "thiserror 2.0.16",
@@ -2669,7 +2663,7 @@ dependencies = [
 [[package]]
 name = "ethrex-sdk-contract-utils"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?rev=c356adc73e2ae50a465cdb1f0090d3d3e1b86323#c356adc73e2ae50a465cdb1f0090d3d3e1b86323"
+source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
  "thiserror 2.0.16",
  "tracing",
@@ -2678,7 +2672,7 @@ dependencies = [
 [[package]]
 name = "ethrex-storage"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?rev=c356adc73e2ae50a465cdb1f0090d3d3e1b86323#c356adc73e2ae50a465cdb1f0090d3d3e1b86323"
+source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2701,7 +2695,7 @@ dependencies = [
 [[package]]
 name = "ethrex-storage-rollup"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?rev=c356adc73e2ae50a465cdb1f0090d3d3e1b86323#c356adc73e2ae50a465cdb1f0090d3d3e1b86323"
+source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2720,7 +2714,7 @@ dependencies = [
 [[package]]
 name = "ethrex-trie"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?rev=c356adc73e2ae50a465cdb1f0090d3d3e1b86323#c356adc73e2ae50a465cdb1f0090d3d3e1b86323"
+source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
  "anyhow",
  "bytes",
@@ -2741,7 +2735,7 @@ dependencies = [
 [[package]]
 name = "ethrex-vm"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?rev=c356adc73e2ae50a465cdb1f0090d3d3e1b86323#c356adc73e2ae50a465cdb1f0090d3d3e1b86323"
+source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
  "bincode",
  "bytes",
@@ -2755,6 +2749,7 @@ dependencies = [
  "ethrex-trie",
  "hex",
  "lazy_static",
+ "rkyv",
  "serde",
  "sha3",
  "thiserror 2.0.16",
@@ -3125,8 +3120,9 @@ dependencies = [
 [[package]]
 name = "guest_program"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?rev=c356adc73e2ae50a465cdb1f0090d3d3e1b86323#c356adc73e2ae50a465cdb1f0090d3d3e1b86323"
+source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
+ "bytes",
  "ethrex-blockchain",
  "ethrex-common",
  "ethrex-l2-common",
@@ -3924,16 +3920,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "keccak-hash"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e1b8590eb6148af2ea2d75f38e7d29f5ca970d5a4df456b3ef19b8b415d0264"
-dependencies = [
- "primitive-types 0.13.1",
- "tiny-keccak",
-]
-
-[[package]]
 name = "kzg-rs"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4349,7 +4335,7 @@ dependencies = [
  "bitcoin",
  "bitcoincore-rpc",
  "rand 0.8.5",
- "secp256k1",
+ "secp256k1 0.30.0",
  "thiserror 2.0.16",
  "tokio",
  "tracing",
@@ -4445,7 +4431,7 @@ dependencies = [
  "mojave-signature",
  "mojave-utils",
  "rand 0.8.5",
- "secp256k1",
+ "secp256k1 0.30.0",
  "serde",
  "serde_json",
  "thiserror 2.0.16",
@@ -4567,7 +4553,7 @@ dependencies = [
  "cfg-if 1.0.3",
  "ed25519-dalek",
  "hex",
- "secp256k1",
+ "secp256k1 0.30.0",
  "serde",
  "serde_json",
  "sha2",
@@ -6172,6 +6158,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "secp256k1"
+version = "0.30.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b50c5943d326858130af85e049f2661ba3c78b26589b8ab98e65e80ae44a1252"
+dependencies = [
+ "bitcoin_hashes",
+ "rand 0.8.5",
+ "secp256k1-sys",
+ "serde",
+]
+
+[[package]]
 name = "secp256k1-sys"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6569,9 +6567,9 @@ dependencies = [
 
 [[package]]
 name = "spawned-concurrency"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0807232f6f44b0352bcef6218f34e0be66b97486f63fe3e075bc23fbfc146b90"
+checksum = "92e46fce4cdece99f2f07c125e902629ee25e4487d80cae6e3d6e891d5906b00"
 dependencies = [
  "futures",
  "spawned-rt",
@@ -6581,9 +6579,9 @@ dependencies = [
 
 [[package]]
 name = "spawned-rt"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c31ef7a19f49a842b84dcdde52d88eabbe28f48a2b9a4669180fe17a556c2dc1"
+checksum = "76347472cc448d47dbf9f67541fde19dbb054793e8e0546ce8917bfb695e1b56"
 dependencies = [
  "crossbeam",
  "tokio",

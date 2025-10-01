@@ -41,7 +41,8 @@ pub async fn start_network(
         blockchain.clone(),
         get_client_version(),
         based_context,
-    );
+    )
+    .await?;
 
     ethrex_p2p::start_network(context, bootnodes).await?;
 

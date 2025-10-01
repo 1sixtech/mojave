@@ -125,7 +125,7 @@ impl ProofCoordinator {
         Ok(ProverData {
             batch_number,
             input: ProgramInput {
-                db: witness,
+                execution_witness: witness,
                 blocks,
                 blob_commitment,
                 blob_proof,
