@@ -2277,15 +2277,35 @@ dependencies = [
 [[package]]
 name = "ethrex-blockchain"
 version = "0.1.0"
+source = "git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025#b721f57e935bfa062a1e8593dcd5da975f0584c4"
+dependencies = [
+ "bytes",
+ "cfg-if 1.0.3",
+ "ethrex-common 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "ethrex-metrics 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "ethrex-rlp 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "ethrex-storage 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "ethrex-vm 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "secp256k1 0.30.0",
+ "sha3",
+ "thiserror 2.0.17",
+ "tokio",
+ "tokio-util",
+ "tracing",
+]
+
+[[package]]
+name = "ethrex-blockchain"
+version = "0.1.0"
 source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
  "bytes",
  "cfg-if 1.0.3",
- "ethrex-common",
- "ethrex-metrics",
- "ethrex-rlp",
- "ethrex-storage",
- "ethrex-vm",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-metrics 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-storage 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-vm 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "secp256k1 0.30.0",
  "sha3",
  "thiserror 2.0.17",
@@ -2297,14 +2317,42 @@ dependencies = [
 [[package]]
 name = "ethrex-common"
 version = "0.1.0"
+source = "git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025#b721f57e935bfa062a1e8593dcd5da975f0584c4"
+dependencies = [
+ "bytes",
+ "c-kzg",
+ "crc32fast",
+ "ethereum-types 0.15.1",
+ "ethrex-rlp 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "ethrex-trie 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "hex",
+ "kzg-rs",
+ "lazy_static",
+ "once_cell",
+ "rayon",
+ "rkyv",
+ "secp256k1 0.30.0",
+ "serde",
+ "serde_json",
+ "sha2",
+ "sha3",
+ "thiserror 2.0.17",
+ "tinyvec",
+ "tracing",
+ "url",
+]
+
+[[package]]
+name = "ethrex-common"
+version = "0.1.0"
 source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
  "bytes",
  "c-kzg",
  "crc32fast",
  "ethereum-types 0.15.1",
- "ethrex-rlp",
- "ethrex-trie",
+ "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-trie 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "hex",
  "kzg-rs",
  "lazy_static",
@@ -2327,12 +2375,17 @@ name = "ethrex-config"
 version = "0.1.0"
 source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
- "ethrex-common",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "ethrex-p2p",
  "hex",
  "serde",
  "serde_json",
 ]
+
+[[package]]
+name = "ethrex-crypto"
+version = "0.1.0"
+source = "git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025#b721f57e935bfa062a1e8593dcd5da975f0584c4"
 
 [[package]]
 name = "ethrex-crypto"
@@ -2377,22 +2430,22 @@ dependencies = [
  "envy",
  "ethereum-types 0.15.1",
  "ethers",
- "ethrex-blockchain",
- "ethrex-common",
+ "ethrex-blockchain 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "ethrex-config",
  "ethrex-dev",
- "ethrex-l2-common",
+ "ethrex-l2-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "ethrex-l2-rpc",
- "ethrex-levm",
- "ethrex-metrics",
+ "ethrex-levm 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-metrics 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "ethrex-p2p",
- "ethrex-rlp",
+ "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "ethrex-rpc",
  "ethrex-sdk",
- "ethrex-storage",
- "ethrex-storage-rollup",
- "ethrex-trie",
- "ethrex-vm",
+ "ethrex-storage 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-storage-rollup 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-trie 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-vm 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "futures",
  "guest_program",
  "hex",
@@ -2421,15 +2474,34 @@ dependencies = [
 [[package]]
 name = "ethrex-l2-common"
 version = "0.1.0"
+source = "git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025#b721f57e935bfa062a1e8593dcd5da975f0584c4"
+dependencies = [
+ "bytes",
+ "ethereum-types 0.15.1",
+ "ethrex-common 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "ethrex-rlp 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "ethrex-storage 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "ethrex-trie 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "ethrex-vm 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "lambdaworks-crypto 0.11.0",
+ "secp256k1 0.30.0",
+ "serde",
+ "sha3",
+ "thiserror 2.0.17",
+]
+
+[[package]]
+name = "ethrex-l2-common"
+version = "0.1.0"
 source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
  "bytes",
  "ethereum-types 0.15.1",
- "ethrex-common",
- "ethrex-rlp",
- "ethrex-storage",
- "ethrex-trie",
- "ethrex-vm",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-storage 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-trie 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-vm 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "lambdaworks-crypto 0.11.0",
  "secp256k1 0.30.0",
  "serde",
@@ -2445,14 +2517,14 @@ dependencies = [
  "axum",
  "bytes",
  "ethereum-types 0.15.1",
- "ethrex-blockchain",
- "ethrex-common",
- "ethrex-l2-common",
+ "ethrex-blockchain 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-l2-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "ethrex-p2p",
- "ethrex-rlp",
+ "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "ethrex-rpc",
- "ethrex-storage",
- "ethrex-storage-rollup",
+ "ethrex-storage 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-storage-rollup 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "hex",
  "reqwest 0.12.23",
  "rustc-hex",
@@ -2470,6 +2542,37 @@ dependencies = [
 [[package]]
 name = "ethrex-levm"
 version = "0.1.0"
+source = "git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025#b721f57e935bfa062a1e8593dcd5da975f0584c4"
+dependencies = [
+ "ark-bn254",
+ "ark-ec",
+ "ark-ff",
+ "bls12_381",
+ "bytes",
+ "datatest-stable",
+ "derive_more 1.0.0",
+ "ethrex-common 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "ethrex-crypto 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "ethrex-rlp 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "k256",
+ "lambdaworks-math 0.11.0",
+ "lazy_static",
+ "malachite",
+ "p256",
+ "ripemd",
+ "secp256k1 0.30.0",
+ "serde",
+ "serde_json",
+ "sha2",
+ "sha3",
+ "strum 0.27.2",
+ "thiserror 2.0.17",
+ "walkdir",
+]
+
+[[package]]
+name = "ethrex-levm"
+version = "0.1.0"
 source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
  "ark-bn254",
@@ -2479,9 +2582,9 @@ dependencies = [
  "bytes",
  "datatest-stable",
  "derive_more 1.0.0",
- "ethrex-common",
- "ethrex-crypto",
- "ethrex-rlp",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-crypto 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "k256",
  "lambdaworks-math 0.11.0",
  "lazy_static",
@@ -2501,9 +2604,21 @@ dependencies = [
 [[package]]
 name = "ethrex-metrics"
 version = "0.1.0"
+source = "git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025#b721f57e935bfa062a1e8593dcd5da975f0584c4"
+dependencies = [
+ "ethrex-common 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.17",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "ethrex-metrics"
+version = "0.1.0"
 source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
- "ethrex-common",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "serde",
  "serde_json",
  "thiserror 2.0.17",
@@ -2513,7 +2628,7 @@ dependencies = [
 [[package]]
 name = "ethrex-p2p"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
+source = "git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025#b721f57e935bfa062a1e8593dcd5da975f0584c4"
 dependencies = [
  "aes",
  "async-trait",
@@ -2521,12 +2636,12 @@ dependencies = [
  "concat-kdf",
  "ctr",
  "ethereum-types 0.15.1",
- "ethrex-blockchain",
- "ethrex-common",
- "ethrex-rlp",
- "ethrex-storage",
- "ethrex-storage-rollup",
- "ethrex-trie",
+ "ethrex-blockchain 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "ethrex-common 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "ethrex-rlp 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "ethrex-storage 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "ethrex-storage-rollup 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "ethrex-trie 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
  "futures",
  "hex",
  "hmac",
@@ -2560,14 +2675,14 @@ dependencies = [
  "cfg-if 1.0.3",
  "clap",
  "ethereum-types 0.15.1",
- "ethrex-blockchain",
- "ethrex-common",
+ "ethrex-blockchain 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "ethrex-l2",
- "ethrex-l2-common",
- "ethrex-rlp",
+ "ethrex-l2-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "ethrex-sdk",
- "ethrex-storage",
- "ethrex-vm",
+ "ethrex-storage 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-vm 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "guest_program",
  "hex",
  "kzg-rs",
@@ -2580,6 +2695,20 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "url",
+]
+
+[[package]]
+name = "ethrex-rlp"
+version = "0.1.0"
+source = "git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025#b721f57e935bfa062a1e8593dcd5da975f0584c4"
+dependencies = [
+ "bytes",
+ "ethereum-types 0.15.1",
+ "hex",
+ "lazy_static",
+ "snap",
+ "thiserror 2.0.17",
+ "tinyvec",
 ]
 
 [[package]]
@@ -2607,13 +2736,13 @@ dependencies = [
  "cfg-if 1.0.3",
  "envy",
  "ethereum-types 0.15.1",
- "ethrex-blockchain",
- "ethrex-common",
+ "ethrex-blockchain 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "ethrex-p2p",
- "ethrex-rlp",
- "ethrex-storage",
- "ethrex-trie",
- "ethrex-vm",
+ "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-storage 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-trie 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-vm 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "hex",
  "jsonwebtoken 9.3.1",
  "rand 0.8.5",
@@ -2639,10 +2768,10 @@ source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c912
 dependencies = [
  "bytes",
  "ethereum-types 0.15.1",
- "ethrex-common",
- "ethrex-l2-common",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-l2-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "ethrex-l2-rpc",
- "ethrex-rlp",
+ "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "ethrex-rpc",
  "ethrex-sdk-contract-utils",
  "eyre",
@@ -2670,6 +2799,27 @@ dependencies = [
 [[package]]
 name = "ethrex-storage"
 version = "0.1.0"
+source = "git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025#b721f57e935bfa062a1e8593dcd5da975f0584c4"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bincode",
+ "bytes",
+ "ethereum-types 0.15.1",
+ "ethrex-common 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "ethrex-rlp 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "ethrex-trie 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "hex",
+ "serde",
+ "serde_json",
+ "sha3",
+ "thiserror 2.0.17",
+ "tracing",
+]
+
+[[package]]
+name = "ethrex-storage"
+version = "0.1.0"
 source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
  "anyhow",
@@ -2677,9 +2827,9 @@ dependencies = [
  "bincode",
  "bytes",
  "ethereum-types 0.15.1",
- "ethrex-common",
- "ethrex-rlp",
- "ethrex-trie",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-trie 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "hex",
  "libmdbx",
  "serde",
@@ -2693,18 +2843,57 @@ dependencies = [
 [[package]]
 name = "ethrex-storage-rollup"
 version = "0.1.0"
+source = "git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025#b721f57e935bfa062a1e8593dcd5da975f0584c4"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bincode",
+ "ethereum-types 0.15.1",
+ "ethrex-common 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "ethrex-l2-common 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "ethrex-rlp 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "ethrex-storage 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "ethrex-trie 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "futures",
+ "thiserror 2.0.17",
+ "tracing",
+]
+
+[[package]]
+name = "ethrex-storage-rollup"
+version = "0.1.0"
 source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
  "anyhow",
  "async-trait",
  "bincode",
  "ethereum-types 0.15.1",
- "ethrex-common",
- "ethrex-l2-common",
- "ethrex-rlp",
- "ethrex-storage",
- "ethrex-trie",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-l2-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-storage 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-trie 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "futures",
+ "thiserror 2.0.17",
+ "tracing",
+]
+
+[[package]]
+name = "ethrex-trie"
+version = "0.1.0"
+source = "git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025#b721f57e935bfa062a1e8593dcd5da975f0584c4"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "digest",
+ "ethereum-types 0.15.1",
+ "ethrex-rlp 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "hex",
+ "lazy_static",
+ "serde",
+ "serde_json",
+ "sha3",
+ "smallvec",
  "thiserror 2.0.17",
  "tracing",
 ]
@@ -2718,7 +2907,7 @@ dependencies = [
  "bytes",
  "digest",
  "ethereum-types 0.15.1",
- "ethrex-rlp",
+ "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "hex",
  "lazy_static",
  "libmdbx",
@@ -2726,6 +2915,30 @@ dependencies = [
  "serde_json",
  "sha3",
  "smallvec",
+ "thiserror 2.0.17",
+ "tracing",
+]
+
+[[package]]
+name = "ethrex-vm"
+version = "0.1.0"
+source = "git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025#b721f57e935bfa062a1e8593dcd5da975f0584c4"
+dependencies = [
+ "bincode",
+ "bytes",
+ "cfg-if 1.0.3",
+ "derive_more 1.0.0",
+ "dyn-clone",
+ "ethereum-types 0.15.1",
+ "ethrex-common 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "ethrex-levm 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "ethrex-rlp 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "ethrex-trie 0.1.0 (git+https://github.com/sfroment/ethrex?tag=patch-with-mojave-p2p-01-10-2025)",
+ "hex",
+ "lazy_static",
+ "rkyv",
+ "serde",
+ "sha3",
  "thiserror 2.0.17",
  "tracing",
 ]
@@ -2741,10 +2954,10 @@ dependencies = [
  "derive_more 1.0.0",
  "dyn-clone",
  "ethereum-types 0.15.1",
- "ethrex-common",
- "ethrex-levm",
- "ethrex-rlp",
- "ethrex-trie",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-levm 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-trie 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "hex",
  "lazy_static",
  "rkyv",
@@ -3121,13 +3334,13 @@ version = "0.1.0"
 source = "git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a#9e1e2b390a11caa7ca10e46c9121d8c32aa3096a"
 dependencies = [
  "bytes",
- "ethrex-blockchain",
- "ethrex-common",
- "ethrex-l2-common",
- "ethrex-rlp",
- "ethrex-storage",
- "ethrex-trie",
- "ethrex-vm",
+ "ethrex-blockchain 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-l2-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-rlp 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-storage 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-trie 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-vm 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "hex",
  "rkyv",
  "serde",
@@ -4314,12 +4527,12 @@ dependencies = [
 name = "mojave-batch-producer"
 version = "0.1.0"
 dependencies = [
- "ethrex-blockchain",
- "ethrex-common",
- "ethrex-l2-common",
- "ethrex-storage",
- "ethrex-storage-rollup",
- "ethrex-vm",
+ "ethrex-blockchain 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-l2-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-storage 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-storage-rollup 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-vm 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "mojave-node-lib",
  "mojave-task",
  "thiserror 2.0.17",
@@ -4343,13 +4556,13 @@ dependencies = [
 name = "mojave-block-producer"
 version = "0.1.0"
 dependencies = [
- "ethrex-blockchain",
- "ethrex-common",
+ "ethrex-blockchain 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "ethrex-l2",
- "ethrex-l2-common",
- "ethrex-storage",
- "ethrex-storage-rollup",
- "ethrex-vm",
+ "ethrex-l2-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-storage 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-storage-rollup 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-vm 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "mojave-node-lib",
  "mojave-task",
  "mojave-utils",
@@ -4377,8 +4590,8 @@ name = "mojave-client"
 version = "0.1.0"
 dependencies = [
  "axum",
- "ethrex-common",
- "ethrex-l2-common",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-l2-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "ethrex-rpc",
  "futures",
  "guest_program",
@@ -4416,12 +4629,12 @@ dependencies = [
  "axum",
  "bytes",
  "clap",
- "ethrex-blockchain",
- "ethrex-common",
+ "ethrex-blockchain 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "ethrex-p2p",
  "ethrex-rpc",
- "ethrex-storage",
- "ethrex-storage-rollup",
+ "ethrex-storage 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-storage-rollup 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "hex",
  "local-ip-address",
  "mojave-client",
@@ -4442,11 +4655,11 @@ dependencies = [
 name = "mojave-proof-coordinator"
 version = "0.1.0"
 dependencies = [
- "ethrex-blockchain",
- "ethrex-common",
+ "ethrex-blockchain 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "ethrex-l2",
- "ethrex-storage",
- "ethrex-storage-rollup",
+ "ethrex-storage 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
+ "ethrex-storage-rollup 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "guest_program",
  "mojave-client",
  "mojave-node-lib",
@@ -4579,7 +4792,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "daemonize",
- "ethrex-common",
+ "ethrex-common 0.1.0 (git+https://github.com/1sixtech/ethrex?rev=9e1e2b390a11caa7ca10e46c9121d8c32aa3096a)",
  "ethrex-p2p",
  "lazy_static",
  "mojave-rpc-core",

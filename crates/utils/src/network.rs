@@ -16,6 +16,7 @@ pub const MAINNET_GENESIS_PATH: &str = "cmd/mojave/networks/mainnet/genesis.json
 const MAINNET_BOOTNODES_PATH: &str = "cmd/mojave/networks/mainnet/bootnodes.json";
 
 fn read_bootnodes(path: &str) -> Vec<Node> {
+    // ethrex_p2p::rlpx::Message
     std::fs::File::open(path)
         .map_err(|e| {
             tracing::warn!(path, error = %e, "Failed to open bootnodes file; using empty list");
