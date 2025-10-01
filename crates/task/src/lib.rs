@@ -30,6 +30,11 @@ async fn works() {
         type Response = Response;
         type Error = Error;
 
+        async fn on_start(&mut self) -> Result<(), Self::Error> {
+            tracing::info!("Starting BlockProducer task");
+            Ok(())
+        }
+
         async fn handle_request(
             &mut self,
             request: Self::Request,

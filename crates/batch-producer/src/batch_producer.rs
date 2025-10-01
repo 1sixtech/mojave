@@ -41,6 +41,11 @@ impl Task for BatchProducer {
     type Response = Option<Batch>;
     type Error = Error;
 
+    async fn on_start(&mut self) -> Result<()> {
+        info!("Starting BatchProducer task");
+        Ok(())
+    }
+
     async fn handle_request(&mut self, request: Self::Request) -> Result<Self::Response> {
         match request {
             Request::BuildBatch => self.build_batch().await,

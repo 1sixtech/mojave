@@ -18,5 +18,6 @@ ethrex-rpc.workspace = true
 
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["derive", "env"] }
+ethrex-rpc.workspace = true
 hex = { workspace = true }
 tracing = { workspace = true }

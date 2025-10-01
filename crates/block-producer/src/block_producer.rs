@@ -56,6 +56,11 @@ impl Task for BlockProducer {
     type Response = Block;
     type Error = crate::error::Error;
 
+    async fn on_start(&mut self) -> Result<()> {
+        info!("Starting BlockProducer task");
+        Ok(())
+    }
+
     async fn handle_request(&mut self, request: Request) -> Result<Self::Response> {
         match request {
             Request::BuildBlock => self.build_block().await,

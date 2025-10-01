@@ -12,10 +12,23 @@ pub trait Task: Sized + 'static {
     type Response: std::fmt::Debug + Send + 'static;
     type Error: std::error::Error + Send + 'static;
 
+    fn name(&self) -> &'static str {
+        std::any::type_name::<Self>()
+    }
+
+    async fn on_start(&mut self) -> Result<(), Self::Error>;
+
     async fn handle_request(
         &mut self,
         request: Self::Request,
     ) -> Result<Self::Response, Self::Error>;
+
+    async fn on_request_started(&mut self, _req: &Self::Request) {
+        async {}
+    }
+    async fn on_request_finished(&mut self, _res: &Result<Self::Response, Self::Error>) {
+        async {}
+    }
 
     async fn on_shutdown(&mut self) -> Result<(), Self::Error>;
 

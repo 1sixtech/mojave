@@ -27,11 +27,20 @@ impl<T: Task + 'static> TaskRunner<T> {
     }
 
     pub async fn listen(&mut self) {
+        if let Err(error) = self.task.on_start().await {
+            tracing::error!(
+                "Error while start task '{}'. Message: {}",
+                self.task.name(),
+                error
+            )
+        }
         loop {
             tokio::select! {
                 request = self.request.recv() => {
                     if let Some((request, sender)) = request {
+                        self.task.on_request_started(&request).await;
                         let response = self.task.handle_request(request).await;
+                        self.task.on_request_finished(&response).await;
                         let _ = sender.send(response);
                     }
                 }

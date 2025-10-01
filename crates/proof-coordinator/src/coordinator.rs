@@ -158,6 +158,11 @@ impl mojave_task::Task for ProofCoordinator {
     type Response = Response;
     type Error = Error;
 
+    async fn on_start(&mut self) -> Result<()> {
+        tracing::info!("Starting ProofCoordinator task");
+        Ok(())
+    }
+
     async fn handle_request(&mut self, request: Self::Request) -> Result<Self::Response> {
         match request {
             Request::ProcessBatch(batch_number) => {
