@@ -93,7 +93,7 @@ upgrade-networking:
     
     git fetch $REMOTE_NAME $REMOTE_BRANCH:p2p-branch
     git subtree split --prefix=crates/networking/p2p p2p-branch -b networking-split
-    git subtree add --prefix=crates/p2p ../ethrex-p2p networking-split --squash
+    git subtree pull --prefix=crates/p2p ../ethrex-p2p networking-split --squash
 
 # Upgrade any tooling
 upgrade:
