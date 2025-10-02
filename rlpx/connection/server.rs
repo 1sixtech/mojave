@@ -54,6 +54,7 @@ use crate::{
             },
         },
         message::EthCapVersion,
+        mojave::connection::handle_mojave_capability_message,
         p2p::{
             self, Capability, DisconnectMessage, DisconnectReason, PingMessage, PongMessage,
             SUPPORTED_ETH_CAPABILITIES, SUPPORTED_SNAP_CAPABILITIES,
@@ -934,6 +935,9 @@ async fn handle_peer_message(state: &mut Established, message: Message) -> Resul
         }
         Message::L2(req) if peer_supports_l2 => {
             handle_based_capability_message(state, req).await?;
+        }
+        Message::Mojave(req) => {
+            handle_mojave_capability_message(state, req).await?;
         }
         // Send response messages to the backend
         message @ Message::AccountRange(_)

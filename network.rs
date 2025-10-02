@@ -4,9 +4,11 @@ use crate::{
     metrics::METRICS,
     rlpx::{
         connection::server::{RLPxConnBroadcastSender, RLPxConnection},
+        error::RLPxError,
         initiator::RLPxInitiator,
         l2::l2_connection::P2PBasedContext,
         message::Message,
+        mojave::messages::{MojaveMessage, MojavePayload},
         p2p::SUPPORTED_SNAP_CAPABILITIES,
     },
     tx_broadcaster::{TxBroadcaster, TxBroadcasterError},
@@ -86,6 +88,17 @@ impl P2PContext {
             tx_broadcaster,
         })
     }
+
+    pub fn broadcast_mojave_message(&self, payload: MojavePayload) -> Result<(), NetworkError> {
+        let task_id = tokio::task::id();
+        let message = MojaveMessage::from_payload(&payload)?;
+        self.broadcast
+            .send((task_id, Message::Mojave(message).into()))
+            .map_err(|_| {
+                RLPxError::BroadcastError("Could not broadcast mojave message".to_owned())
+            })?;
+        Ok(())
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -94,6 +107,8 @@ pub enum NetworkError {
     DiscoveryServerError(#[from] DiscoveryServerError),
     #[error("Failed to start Tx Broadcaster: {0}")]
     TxBroadcasterError(#[from] TxBroadcasterError),
+    #[error("RLPx error: {0}")]
+    RLPx(#[from] RLPxError),
 }
 
 pub fn peer_table() -> Kademlia {
