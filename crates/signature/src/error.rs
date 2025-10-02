@@ -36,6 +36,10 @@ pub enum EcdsaError {
 pub enum EcdsaErrorKind {
     #[error("{0}")]
     Secp256k1(#[from] secp256k1::Error),
+    // #[error("{0}")]
+    // BincodeDecodeError(#[from] bincode::error::DecodeError),
+    // #[error("{0}")]
+    // BincodeEncodeError(#[from] bincode::error::EncodeError),
     #[error("{0}")]
     Bincode(#[from] bincode::Error),
     #[error("{0}")]

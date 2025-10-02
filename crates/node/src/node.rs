@@ -23,7 +23,7 @@ use tokio_util::task::TaskTracker;
 
 impl MojaveNode {
     pub async fn init(options: &NodeOptions) -> Result<Self> {
-        let data_dir = resolve_data_dir(&options.datadir).await?;
+        let (data_dir, data_dir_str) = resolve_data_dir(&options.datadir).await?;
         tracing::info!("Data directory resolved to: {:?}", data_dir);
 
         if options.force {
@@ -35,7 +35,7 @@ impl MojaveNode {
 
         let genesis = options.network.get_genesis()?;
 
-        let store = init_store(&data_dir, genesis.clone()).await?;
+        let store = init_store(&data_dir_str, genesis.clone()).await?;
         tracing::info!("Successfully initialized the database.");
 
         let rollup_store = StoreRollup::new(&data_dir, EngineTypeRollup::InMemory)?;
@@ -46,7 +46,7 @@ impl MojaveNode {
 
         let cancel_token = tokio_util::sync::CancellationToken::new();
 
-        let signer = get_signer(&data_dir).await?;
+        let signer = get_signer(&data_dir_str).await?;
 
         let local_p2p_node = get_local_p2p_node(
             &options.discovery_addr,
@@ -57,7 +57,7 @@ impl MojaveNode {
         )
         .await?;
         let local_node_record = Arc::new(Mutex::new(
-            get_local_node_record(&data_dir, &local_p2p_node, &signer).await?,
+            get_local_node_record(&data_dir_str, &local_p2p_node, &signer).await?,
         ));
 
         let peer_table = peer_table();
@@ -74,7 +74,7 @@ impl MojaveNode {
         start_network(
             options.bootnodes.clone(),
             &options.network,
-            &data_dir,
+            &data_dir_str,
             local_p2p_node.clone(),
             local_node_record.clone(),
             signer,
@@ -100,7 +100,7 @@ impl MojaveNode {
         );
 
         Ok(MojaveNode {
-            data_dir,
+            data_dir: data_dir_str.to_string(),
             genesis,
             store,
             rollup_store,

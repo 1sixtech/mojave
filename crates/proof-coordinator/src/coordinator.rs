@@ -97,7 +97,7 @@ impl ProofCoordinator {
 
         let blocks = self.fetch_blocks(block_numbers).await?;
 
-        let witness = self
+        let execution_witness = self
             .blockchain
             .generate_witness_for_blocks(&blocks)
             .await
@@ -125,7 +125,7 @@ impl ProofCoordinator {
         Ok(ProverData {
             batch_number,
             input: ProgramInput {
-                db: witness,
+                execution_witness,
                 blocks,
                 blob_commitment,
                 blob_proof,

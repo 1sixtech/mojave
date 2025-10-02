@@ -89,7 +89,7 @@ pub fn generate_jwt_secret() -> String {
     hex::encode(secret)
 }
 
-pub async fn resolve_data_dir(data_dir: &str) -> Result<String> {
+pub async fn resolve_data_dir(data_dir: &str) -> Result<(PathBuf, String)> {
     let path = match std::env::home_dir() {
         Some(home) => home.join(data_dir),
         None => PathBuf::from(".").join(data_dir),
@@ -102,8 +102,9 @@ pub async fn resolve_data_dir(data_dir: &str) -> Result<String> {
 
     let s = path
         .to_str()
-        .ok_or_else(|| Error::Custom("Invalid UTF-8 in data directory".to_string()))?;
-    Ok(s.to_owned())
+        .ok_or_else(|| Error::Custom("Invalid UTF-8 in data directory".to_string()))?
+        .to_owned();
+    Ok((path, s))
 }
 
 pub async fn get_bootnodes(bootnodes: Vec<Node>, network: &Network, data_dir: &str) -> Vec<Node> {
@@ -273,7 +274,7 @@ mod tests {
         );
         let data_dir = format!("{suffix}/child");
 
-        let full = resolve_data_dir(&data_dir).await.expect("ok");
+        let (_, full) = resolve_data_dir(&data_dir).await.expect("ok");
         // the full is in the form of $HOME/…/suffix/child
         let full_path = PathBuf::from(&full);
         let parent = full_path.parent().expect("has parent");

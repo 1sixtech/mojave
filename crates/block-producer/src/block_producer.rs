@@ -17,9 +17,9 @@ use ethrex_common::{
     Address, Bloom, Bytes, H256, U256,
     constants::{DEFAULT_OMMERS_HASH, DEFAULT_REQUESTS_HASH},
     types::{
-        Block, BlockBody, BlockHeader, ELASTICITY_MULTIPLIER, Receipt, SAFE_BYTES_PER_BLOB,
-        Transaction, calc_excess_blob_gas, calculate_base_fee_per_gas, compute_receipts_root,
-        compute_transactions_root, compute_withdrawals_root,
+        Block, BlockBody, BlockHeader, DEFAULT_BUILDER_GAS_CEIL, ELASTICITY_MULTIPLIER, Receipt,
+        SAFE_BYTES_PER_BLOB, Transaction, calc_excess_blob_gas, calculate_base_fee_per_gas,
+        compute_receipts_root, compute_transactions_root, compute_withdrawals_root,
     },
 };
 use ethrex_l2::sequencer::errors::BlockProducerError;
@@ -97,6 +97,7 @@ impl BlockProducer {
 
         // Proposer creates a new payload
         let args = BuildPayloadArgs {
+            gas_ceil: DEFAULT_BUILDER_GAS_CEIL,
             parent: head_hash,
             timestamp: SystemTime::now()
                 .duration_since(SystemTime::UNIX_EPOCH)?
@@ -169,16 +170,11 @@ impl BlockProducer {
             .get_block_header_by_hash(args.parent)?
             .ok_or_else(|| ChainError::ParentNotFound)?;
         let chain_config = self.store.get_chain_config()?;
-        let gas_limit = calc_gas_limit(parent_block.gas_limit);
+        let fork = chain_config.fork(args.timestamp);
+        let gas_limit = calc_gas_limit(parent_block.gas_limit, DEFAULT_BUILDER_GAS_CEIL);
         let excess_blob_gas = chain_config
             .get_fork_blob_schedule(args.timestamp)
-            .map(|schedule| {
-                calc_excess_blob_gas(
-                    parent_block.excess_blob_gas.unwrap_or_default(),
-                    parent_block.blob_gas_used.unwrap_or_default(),
-                    schedule.target,
-                )
-            });
+            .map(|schedule| calc_excess_blob_gas(&parent_block, schedule, fork));
 
         let header = BlockHeader {
             parent_hash: args.parent,
@@ -239,7 +235,7 @@ impl BlockProducer {
 
         debug!("Building payload");
         let mut context =
-            PayloadBuildContext::new(payload, &self.store, self.blockchain.r#type.clone())?;
+            PayloadBuildContext::new(payload, &self.store, self.blockchain.options.r#type.clone())?;
 
         self.fill_transactions(&mut context).await?;
         self.blockchain.finalize_payload(&mut context).await?;

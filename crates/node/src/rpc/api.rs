@@ -3,7 +3,7 @@ use crate::{
     rpc::{context::RpcApiContext, tasks::spawn_filter_cleanup_task},
 };
 use ethrex_blockchain::Blockchain;
-use ethrex_common::Bytes;
+use ethrex_common::{Bytes, types::DEFAULT_BUILDER_GAS_CEIL};
 use ethrex_p2p::{
     peer_handler::PeerHandler,
     sync_manager::SyncManager,
@@ -43,6 +43,7 @@ pub async fn start_api(
     let active_filters = Arc::new(Mutex::new(HashMap::new()));
     let context = RpcApiContext {
         l1_context: L1Context {
+            gas_ceil: DEFAULT_BUILDER_GAS_CEIL,
             storage,
             blockchain,
             active_filters: active_filters.clone(),
@@ -53,6 +54,7 @@ pub async fn start_api(
                 local_p2p_node,
                 local_node_record,
                 client_version,
+                extra_data: Bytes::new(),
             },
             gas_tip_estimator: Arc::new(TokioMutex::new(GasTipEstimator::new())),
             log_filter_handler: None,

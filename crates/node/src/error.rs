@@ -39,4 +39,6 @@ pub enum Error {
     Store(#[from] ethrex_storage::error::StoreError),
     #[error(transparent)]
     StoreRollup(#[from] RollupStoreError),
+    #[error(transparent)]
+    NodeError(#[from] ethrex_p2p::types::NodeError),
 }
