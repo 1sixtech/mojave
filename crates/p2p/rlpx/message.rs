@@ -2,6 +2,7 @@ use bytes::BufMut;
 use ethrex_rlp::error::{RLPDecodeError, RLPEncodeError};
 use std::fmt::Display;
 
+use crate::rlpx::mojave::messages::MojaveMessage;
 use crate::rlpx::snap::{
     AccountRange, ByteCodes, GetAccountRange, GetByteCodes, GetStorageRanges, GetTrieNodes,
     StorageRanges, TrieNodes,
@@ -25,6 +26,7 @@ const SNAP_CAPABILITY_OFFSET_ETH_68: u8 = 0x21;
 const SNAP_CAPABILITY_OFFSET_ETH_69: u8 = 0x22;
 const BASED_CAPABILITY_OFFSET_ETH_68: u8 = 0x30;
 const BASED_CAPABILITY_OFFSET_ETH_69: u8 = 0x31;
+const MOJABE_CAPABILITY_OFFSET: u8 = 0x40;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub enum EthCapVersion {
@@ -94,6 +96,8 @@ pub enum Message {
     TrieNodes(TrieNodes),
     // based capability
     L2(messages::L2Message),
+    // mojave capability
+    Mojave(MojaveMessage),
 }
 
 impl Message {
@@ -154,6 +158,9 @@ impl Message {
                     }
                 }
             }
+
+            // mojave capability
+            Message::Mojave(_) => MOJABE_CAPABILITY_OFFSET + MojaveMessage::CODE,
         }
     }
     pub fn decode(
@@ -225,7 +232,7 @@ impl Message {
                 TrieNodes::CODE => Ok(Message::TrieNodes(TrieNodes::decode(data)?)),
                 _ => Err(RLPDecodeError::MalformedData),
             }
-        } else {
+        } else if msg_id < MOJABE_CAPABILITY_OFFSET {
             // based capability
             Ok(Message::L2(
                 match msg_id - eth_version.based_capability_offset() {
@@ -240,6 +247,8 @@ impl Message {
                     _ => return Err(RLPDecodeError::MalformedData),
                 },
             ))
+        } else {
+            Ok(Message::Mojave(MojaveMessage::decode(data)?))
         }
     }
 
@@ -280,6 +289,7 @@ impl Message {
                 L2Message::BatchSealed(msg) => msg.encode(buf),
                 L2Message::NewBlock(msg) => msg.encode(buf),
             },
+            Message::Mojave(msg) => msg.encode(buf),
         }
     }
 }
@@ -317,6 +327,7 @@ impl Display for Message {
                 L2Message::BatchSealed(_) => "based:BatchSealed".fmt(f),
                 L2Message::NewBlock(_) => "based:NewBlock".fmt(f),
             },
+            Message::Mojave(_) => "mojave:Message".fmt(f),
         }
     }
 }
