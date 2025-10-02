@@ -80,6 +80,25 @@ fix flags="":
 upgrade-ethrex:
 	./scripts/update_ethrex_rev.sh
 
+upgrade-networking:
+    #!/usr/bin/env bash
+    REMOTE_NAME=1sixethrex
+    REMOTE_URL=git@github.com:1sixtech/ethrex
+    REMOTE_BRANCH=dh-mojave-p2p
+    CURRENT_DIR=$(pwd)
+
+    if ! git remote | grep -q "^$REMOTE_NAME"; then
+      git remote add $REMOTE_NAME $REMOTE_URL
+    fi
+    
+    echo "    git fetch $REMOTE_NAME $REMOTE_BRANCH:p2p-branch"
+    git fetch $REMOTE_NAME $REMOTE_BRANCH:p2p-branch
+    git worktree add ../ethrex-p2p p2p-branch
+    cd ../ethrex-p2p
+    git subtree split --prefix=crates/networking/p2p p2p-branch -b networking-split
+    cd $CURRENT_DIR
+    git subtree add --prefix=crates/p2p ../ethrex-p2p networking-split --squash
+
 # Upgrade any tooling
 upgrade:
 	# Update any patch versions
