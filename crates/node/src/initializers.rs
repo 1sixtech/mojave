@@ -1,9 +1,6 @@
-use crate::{
-    error::{Error, Result},
-    utils::read_node_config_file_async,
-};
+use crate::{error::Result, utils::read_node_config_file_async};
 
-use ethrex_blockchain::{Blockchain, BlockchainType};
+use ethrex_blockchain::{Blockchain, BlockchainOptions, BlockchainType};
 use ethrex_common::types::Genesis;
 use ethrex_p2p::types::{Node, NodeRecord};
 use ethrex_storage::{EngineType, Store};
@@ -44,7 +41,11 @@ pub fn open_store(data_dir: &str) -> Result<Store> {
 
 pub fn init_blockchain(store: Store, blockchain_type: BlockchainType) -> Arc<Blockchain> {
     info!("Initiating blockchain");
-    Blockchain::new(store, blockchain_type, false).into()
+    let options = BlockchainOptions {
+        r#type: blockchain_type,
+        ..Default::default()
+    };
+    Blockchain::new(store, options).into()
 }
 
 pub async fn get_signer(data_dir: &str) -> Result<SecretKey> {
@@ -78,18 +79,17 @@ pub async fn get_local_node_record(
     let config_file = PathBuf::from(data_dir.to_owned() + "/node_config.json");
 
     match read_node_config_file_async(config_file).await {
-        Ok(ref mut config) => {
-            Ok(
-                NodeRecord::from_node(local_p2p_node, config.node_record.seq + 1, signer)
-                    .map_err(Error::Custom)?,
-            )
-        }
+        Ok(ref mut config) => Ok(NodeRecord::from_node(
+            local_p2p_node,
+            config.node_record.seq + 1,
+            signer,
+        )?),
         Err(_) => {
             let timestamp = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap_or_default()
                 .as_secs();
-            Ok(NodeRecord::from_node(local_p2p_node, timestamp, signer).map_err(Error::Custom)?)
+            Ok(NodeRecord::from_node(local_p2p_node, timestamp, signer)?)
         }
     }
 }
