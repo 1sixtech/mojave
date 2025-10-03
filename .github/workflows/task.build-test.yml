@@ -6,11 +6,38 @@ on:
 
 jobs:
   test:
+    name: coverage test
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        fail_under: [60]
+
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo test --workspace
+
+      - name: Add llvm-tools
+        run: rustup component add llvm-tools-preview
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ci
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-llvm-cov
+
+      - name: Run coverage (gate)
+        run: |
+          set -euo pipefail
+          cargo llvm-cov \
+            --workspace \
+            --all-features \
+            --fail-under-lines ${{ matrix.fail_under }}
