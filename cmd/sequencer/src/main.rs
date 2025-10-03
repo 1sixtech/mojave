@@ -2,8 +2,10 @@ pub mod cli;
 
 use crate::cli::Command;
 use anyhow::Result;
+use std::sync::Arc;
 
 use mojave_batch_producer::{BatchProducer, types::Request as BatchProducerRequest};
+use mojave_batch_submitter::queue::NoOpBatchQueue;
 use mojave_block_producer::{
     BlockProducer,
     types::{BlockProducerOptions, Request as BlockProducerRequest},
@@ -54,7 +56,8 @@ fn main() -> Result<()> {
                     .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
                 let cancel_token = node.cancel_token.clone();
 
-                let batch_producer = BatchProducer::new(node.clone(), 0);
+                let batch_queue = Arc::new(NoOpBatchQueue::new());
+                let batch_producer = BatchProducer::new(node.clone(), 0, batch_queue);
                 let block_producer = BlockProducer::new(node.clone());
                 let proof_coordinator = ProofCoordinator::new(node.clone(), &node_options, &proof_coordinator_options)?;
 

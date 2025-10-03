@@ -9,6 +9,7 @@ repository = { workspace = true }
 documentation = { workspace = true }
 
 [dependencies]
+mojave-batch-submitter = { workspace = true }
 mojave-node-lib = { workspace = true }
 mojave-task = { workspace = true }
 
