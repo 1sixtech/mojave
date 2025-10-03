@@ -56,17 +56,17 @@ mojave-task = { path = "crates/task" }
 mojave-tests = { path = "crates/tests" }
 mojave-utils = { path = "crates/utils" }
 
-ethrex-blockchain = { git = "https://github.com/1sixtech/ethrex", rev = "9e1e2b390a11caa7ca10e46c9121d8c32aa3096a", default-features = false }
-ethrex-common = { git = "https://github.com/1sixtech/ethrex", rev = "9e1e2b390a11caa7ca10e46c9121d8c32aa3096a" }
-ethrex-l2 = { git = "https://github.com/1sixtech/ethrex", rev = "9e1e2b390a11caa7ca10e46c9121d8c32aa3096a", default-features = false }
-ethrex-l2-common = { git = "https://github.com/1sixtech/ethrex", rev = "9e1e2b390a11caa7ca10e46c9121d8c32aa3096a", default-features = false }
-ethrex-p2p = { git = "https://github.com/1sixtech/ethrex", rev = "9e1e2b390a11caa7ca10e46c9121d8c32aa3096a" }
-ethrex-prover = { git = "https://github.com/1sixtech/ethrex", rev = "9e1e2b390a11caa7ca10e46c9121d8c32aa3096a" }
-ethrex-rpc = { git = "https://github.com/1sixtech/ethrex", rev = "9e1e2b390a11caa7ca10e46c9121d8c32aa3096a", default-features = false }
-ethrex-storage = { git = "https://github.com/1sixtech/ethrex", rev = "9e1e2b390a11caa7ca10e46c9121d8c32aa3096a" }
-ethrex-storage-rollup = { git = "https://github.com/1sixtech/ethrex", rev = "9e1e2b390a11caa7ca10e46c9121d8c32aa3096a", default-features = false }
-ethrex-vm = { git = "https://github.com/1sixtech/ethrex", rev = "9e1e2b390a11caa7ca10e46c9121d8c32aa3096a", default-features = false }
-guest_program = { git = "https://github.com/1sixtech/ethrex", rev = "9e1e2b390a11caa7ca10e46c9121d8c32aa3096a", default-features = false }
+ethrex-blockchain = { git = "https://github.com/1sixtech/ethrex", branch = "dh-mojave-p2p", default-features = false }
+ethrex-common = { git = "https://github.com/1sixtech/ethrex", branch = "dh-mojave-p2p" }
+ethrex-l2 = { git = "https://github.com/1sixtech/ethrex", branch = "dh-mojave-p2p", default-features = false }
+ethrex-l2-common = { git = "https://github.com/1sixtech/ethrex", branch = "dh-mojave-p2p", default-features = false }
+ethrex-p2p = { git = "https://github.com/1sixtech/ethrex", branch = "dh-mojave-p2p", default-features = false }
+ethrex-prover = { git = "https://github.com/1sixtech/ethrex", branch = "dh-mojave-p2p" }
+ethrex-rpc = { git = "https://github.com/1sixtech/ethrex", branch = "dh-mojave-p2p", default-features = false }
+ethrex-storage = { git = "https://github.com/1sixtech/ethrex", branch = "dh-mojave-p2p" }
+ethrex-storage-rollup = { git = "https://github.com/1sixtech/ethrex", branch = "dh-mojave-p2p", default-features = false }
+ethrex-vm = { git = "https://github.com/1sixtech/ethrex", branch = "dh-mojave-p2p", default-features = false }
+guest_program = { git = "https://github.com/1sixtech/ethrex", branch = "dh-mojave-p2p", default-features = false }
 
 anyhow = { version = "1.0" }
 axum = { version = "0.8" }
@@ -100,18 +100,3 @@ tower-http = { version = "0.6.2", default-features = false }
 tracing = "0.1"
 tracing-subscriber = "0.3"
 zeromq = { version = "0.4", default-features = false }
-
-[patch."https://github.com/1sixtech/ethrex"]
-# There it is needed to make it come from a fork of 1sixtech as it's a limitation of cargo, cargo do not allow you to patch with the same repo
-# nevertheless this tag is also pushed in 1sixtech/ethrex
-ethrex-p2p = { git = "https://github.com/sfroment/ethrex", tag = "patch-with-mojave-p2p-01-10-2025" }
-ethrex-blockchain = { git = "https://github.com/sfroment/ethrex", tag = "patch-with-mojave-p2p-01-10-2025", default-features = false }
-ethrex-common = { git = "https://github.com/sfroment/ethrex", tag = "patch-with-mojave-p2p-01-10-2025" }
-ethrex-l2 = { git = "https://github.com/sfroment/ethrex", tag = "patch-with-mojave-p2p-01-10-2025", default-features = false }
-ethrex-l2-common = { git = "https://github.com/sfroment/ethrex", tag = "patch-with-mojave-p2p-01-10-2025", default-features = false }
-ethrex-prover = { git = "https://github.com/sfroment/ethrex", tag = "patch-with-mojave-p2p-01-10-2025" }
-ethrex-rpc = { git = "https://github.com/sfroment/ethrex", tag = "patch-with-mojave-p2p-01-10-2025", default-features = false }
-ethrex-storage = { git = "https://github.com/sfroment/ethrex", tag = "patch-with-mojave-p2p-01-10-2025" }
-ethrex-storage-rollup = { git = "https://github.com/sfroment/ethrex", tag = "patch-with-mojave-p2p-01-10-2025", default-features = false }
-ethrex-vm = { git = "https://github.com/sfroment/ethrex", tag = "patch-with-mojave-p2p-01-10-2025", default-features = false }
-guest_program = { git = "https://github.com/sfroment/ethrex", tag = "patch-with-mojave-p2p-01-10-2025", default-features = false }
