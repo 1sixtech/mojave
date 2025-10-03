@@ -9,6 +9,12 @@ repository = { workspace = true }
 documentation = { workspace = true }
 
 [dependencies]
+bitcoin = { workspace = true, features = ["std", "secp-recovery"] }
+bitcoincore-rpc = { workspace = true }
+rand = { workspace = true }
+# TODO: make sure when we update bitcoin that this is still needed
+# this is mandatory to handle 2 version of secp256k1 as bitcoin lib await this version right now
+secp256k1 = { version = "0.29", features = ["global-context", "std"] }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["sync"] }
 tracing = { workspace = true }

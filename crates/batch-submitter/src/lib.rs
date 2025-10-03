@@ -1,3 +1,4 @@
+pub mod builder;
 pub mod committer;
 pub mod error;
 pub mod notifier;

@@ -1,4 +1,7 @@
-use crate::error::{Error, Result};
+use crate::{
+    error::{Error, Result},
+    types::Request,
+};
 use ethrex_blockchain::{
     Blockchain,
     constants::TX_GAS_COST,
@@ -14,9 +17,9 @@ use ethrex_common::{
     Address, Bloom, Bytes, H256, U256,
     constants::{DEFAULT_OMMERS_HASH, DEFAULT_REQUESTS_HASH},
     types::{
-        Block, BlockBody, BlockHeader, ELASTICITY_MULTIPLIER, Receipt, SAFE_BYTES_PER_BLOB,
-        Transaction, calc_excess_blob_gas, calculate_base_fee_per_gas, compute_receipts_root,
-        compute_transactions_root, compute_withdrawals_root,
+        Block, BlockBody, BlockHeader, DEFAULT_BUILDER_GAS_CEIL, ELASTICITY_MULTIPLIER, Receipt,
+        SAFE_BYTES_PER_BLOB, Transaction, calc_excess_blob_gas, calculate_base_fee_per_gas,
+        compute_receipts_root, compute_transactions_root, compute_withdrawals_root,
     },
 };
 use ethrex_l2::sequencer::errors::BlockProducerError;
@@ -30,6 +33,8 @@ use ethrex_l2_common::{
 use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
 use ethrex_vm::BlockExecutionResult;
+use mojave_node_lib::types::MojaveNode;
+use mojave_task::Task;
 use std::{
     collections::{BTreeMap, HashMap},
     ops::Div,
@@ -39,25 +44,37 @@ use std::{
 use tracing::{debug, error, info};
 
 #[derive(Clone)]
-pub struct BlockProducerContext {
+pub struct BlockProducer {
     store: Store,
     blockchain: Arc<Blockchain>,
     rollup_store: StoreRollup,
     coinbase_address: Address,
 }
 
-impl BlockProducerContext {
-    pub fn new(
-        store: Store,
-        blockchain: Arc<Blockchain>,
-        rollup_store: StoreRollup,
-        coinbase_address: Address,
-    ) -> Self {
-        Self {
-            store,
-            blockchain,
-            rollup_store,
-            coinbase_address,
+impl Task for BlockProducer {
+    type Request = Request;
+    type Response = Block;
+    type Error = crate::error::Error;
+
+    async fn handle_request(&mut self, request: Request) -> Result<Self::Response> {
+        match request {
+            Request::BuildBlock => self.build_block().await,
+        }
+    }
+
+    async fn on_shutdown(&mut self) -> Result<()> {
+        tracing::info!("Shutting down block producer");
+        Ok(())
+    }
+}
+
+impl BlockProducer {
+    pub fn new(node: MojaveNode) -> Self {
+        BlockProducer {
+            store: node.store.clone(),
+            blockchain: node.blockchain.clone(),
+            rollup_store: node.rollup_store.clone(),
+            coinbase_address: node.genesis.coinbase,
         }
     }
 
@@ -80,6 +97,7 @@ impl BlockProducerContext {
 
         // Proposer creates a new payload
         let args = BuildPayloadArgs {
+            gas_ceil: DEFAULT_BUILDER_GAS_CEIL,
             parent: head_hash,
             timestamp: SystemTime::now()
                 .duration_since(SystemTime::UNIX_EPOCH)?
@@ -152,16 +170,11 @@ impl BlockProducerContext {
             .get_block_header_by_hash(args.parent)?
             .ok_or_else(|| ChainError::ParentNotFound)?;
         let chain_config = self.store.get_chain_config()?;
-        let gas_limit = calc_gas_limit(parent_block.gas_limit);
+        let fork = chain_config.fork(args.timestamp);
+        let gas_limit = calc_gas_limit(parent_block.gas_limit, DEFAULT_BUILDER_GAS_CEIL);
         let excess_blob_gas = chain_config
             .get_fork_blob_schedule(args.timestamp)
-            .map(|schedule| {
-                calc_excess_blob_gas(
-                    parent_block.excess_blob_gas.unwrap_or_default(),
-                    parent_block.blob_gas_used.unwrap_or_default(),
-                    schedule.target,
-                )
-            });
+            .map(|schedule| calc_excess_blob_gas(&parent_block, schedule, fork));
 
         let header = BlockHeader {
             parent_hash: args.parent,
@@ -222,7 +235,7 @@ impl BlockProducerContext {
 
         debug!("Building payload");
         let mut context =
-            PayloadBuildContext::new(payload, &self.store, self.blockchain.r#type.clone())?;
+            PayloadBuildContext::new(payload, &self.store, self.blockchain.options.r#type.clone())?;
 
         self.fill_transactions(&mut context).await?;
         self.blockchain.finalize_payload(&mut context).await?;

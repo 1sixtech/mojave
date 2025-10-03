@@ -1,13 +1,9 @@
-mod context;
+mod block_producer;
 mod error;
-mod service;
 
-pub mod rpc;
-pub mod services;
 pub mod types;
 
-pub use context::BlockProducerContext;
-pub use service::{BlockProducer, run};
+pub use block_producer::BlockProducer;
 
 pub mod prelude {
     pub use crate::{

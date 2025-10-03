@@ -10,10 +10,13 @@ documentation = { workspace = true }
 
 [dependencies]
 mojave-node-lib = { workspace = true }
+mojave-rpc-core = { workspace = true }
+mojave-rpc-server = { workspace = true }
 mojave-utils = { workspace = true }
 
+ethrex-rpc.workspace = true
+
 anyhow = { workspace = true }
-clap = { workspace = true }
+clap = { workspace = true, features = ["derive", "env"] }
 hex = { workspace = true }
-tokio = { workspace = true, features = ["macros", "rt"] }
 tracing = { workspace = true }

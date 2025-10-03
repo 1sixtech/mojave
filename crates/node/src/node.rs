@@ -2,7 +2,7 @@ use crate::{
     error::{Error, Result},
     initializers::{get_local_node_record, get_signer, init_blockchain, init_store},
     p2p::network::start_network,
-    rpc::start_api,
+    rpc::{context::RpcApiContext, start_api},
     types::{MojaveNode, NodeConfigFile, NodeOptions},
     utils::{
         get_authrpc_socket_addr, get_http_socket_addr, get_local_p2p_node, read_jwtsecret_file,
@@ -15,6 +15,7 @@ use ethrex_p2p::{
     sync_manager::SyncManager,
 };
 use ethrex_storage_rollup::{EngineTypeRollup, StoreRollup};
+use mojave_rpc_server::RpcRegistry;
 use mojave_utils::unique_heap::AsyncUniqueHeap;
 use std::{path::PathBuf, sync::Arc};
 use tokio::sync::Mutex;
@@ -22,7 +23,7 @@ use tokio_util::task::TaskTracker;
 
 impl MojaveNode {
     pub async fn init(options: &NodeOptions) -> Result<Self> {
-        let data_dir = resolve_data_dir(&options.datadir).await?;
+        let (data_dir, data_dir_str) = resolve_data_dir(&options.datadir).await?;
         tracing::info!("Data directory resolved to: {:?}", data_dir);
 
         if options.force {
@@ -34,7 +35,7 @@ impl MojaveNode {
 
         let genesis = options.network.get_genesis()?;
 
-        let store = init_store(&data_dir, genesis.clone()).await?;
+        let store = init_store(&data_dir_str, genesis.clone()).await?;
         tracing::info!("Successfully initialized the database.");
 
         let rollup_store = StoreRollup::new(&data_dir, EngineTypeRollup::InMemory)?;
@@ -45,7 +46,7 @@ impl MojaveNode {
 
         let cancel_token = tokio_util::sync::CancellationToken::new();
 
-        let signer = get_signer(&data_dir).await?;
+        let signer = get_signer(&data_dir_str).await?;
 
         let local_p2p_node = get_local_p2p_node(
             &options.discovery_addr,
@@ -56,7 +57,7 @@ impl MojaveNode {
         )
         .await?;
         let local_node_record = Arc::new(Mutex::new(
-            get_local_node_record(&data_dir, &local_p2p_node, &signer).await?,
+            get_local_node_record(&data_dir_str, &local_p2p_node, &signer).await?,
         ));
 
         let peer_table = peer_table();
@@ -73,7 +74,7 @@ impl MojaveNode {
         start_network(
             options.bootnodes.clone(),
             &options.network,
-            &data_dir,
+            &data_dir_str,
             local_p2p_node.clone(),
             local_node_record.clone(),
             signer,
@@ -99,7 +100,7 @@ impl MojaveNode {
         );
 
         Ok(MojaveNode {
-            data_dir,
+            data_dir: data_dir_str.to_string(),
             genesis,
             store,
             rollup_store,
@@ -113,7 +114,11 @@ impl MojaveNode {
         })
     }
 
-    pub async fn run(self, options: &NodeOptions) -> Result<()> {
+    pub async fn run(
+        self,
+        options: &NodeOptions,
+        registry: RpcRegistry<RpcApiContext>,
+    ) -> Result<()> {
         let rpc_shutdown = self.cancel_token.child_token();
         let jwt_secret = read_jwtsecret_file(&options.authrpc_jwtsecret).await?;
         let api_task = start_api(
@@ -130,6 +135,7 @@ impl MojaveNode {
             self.rollup_store.clone(),
             AsyncUniqueHeap::new(),
             rpc_shutdown.clone(),
+            registry,
         );
         tokio::pin!(api_task);
         tokio::select! {

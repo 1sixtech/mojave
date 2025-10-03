@@ -16,6 +16,7 @@ pub const MAINNET_GENESIS_PATH: &str = "cmd/mojave/networks/mainnet/genesis.json
 const MAINNET_BOOTNODES_PATH: &str = "cmd/mojave/networks/mainnet/bootnodes.json";
 
 fn read_bootnodes(path: &str) -> Vec<Node> {
+    // ethrex_p2p::rlpx::Message
     std::fs::File::open(path)
         .map_err(|e| {
             tracing::warn!(path, error = %e, "Failed to open bootnodes file; using empty list");
@@ -93,5 +94,62 @@ impl fmt::Display for Network {
             Network::Testnet => write!(f, "testnet"),
             Network::GenesisPath(path) => write!(f, "{path:?}"),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    #[test]
+    fn from_str_variants_map_correctly() {
+        assert!(matches!(Network::from("default"), Network::DefaultNet));
+        assert!(matches!(Network::from("mainnet"), Network::Mainnet));
+        assert!(matches!(Network::from("testnet"), Network::Testnet));
+
+        let network = Network::from("/tmp/genesis.json");
+        match network {
+            Network::GenesisPath(p) => assert_eq!(p, PathBuf::from("/tmp/genesis.json")),
+            _ => panic!("expected GenesisPath"),
+        }
+    }
+
+    #[test]
+    fn from_pathbuf_becomes_genesispath() {
+        let pathbuf = PathBuf::from("tmp/genesis.json");
+        let network = Network::from(pathbuf.clone());
+        match network {
+            Network::GenesisPath(p) => assert_eq!(p, pathbuf),
+            _ => panic!("expected GenesisPath"),
+        }
+    }
+
+    #[test]
+    fn display_formats_are_stable() {
+        assert_eq!(format!("{}", Network::DefaultNet), "default");
+        assert_eq!(format!("{}", Network::Mainnet), "mainnet");
+        assert_eq!(format!("{}", Network::Testnet), "testnet");
+
+        let network = Network::from("1six/mojave.json");
+        let s = format!("{network}");
+        assert!(s.contains("1six/mojave.json"));
+    }
+
+    #[test]
+    #[should_panic(expected = "DefaultNet does not have a genesis path")]
+    fn defaultnet_get_genesis_path_panics() {
+        let _ = Network::DefaultNet.get_genesis_path();
+    }
+
+    #[test]
+    fn invalid_path_get_genesis_err() {
+        let network = Network::from("/does/not/exist.json");
+        let err = network.get_genesis().unwrap_err();
+
+        assert!(matches!(
+            err,
+            GenesisError::File(ref e) if e.kind() == std::io::ErrorKind::NotFound
+        ));
     }
 }

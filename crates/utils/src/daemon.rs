@@ -5,7 +5,7 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use daemonize::Daemonize;
 use sysinfo::{Pid, System};
 use thiserror::Error;
@@ -43,45 +43,38 @@ pub enum DaemonError {
     ParsePid(String),
 }
 
-pub fn run_daemonized<F, Fut>(opts: DaemonOptions, proc: F) -> Result<()>
-where
-    F: FnOnce() -> Fut,
-    Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
-{
-    let rt = tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()
-        .context("failed to build Tokio runtime")?;
-    rt.block_on(run_daemonized_async(opts, proc))
-}
-
-pub async fn run_daemonized_async<F, Fut>(opts: DaemonOptions, proc: F) -> Result<()>
+pub fn run_daemonized<F, Fut>(
+    opts: DaemonOptions,
+    proc: F,
+) -> Result<(), Box<dyn std::error::Error>>
 where
     F: FnOnce() -> Fut,
     Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
 {
     if opts.no_daemon {
-        return run_main_task_async(proc, None::<PathBuf>).await;
+        return run_main_task(proc);
     }
 
     let log_path = resolve_path(&opts.log_file_path)?;
     let pid_path = resolve_path(&opts.pid_file_path)?;
 
-    match read_pid_from_file(&pid_path) {
-        std::result::Result::Ok(pid) if is_pid_running(pid) => {
-            return Err(DaemonError::AlreadyRunning(pid).into());
-        }
-        _ => {
-            if let Err(e) = std::fs::remove_file(&pid_path) {
-                tracing::warn!(
-                    ?pid_path,
-                    error = %e,
-                    "Failed to remove stale pid file while preparing daemon"
-                );
-            }
-        }
+    if let Some(pid) = read_pid_from_file(&pid_path)
+        .ok()
+        .filter(|pid| is_pid_running(pid.to_owned()))
+    {
+        return Err(DaemonError::AlreadyRunning(pid).into());
     }
 
+    match std::fs::remove_file(&pid_path) {
+        Err(e) if e.kind() != std::io::ErrorKind::NotFound => {
+            tracing::warn!(
+                ?pid_path,
+                error = %e,
+                "Failed to remove stale pid file while preparing daemon"
+            );
+        }
+        _ => {}
+    }
     let log_file = OpenOptions::new()
         .append(true)
         .create(true)
@@ -108,7 +101,7 @@ where
         .stderr(log_file_err);
     daemon.start()?;
 
-    if let Err(e) = run_main_task_async(proc, Some(pid_path)).await {
+    if let Err(e) = run_main_task(proc) {
         tracing::error!("run_main_task failed: {e}");
         return Err(e);
     }
@@ -180,25 +173,137 @@ fn is_pid_running(pid: Pid) -> bool {
     System::new_all().process(pid).is_some()
 }
 
-async fn run_main_task_async<F, Fut, P>(proc: F, pid_file: Option<P>) -> Result<()>
+fn run_main_task<F, Fut>(proc: F) -> Result<(), Box<dyn std::error::Error>>
 where
     F: FnOnce() -> Fut,
     Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
-    P: AsRef<Path>,
 {
-    let res = proc().await;
+    let rt = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()?;
 
-    if let Some(pid_file) = pid_file
-        && let Err(e) = std::fs::remove_file(pid_file)
-    {
-        tracing::warn!(error = %e, "Failed to remove pid file during shutdown");
+    rt.block_on(async move {
+        let res = proc().await;
+        if let Err(err) = res {
+            tracing::error!("Process stopped unexpectedly: {}", err);
+            return Err(err);
+        }
+        Ok(())
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{
+        fs,
+        time::{SystemTime, UNIX_EPOCH},
+    };
+
+    /// create temporary directory path
+    fn unique_path(name: &str) -> PathBuf {
+        let mut p = std::env::temp_dir();
+        let ts = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        p.push(format!(
+            "mojave_daemon_test_{}_{}_{}",
+            name,
+            std::process::id(),
+            ts
+        ));
+        p
     }
 
-    match res {
-        Ok(()) => Ok(()),
-        Err(err) => {
-            tracing::error!("Process stopped unexpectedly: {}", err);
-            Err(anyhow::anyhow!("{}", err))
-        }
+    #[test]
+    fn resolve_path_keeps_absolute_path() {
+        let abs = unique_path("abs_dir").join("pidfile.pid");
+        let resolved = resolve_path(&abs).unwrap();
+        assert_eq!(resolved, abs);
+    }
+
+    #[test]
+    fn read_pid_from_file_parses_current_pid() {
+        // Write the current process PID to a file and check if it is read correctly + if it is a running PID
+        let pid_file = unique_path("pid_ok");
+        fs::create_dir_all(pid_file.parent().unwrap()).unwrap();
+        let my_pid_str = format!("{}", std::process::id());
+        fs::write(&pid_file, &my_pid_str).unwrap();
+
+        let pid = read_pid_from_file(&pid_file).unwrap();
+
+        assert!(is_pid_running(pid), "current process should be running");
+
+        // cleanup temp test file
+        let _ = fs::remove_file(pid_file);
+    }
+
+    #[test]
+    fn read_pid_from_file_parse_error() {
+        let pid_file = unique_path("pid_parse_err");
+        fs::create_dir_all(pid_file.parent().unwrap()).unwrap();
+        fs::write(&pid_file, "not-an-int\n").unwrap();
+
+        let err = read_pid_from_file(&pid_file).unwrap_err();
+
+        assert!(matches!(
+            err.downcast_ref::<DaemonError>(),
+            Some(DaemonError::ParsePid(_))
+        ));
+    }
+
+    #[test]
+    fn read_pid_from_file_io_error_when_missing() {
+        // if no such file, return IoWithPath error
+        let missing = unique_path("pid_missing");
+        let err = read_pid_from_file(&missing).unwrap_err();
+
+        assert!(matches!(
+            err.downcast_ref::<DaemonError>(),
+            Some(DaemonError::IoWithPath { .. })
+        ));
+    }
+
+    #[test]
+    fn run_daemonized_sync_no_daemon_ok() {
+        let opts = DaemonOptions {
+            no_daemon: true,
+            pid_file_path: unique_path("unused_pid3"),
+            log_file_path: unique_path("unused_log3"),
+        };
+        let res = run_daemonized(opts, || async { Ok(()) });
+
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn run_daemonized_sync_no_daemon_err_propagates() {
+        let opts = DaemonOptions {
+            no_daemon: true,
+            pid_file_path: unique_path("unused_pid4"),
+            log_file_path: unique_path("unused_log4"),
+        };
+        let res = run_daemonized(opts, || async { Err::<(), _>("propagate".into()) });
+
+        assert!(res.is_err());
+        assert!(format!("{res:#?}").contains("propagate"));
+    }
+
+    #[tokio::test]
+    async fn stop_daemonized_returns_no_such_process_for_fake_pid() {
+        let pid_file = unique_path("fake_pid");
+        fs::create_dir_all(pid_file.parent().unwrap()).unwrap();
+        fs::write(&pid_file, "0").unwrap();
+
+        let err = stop_daemonized(&pid_file).unwrap_err();
+
+        assert!(matches!(
+            err.downcast_ref::<DaemonError>(),
+            Some(DaemonError::NoSuchProcess(_))
+        ));
+
+        // In actual usage, the pid file is not removed if process is not found
+        let _ = fs::remove_file(pid_file);
     }
 }
