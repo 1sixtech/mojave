@@ -864,9 +864,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.2.40"
+version = "1.2.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1d05d92f4b1fd76aad469d46cdd858ca761576082cd37df81416691e50199fb"
+checksum = "ac9fe6cdbb24b6ade63616c0a0688e45bb56732262c158df3c0c4bea4ca47cb7"
 dependencies = [
  "find-msvc-tools",
  "jobserver",
@@ -2277,7 +2277,7 @@ dependencies = [
 [[package]]
 name = "ethrex-blockchain"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#6778ce3e93e593fd91a96fbf64621056d0e76a59"
+source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#fb478e64f18d03d1c2369dac25db86fd9457e14a"
 dependencies = [
  "bytes",
  "cfg-if 1.0.3",
@@ -2297,7 +2297,7 @@ dependencies = [
 [[package]]
 name = "ethrex-common"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#6778ce3e93e593fd91a96fbf64621056d0e76a59"
+source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#fb478e64f18d03d1c2369dac25db86fd9457e14a"
 dependencies = [
  "bytes",
  "c-kzg",
@@ -2325,7 +2325,7 @@ dependencies = [
 [[package]]
 name = "ethrex-config"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#6778ce3e93e593fd91a96fbf64621056d0e76a59"
+source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#fb478e64f18d03d1c2369dac25db86fd9457e14a"
 dependencies = [
  "ethrex-common",
  "ethrex-p2p",
@@ -2337,12 +2337,12 @@ dependencies = [
 [[package]]
 name = "ethrex-crypto"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#6778ce3e93e593fd91a96fbf64621056d0e76a59"
+source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#fb478e64f18d03d1c2369dac25db86fd9457e14a"
 
 [[package]]
 name = "ethrex-dev"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#6778ce3e93e593fd91a96fbf64621056d0e76a59"
+source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#fb478e64f18d03d1c2369dac25db86fd9457e14a"
 dependencies = [
  "bytes",
  "envy",
@@ -2362,7 +2362,7 @@ dependencies = [
 [[package]]
 name = "ethrex-l2"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#6778ce3e93e593fd91a96fbf64621056d0e76a59"
+source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#fb478e64f18d03d1c2369dac25db86fd9457e14a"
 dependencies = [
  "aligned-sdk",
  "axum",
@@ -2421,7 +2421,7 @@ dependencies = [
 [[package]]
 name = "ethrex-l2-common"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#6778ce3e93e593fd91a96fbf64621056d0e76a59"
+source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#fb478e64f18d03d1c2369dac25db86fd9457e14a"
 dependencies = [
  "bytes",
  "ethereum-types 0.15.1",
@@ -2440,7 +2440,7 @@ dependencies = [
 [[package]]
 name = "ethrex-l2-rpc"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#6778ce3e93e593fd91a96fbf64621056d0e76a59"
+source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#fb478e64f18d03d1c2369dac25db86fd9457e14a"
 dependencies = [
  "axum",
  "bytes",
@@ -2470,7 +2470,7 @@ dependencies = [
 [[package]]
 name = "ethrex-levm"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#6778ce3e93e593fd91a96fbf64621056d0e76a59"
+source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#fb478e64f18d03d1c2369dac25db86fd9457e14a"
 dependencies = [
  "ark-bn254",
  "ark-ec",
@@ -2501,7 +2501,7 @@ dependencies = [
 [[package]]
 name = "ethrex-metrics"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#6778ce3e93e593fd91a96fbf64621056d0e76a59"
+source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#fb478e64f18d03d1c2369dac25db86fd9457e14a"
 dependencies = [
  "ethrex-common",
  "serde",
@@ -2513,7 +2513,7 @@ dependencies = [
 [[package]]
 name = "ethrex-p2p"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#6778ce3e93e593fd91a96fbf64621056d0e76a59"
+source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#fb478e64f18d03d1c2369dac25db86fd9457e14a"
 dependencies = [
  "aes",
  "async-trait",
@@ -2552,7 +2552,7 @@ dependencies = [
 [[package]]
 name = "ethrex-prover"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#6778ce3e93e593fd91a96fbf64621056d0e76a59"
+source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#fb478e64f18d03d1c2369dac25db86fd9457e14a"
 dependencies = [
  "anyhow",
  "bincode",
@@ -2585,7 +2585,7 @@ dependencies = [
 [[package]]
 name = "ethrex-rlp"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#6778ce3e93e593fd91a96fbf64621056d0e76a59"
+source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#fb478e64f18d03d1c2369dac25db86fd9457e14a"
 dependencies = [
  "bytes",
  "ethereum-types 0.15.1",
@@ -2599,7 +2599,7 @@ dependencies = [
 [[package]]
 name = "ethrex-rpc"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#6778ce3e93e593fd91a96fbf64621056d0e76a59"
+source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#fb478e64f18d03d1c2369dac25db86fd9457e14a"
 dependencies = [
  "axum",
  "axum-extra",
@@ -2635,7 +2635,7 @@ dependencies = [
 [[package]]
 name = "ethrex-sdk"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#6778ce3e93e593fd91a96fbf64621056d0e76a59"
+source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#fb478e64f18d03d1c2369dac25db86fd9457e14a"
 dependencies = [
  "bytes",
  "ethereum-types 0.15.1",
@@ -2661,7 +2661,7 @@ dependencies = [
 [[package]]
 name = "ethrex-sdk-contract-utils"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#6778ce3e93e593fd91a96fbf64621056d0e76a59"
+source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#fb478e64f18d03d1c2369dac25db86fd9457e14a"
 dependencies = [
  "thiserror 2.0.17",
  "tracing",
@@ -2670,7 +2670,7 @@ dependencies = [
 [[package]]
 name = "ethrex-storage"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#6778ce3e93e593fd91a96fbf64621056d0e76a59"
+source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#fb478e64f18d03d1c2369dac25db86fd9457e14a"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2693,7 +2693,7 @@ dependencies = [
 [[package]]
 name = "ethrex-storage-rollup"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#6778ce3e93e593fd91a96fbf64621056d0e76a59"
+source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#fb478e64f18d03d1c2369dac25db86fd9457e14a"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2712,7 +2712,7 @@ dependencies = [
 [[package]]
 name = "ethrex-trie"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#6778ce3e93e593fd91a96fbf64621056d0e76a59"
+source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#fb478e64f18d03d1c2369dac25db86fd9457e14a"
 dependencies = [
  "anyhow",
  "bytes",
@@ -2733,7 +2733,7 @@ dependencies = [
 [[package]]
 name = "ethrex-vm"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#6778ce3e93e593fd91a96fbf64621056d0e76a59"
+source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#fb478e64f18d03d1c2369dac25db86fd9457e14a"
 dependencies = [
  "bincode",
  "bytes",
@@ -2817,9 +2817,9 @@ checksum = "28dea519a9695b9977216879a3ebfddf92f1c08c05d984f8996aecd6ecdc811d"
 
 [[package]]
 name = "find-msvc-tools"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0399f9d26e5191ce32c498bebd31e7a3ceabc2745f0ac54af3f335126c3f24b3"
+checksum = "52051878f80a721bb68ebfbc930e07b65ba72f2da88968ea5c06fd6ca3d3a127"
 
 [[package]]
 name = "fixed-hash"
@@ -3118,7 +3118,7 @@ dependencies = [
 [[package]]
 name = "guest_program"
 version = "0.1.0"
-source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#6778ce3e93e593fd91a96fbf64621056d0e76a59"
+source = "git+https://github.com/1sixtech/ethrex?branch=dh-mojave-p2p#fb478e64f18d03d1c2369dac25db86fd9457e14a"
 dependencies = [
  "bytes",
  "ethrex-blockchain",
@@ -3888,7 +3888,7 @@ checksum = "5a87cc7a48537badeae96744432de36f4be2b4a34a05a5ef32e9dd8a1c169dde"
 dependencies = [
  "base64 0.22.1",
  "js-sys",
- "pem 3.0.5",
+ "pem 3.0.6",
  "ring 0.17.14",
  "serde",
  "serde_json",
@@ -4017,9 +4017,9 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "libc"
-version = "0.2.176"
+version = "0.2.177"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "58f929b4d672ea937a23a1ab494143d968337a5f47e56d0815df1e0890ddf174"
+checksum = "2874a2af47a2325c2001a6e6fad9b16a53b802102b528163885171cf92b15976"
 
 [[package]]
 name = "libgit2-sys"
@@ -5136,12 +5136,12 @@ dependencies = [
 
 [[package]]
 name = "pem"
-version = "3.0.5"
+version = "3.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38af38e8470ac9dee3ce1bae1af9c1671fffc44ddfd8bd1d0a3445bf349a8ef3"
+checksum = "1d30c53c26bc5b31a98cd02d20f25a7c8567146caf63ed593a9d87b2775291be"
 dependencies = [
  "base64 0.22.1",
- "serde",
+ "serde_core",
 ]
 
 [[package]]
@@ -5351,7 +5351,7 @@ version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "219cb19e96be00ab2e37d6e299658a0cfa83e52429179969b0f0121b4ac46983"
 dependencies = [
- "toml_edit 0.23.6",
+ "toml_edit 0.23.7",
 ]
 
 [[package]]
@@ -7125,9 +7125,9 @@ dependencies = [
 
 [[package]]
 name = "toml_datetime"
-version = "0.7.2"
+version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "32f1085dec27c2b6632b04c80b3bb1b4300d6495d1e129693bdda7d91e72eec1"
+checksum = "f2cdb639ebbc97961c51720f858597f7f24c4fc295327923af55b74c3c724533"
 dependencies = [
  "serde_core",
 ]
@@ -7148,21 +7148,21 @@ dependencies = [
 
 [[package]]
 name = "toml_edit"
-version = "0.23.6"
+version = "0.23.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3effe7c0e86fdff4f69cdd2ccc1b96f933e24811c5441d44904e8683e27184b"
+checksum = "6485ef6d0d9b5d0ec17244ff7eb05310113c3f316f2d14200d4de56b3cb98f8d"
 dependencies = [
  "indexmap 2.11.4",
- "toml_datetime 0.7.2",
+ "toml_datetime 0.7.3",
  "toml_parser",
  "winnow",
 ]
 
 [[package]]
 name = "toml_parser"
-version = "1.0.3"
+version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4cf893c33be71572e0e9aa6dd15e6677937abd686b066eac3f8cd3531688a627"
+checksum = "c0cbe268d35bdb4bb5a56a2de88d0ad0eb70af5384a99d648cd4b3d04039800e"
 dependencies = [
  "winnow",
 ]
