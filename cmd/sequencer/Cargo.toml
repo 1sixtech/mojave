@@ -10,6 +10,7 @@ documentation = { workspace = true }
 
 [dependencies]
 mojave-batch-producer = { workspace = true }
+mojave-batch-submitter = { workspace = true }
 mojave-block-producer = { workspace = true }
 mojave-node-lib = { workspace = true }
 mojave-proof-coordinator = { workspace = true }

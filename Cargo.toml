@@ -43,6 +43,7 @@ resolver = "2"
 
 [workspace.dependencies]
 mojave-batch-producer = { path = "crates/batch-producer" }
+mojave-batch-submitter = { path = "crates/batch-submitter" }
 mojave-block-producer = { path = "crates/block-producer" }
 mojave-client = { path = "crates/client" }
 mojave-node-lib = { path = "crates/node" }

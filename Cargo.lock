@@ -4320,6 +4320,7 @@ dependencies = [
  "ethrex-storage",
  "ethrex-storage-rollup",
  "ethrex-vm",
+ "mojave-batch-submitter",
  "mojave-node-lib",
  "mojave-task",
  "thiserror 2.0.17",
@@ -4332,6 +4333,7 @@ version = "0.1.0"
 dependencies = [
  "bitcoin",
  "bitcoincore-rpc",
+ "ethrex-common",
  "rand 0.8.5",
  "secp256k1 0.29.1",
  "thiserror 2.0.17",
@@ -4534,6 +4536,7 @@ dependencies = [
  "clap",
  "hex",
  "mojave-batch-producer",
+ "mojave-batch-submitter",
  "mojave-block-producer",
  "mojave-node-lib",
  "mojave-proof-coordinator",

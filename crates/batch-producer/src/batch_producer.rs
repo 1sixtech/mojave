@@ -22,11 +22,12 @@ use ethrex_l2_common::{
 };
 use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
+use mojave_batch_submitter::types::BatchQueue;
 use mojave_node_lib::types::MojaveNode;
 use mojave_task::Task;
 use tracing::{debug, info, warn};
 
-pub struct BatchProducer {
+pub struct BatchProducer<Q: BatchQueue + 'static> {
     // TODO: replace that with a real batch counter (getting the batch counter from the context/l1)
     // dummy batch counter for the moment
     batch_counter: u64,
@@ -34,9 +35,10 @@ pub struct BatchProducer {
     store: Store,
     blockchain: Arc<Blockchain>,
     rollup_store: StoreRollup,
+    batch_queue: Arc<Q>,
 }
 
-impl Task for BatchProducer {
+impl<Q: BatchQueue + 'static> Task for BatchProducer<Q> {
     type Request = Request;
     type Response = Option<Batch>;
     type Error = Error;
@@ -53,13 +55,14 @@ impl Task for BatchProducer {
     }
 }
 
-impl BatchProducer {
-    pub fn new(node: MojaveNode, batch_counter: u64) -> Self {
+impl<Q: BatchQueue + 'static> BatchProducer<Q> {
+    pub fn new(node: MojaveNode, batch_counter: u64, batch_queue: Arc<Q>) -> Self {
         BatchProducer {
             batch_counter,
             store: node.store.clone(),
             blockchain: node.blockchain.clone(),
             rollup_store: node.rollup_store.clone(),
+            batch_queue,
         }
     }
 
@@ -94,6 +97,20 @@ impl BatchProducer {
             batch_number = batch.number,
             "Batch stored in database",
         );
+
+        // Send batch to queue
+        if let Err(e) = self.batch_queue.send_batch(&batch) {
+            warn!(
+                batch_number = batch.number,
+                error = ?e,
+                "Failed to send batch to queue"
+            );
+        } else {
+            debug!(
+                batch_number = batch.number,
+                "Batch sent to queue"
+            );
+        }
 
         // SUCCESS update batch counter
         self.batch_counter += 1;
