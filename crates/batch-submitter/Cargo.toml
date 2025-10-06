@@ -9,7 +9,16 @@ repository = { workspace = true }
 documentation = { workspace = true }
 
 [dependencies]
+mojave-msgio = { workspace = true }
+mojave-task = { workspace = true }
+
+ethrex-common = { workspace = true }
+ethrex-p2p = { workspace = true }
+
 bitcoin = { workspace = true, features = ["std", "secp-recovery"] }
+bincode = { workspace = true }
+bytes = { workspace = true }
+
 bitcoincore-rpc = { workspace = true }
 rand = { workspace = true }
 # TODO: make sure when we update bitcoin that this is still needed

@@ -84,6 +84,10 @@ impl BatchProducer {
         }
     }
 
+    pub fn subscribe(&self) -> tokio::sync::broadcast::Receiver<Batch> {
+        self.broadcast.subscribe()
+    }
+
     pub async fn build_batch(&mut self) -> Result<Option<Batch>> {
         let batch_number = self.batch_counter + 1;
 
