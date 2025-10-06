@@ -70,7 +70,6 @@ fn main() -> Result<()> {
 
                 tokio::select! {
                     // TODO: replace with api task
-
                     _ = mojave_utils::signal::wait_for_shutdown_signal()  => {
                         tracing::info!("Termination signal received, shutting down sequencer..");
                         cancel_token.cancel();

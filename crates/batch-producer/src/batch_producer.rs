@@ -26,6 +26,8 @@ use mojave_node_lib::types::MojaveNode;
 use mojave_task::Task;
 use tracing::{debug, info, warn};
 
+const MAX_BATCH_TO_BROADCAST: usize = 16;
+
 pub struct BatchProducer {
     // TODO: replace that with a real batch counter (getting the batch counter from the context/l1)
     // dummy batch counter for the moment
@@ -34,6 +36,7 @@ pub struct BatchProducer {
     store: Store,
     blockchain: Arc<Blockchain>,
     rollup_store: StoreRollup,
+    broadcast: tokio::sync::broadcast::Sender<Batch>,
 }
 
 impl Task for BatchProducer {
@@ -43,7 +46,22 @@ impl Task for BatchProducer {
 
     async fn handle_request(&mut self, request: Self::Request) -> Result<Self::Response> {
         match request {
-            Request::BuildBatch => self.build_batch().await,
+            Request::BuildBatch => {
+                let batch = self.build_batch().await;
+
+                match batch {
+                    Ok(batch) => {
+                        if let Some(batch) = &batch {
+                            info!("New batch created: {:?}", batch);
+                            self.broadcast.send(batch.clone())?;
+                        } else {
+                            info!("No new batch created");
+                        }
+                        Ok(batch)
+                    }
+                    Err(e) => Err(e),
+                }
+            }
         }
     }
 
@@ -55,11 +73,14 @@ impl Task for BatchProducer {
 
 impl BatchProducer {
     pub fn new(node: MojaveNode, batch_counter: u64) -> Self {
+        let (broadcast, _) = tokio::sync::broadcast::channel(MAX_BATCH_TO_BROADCAST);
+
         BatchProducer {
             batch_counter,
             store: node.store.clone(),
             blockchain: node.blockchain.clone(),
             rollup_store: node.rollup_store.clone(),
+            broadcast,
         }
     }
 

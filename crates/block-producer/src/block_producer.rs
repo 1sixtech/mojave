@@ -58,6 +58,7 @@ impl Task for BlockProducer {
 
     async fn handle_request(&mut self, request: Request) -> Result<Self::Response> {
         match request {
+            // TODO: send the block here to the p2p layer
             Request::BuildBlock => self.build_block().await,
         }
     }
@@ -70,6 +71,8 @@ impl Task for BlockProducer {
 
 impl BlockProducer {
     pub fn new(node: MojaveNode) -> Self {
+        // TODO: add the ethrex_p2p::P2PContext here to then be able to do
+        // context.broadcast.send(id, block)
         BlockProducer {
             store: node.store.clone(),
             blockchain: node.blockchain.clone(),

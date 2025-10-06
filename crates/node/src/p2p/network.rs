@@ -28,7 +28,7 @@ pub async fn start_network(
     tracker: TaskTracker,
     blockchain: Arc<Blockchain>,
     based_context: Option<P2PBasedContext>,
-) -> Result<()> {
+) -> Result<P2PContext> {
     let bootnodes = get_bootnodes(bootnodes, network, data_dir).await;
 
     let context = P2PContext::new(
@@ -43,12 +43,15 @@ pub async fn start_network(
         based_context,
     )
     .await?;
-
-    ethrex_p2p::start_network(context, bootnodes).await?;
-
+    blockchain.set_synced();
+    ethrex_p2p::start_network(context.clone(), bootnodes.clone()).await?;
+    tracing::info!(
+        "----------- - --- P2P network started with {} bootnodes",
+        bootnodes.len()
+    );
     tracker.spawn(ethrex_p2p::periodically_show_peer_stats(
         blockchain,
         peer_table.peers,
     ));
-    Ok(())
+    Ok(context)
 }

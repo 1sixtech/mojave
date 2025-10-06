@@ -4324,6 +4324,7 @@ dependencies = [
  "mojave-node-lib",
  "mojave-task",
  "thiserror 2.0.17",
+ "tokio",
  "tracing",
 ]
 
