@@ -75,7 +75,7 @@ pub struct Options {
     #[arg(
         long = "metrics",
         action = ArgAction::SetTrue,
-        help = "Enable metrics collection and exposition",
+        help = "Enable metrics collection and exposition",             
         help_heading = "Node options"
     )]
     pub metrics_enabled: bool,
