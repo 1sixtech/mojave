@@ -1,4 +1,4 @@
-use crate::types::{Publisher, Result};
+use crate::{error::Result, types::Publisher};
 
 pub struct Dummy;
 
