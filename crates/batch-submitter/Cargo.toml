@@ -15,8 +15,8 @@ mojave-task = { workspace = true }
 ethrex-common = { workspace = true }
 ethrex-p2p = { workspace = true }
 
-bitcoin = { workspace = true, features = ["std", "secp-recovery"] }
 bincode = { workspace = true }
+bitcoin = { workspace = true, features = ["std", "secp-recovery"] }
 bytes = { workspace = true }
 
 bitcoincore-rpc = { workspace = true }

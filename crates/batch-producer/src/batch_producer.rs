@@ -28,6 +28,7 @@ use tracing::{debug, info, warn};
 
 const MAX_BATCH_TO_BROADCAST: usize = 16;
 
+#[derive(Clone)]
 pub struct BatchProducer {
     // TODO: replace that with a real batch counter (getting the batch counter from the context/l1)
     // dummy batch counter for the moment
@@ -55,7 +56,7 @@ impl Task for BatchProducer {
                             info!("New batch created: {:?}", batch);
                             self.broadcast.send(batch.clone())?;
                         } else {
-                            info!("No new batch created");
+                            warn!("No new batch created");
                         }
                         Ok(batch)
                     }

@@ -20,5 +20,5 @@ ethrex-storage-rollup = { workspace = true, default-features = false }
 ethrex-vm = { workspace = true, default-features = false }
 
 thiserror = { workspace = true }
-tracing = { workspace = true }
 tokio = { workspace = true, features = ["sync"] }
+tracing = { workspace = true }

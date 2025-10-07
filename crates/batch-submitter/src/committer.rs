@@ -8,13 +8,10 @@ use ethrex_p2p::{
     },
 };
 use mojave_msgio::types::Publisher;
-use mojave_task::Task;
+use mojave_task::Service;
 use tokio::sync::broadcast;
 
-use crate::{
-    error::{Error, Result},
-    types::Request,
-};
+use crate::error::{Error, Result};
 
 pub struct Committer<P: Publisher> {
     rx: broadcast::Receiver<Batch>,
@@ -34,47 +31,39 @@ where
         }
     }
 
-    pub async fn run(&mut self) -> Result<()> {
-        tracing::info!("Commiter started but doing nothing as of right now");
-
-        loop {
-            let batch = self.rx.recv().await?;
-
-            self.commit_next_batch_to_l1(batch.clone())?;
-
-            let data = bincode::serialize(&batch)?;
-            let data = Bytes::from(data);
-            self.queue.publish(data).await?;
-
-            self.p2p_context
-                .broadcast_mojave_message(Message::Mojave(MojaveMessage::Batch(
-                    MojaveBatch::new(batch),
-                )))?;
-        }
-    }
-
-    #[allow(dead_code)]
     fn commit_next_batch_to_l1(&self, _batch: Batch) -> Result<()> {
         // TODO: Implement the logic to commit the next batch to L1
         Ok(())
     }
 }
 
-// impl<P> Task for Committer<P>
-// where
-//     P: Publisher,
-// {
-//     type Request = Request;
-//
-//     type Response = ();
-//
-//     type Error = Error;
-//
-//     async fn handle_request(&mut self, _request: Self::Request) -> Result<Self::Response> {
-//         // for this case we don't care about request as it will alway be listening for the next tx
-//     }
-//
-//     async fn on_shutdown(&mut self) -> Result<()> {
-//         todo!()
-//     }
-// }
+impl<P> Service for Committer<P>
+where
+    P: Publisher,
+{
+    type Error = Error;
+
+    async fn run(&mut self) -> Result<()> {
+        tracing::info!("Commiter started but doing nothing as of right now");
+
+        let batch = self.rx.recv().await?;
+
+        self.commit_next_batch_to_l1(batch.clone())?;
+
+        let data = bincode::serialize(&batch)?;
+        let data = Bytes::from(data);
+        self.queue.publish(data).await?;
+
+        self.p2p_context
+            .broadcast_mojave_message(Message::Mojave(MojaveMessage::Batch(MojaveBatch::new(
+                batch,
+            ))))?;
+
+        Ok(())
+    }
+
+    async fn shutdown(&self) -> Result<()> {
+        tracing::info!("Shutting down the committer...");
+        Ok(())
+    }
+}

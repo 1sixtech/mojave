@@ -4,6 +4,7 @@ use crate::cli::Command;
 use anyhow::Result;
 
 use mojave_batch_producer::{BatchProducer, types::Request as BatchProducerRequest};
+use mojave_batch_submitter::committer::Committer;
 use mojave_block_producer::{
     BlockProducer,
     types::{BlockProducerOptions, Request as BlockProducerRequest},
@@ -14,7 +15,7 @@ use mojave_node_lib::{
     utils::store_node_config_file,
 };
 use mojave_proof_coordinator::{ProofCoordinator, types::ProofCoordinatorOptions};
-use mojave_task::Task;
+use mojave_task::{Runner, Task};
 use mojave_utils::{
     block_on::block_on_current_thread,
     daemon::{DaemonOptions, run_daemonized, stop_daemonized},
@@ -54,17 +55,20 @@ fn main() -> Result<()> {
                     .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
                 let cancel_token = node.cancel_token.clone();
 
+                // TODO: replace by implementation batcked by a real queue
+                let q = mojave_msgio::dummy::Dummy;
+
                 let batch_producer = BatchProducer::new(node.clone(), 0);
                 let block_producer = BlockProducer::new(node.clone());
                 let proof_coordinator = ProofCoordinator::new(node.clone(), &node_options, &proof_coordinator_options)?;
 
-                let batch_producer_task = batch_producer
+                let batch_producer_task = batch_producer.clone()
                     .spawn_periodic(Duration::from_millis(10_000), || BatchProducerRequest::BuildBatch);
 
                 let block_producer_task = block_producer
                     .spawn_with_capacity_periodic(BLOCK_PRODUCER_CAPACITY, Duration::from_millis(block_producer_options.block_time), || BlockProducerRequest::BuildBlock);
 
-                // TODO: add batch submitter handle here
+                let commiter_handle = Runner::new(Committer::new(batch_producer.subscribe(), q, node.p2p_context.clone()), cancel_token.clone()).spawn();
 
                 let proof_coordinator_task = proof_coordinator.spawn();
 
@@ -76,6 +80,7 @@ fn main() -> Result<()> {
                         batch_producer_task.shutdown().await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
                         block_producer_task.shutdown().await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
                         proof_coordinator_task.shutdown().await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
+                        let _ = commiter_handle.await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
 
                         let node_config_path = PathBuf::from(node.data_dir).join("node_config.json");
                         tracing::info!("Storing config at {:?}...", node_config_path);
@@ -93,7 +98,7 @@ fn main() -> Result<()> {
                     }
                 }
             })
-            .unwrap_or_else(|err| tracing::error!("Failed to start daemonized sequencer: {}", err));
+                .unwrap_or_else(|err| tracing::error!("Failed to start daemonized sequencer: {}", err));
         }
         Command::Stop => stop_daemonized(PathBuf::from(cli.datadir.clone()).join(PID_FILE_NAME))?,
         Command::GetPubKey => {
