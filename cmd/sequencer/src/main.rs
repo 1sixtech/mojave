@@ -55,7 +55,7 @@ fn main() -> Result<()> {
                     .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
                 let cancel_token = node.cancel_token.clone();
 
-                // TODO: replace by implementation batcked by a real queue
+                // TODO: replace by implementation backed by a real queue
                 let q = mojave_msgio::dummy::Dummy;
 
                 let batch_producer = BatchProducer::new(node.clone(), 0);
@@ -68,7 +68,7 @@ fn main() -> Result<()> {
                 let block_producer_task = block_producer
                     .spawn_with_capacity_periodic(BLOCK_PRODUCER_CAPACITY, Duration::from_millis(block_producer_options.block_time), || BlockProducerRequest::BuildBlock);
 
-                let commiter_handle = Runner::new(Committer::new(batch_producer.subscribe(), q, node.p2p_context.clone()), cancel_token.clone()).spawn();
+                let committer_handle = Runner::new(Committer::new(batch_producer.subscribe(), q, node.p2p_context.clone()), cancel_token.clone()).spawn();
 
                 let proof_coordinator_task = proof_coordinator.spawn();
 
@@ -80,7 +80,7 @@ fn main() -> Result<()> {
                         batch_producer_task.shutdown().await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
                         block_producer_task.shutdown().await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
                         proof_coordinator_task.shutdown().await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
-                        let _ = commiter_handle.await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
+                        let _ = committer_handle.await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
 
                         let node_config_path = PathBuf::from(node.data_dir).join("node_config.json");
                         tracing::info!("Storing config at {:?}...", node_config_path);

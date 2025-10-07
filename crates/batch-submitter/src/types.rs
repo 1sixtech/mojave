@@ -1,16 +1,4 @@
 #[derive(Debug, Clone)]
-pub enum Request {
-    /// Start listening for batches (non-blocking)
-    StartListening,
-    /// Get current status of the committer
-    GetStatus,
-    /// Force process a specific batch
-    ProcessBatch(ethrex_common::types::batch::Batch),
-    /// Get metrics about processed batches
-    GetMetrics,
-}
-
-#[derive(Debug, Clone)]
 pub struct CommitterStatus {
     pub is_listening: bool,
     pub batches_processed: u64,

@@ -44,7 +44,7 @@ where
     type Error = Error;
 
     async fn run(&mut self) -> Result<()> {
-        tracing::info!("Commiter started but doing nothing as of right now");
+        tracing::info!("Committer started but doing nothing as of right now");
 
         let batch = self.rx.recv().await?;
 
