@@ -110,6 +110,7 @@ mod tests {
 
     impl Service for MockService {
         type Error = TestError;
+
         async fn run(&mut self) -> Result<(), Self::Error> {
             self.run_called.store(true, Ordering::SeqCst);
 
