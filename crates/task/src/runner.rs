@@ -7,7 +7,7 @@ pub trait Service {
     type Error: std::error::Error + Send + 'static;
 
     /// Run the service. Called repeatedly until shutdown or error.
-    async fn run(&self) -> Result<(), Self::Error>;
+    async fn run(&mut self) -> Result<(), Self::Error>;
 
     /// Gracefully shutdown the service.
     async fn shutdown(&self) -> Result<(), Self::Error>;
@@ -111,7 +111,7 @@ mod tests {
     impl Service for MockService {
         type Error = TestError;
 
-        async fn run(&self) -> Result<(), Self::Error> {
+        async fn run(&mut self) -> Result<(), Self::Error> {
             self.run_called.store(true, Ordering::SeqCst);
 
             if self.should_error {

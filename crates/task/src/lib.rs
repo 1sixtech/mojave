@@ -8,7 +8,7 @@ mod traits;
 pub use constants::*;
 pub use error::Error;
 pub use handle::TaskHandle;
-pub use runner::Runner;
+pub use runner::{Runner, Service};
 pub use traits::Task;
 
 #[tokio::test]

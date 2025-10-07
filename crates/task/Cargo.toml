@@ -16,8 +16,8 @@ mojave-utils = { workspace = true }
 
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["macros", "sync", "rt"] }
-tracing = { workspace = true }
 tokio-util = { workspace = true }
+tracing = { workspace = true }
 trait-variant = "0.1.2"
 
 [dev-dependencies]
