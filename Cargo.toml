@@ -38,7 +38,6 @@ members = [
   "crates/task",
   "crates/tests",
   "crates/utils",
-  "crates/msgio",
 ]
 default-members = ["cmd/node", "cmd/prover", "cmd/sequencer"]
 resolver = "2"
@@ -59,7 +58,6 @@ mojave-signature = { path = "crates/signature" }
 mojave-task = { path = "crates/task" }
 mojave-tests = { path = "crates/tests" }
 mojave-utils = { path = "crates/utils" }
-mojave-msgio = { path = "crates/msgio" }
 
 ethrex-blockchain = { git = "https://github.com/1sixtech/ethrex", branch = "dh-mojave-p2p", default-features = false }
 ethrex-common = { git = "https://github.com/1sixtech/ethrex", branch = "dh-mojave-p2p" }
@@ -75,7 +73,6 @@ guest_program = { git = "https://github.com/1sixtech/ethrex", branch = "dh-mojav
 
 anyhow = { version = "1.0" }
 async-trait = "0.1"
-async-nats = "0.44"
 axum = { version = "0.8" }
 bincode = { version = "1.3" }
 bitcoin = { version = "0.32", default-features = false }

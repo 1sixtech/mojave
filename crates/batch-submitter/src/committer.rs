@@ -67,22 +67,3 @@ where
         Ok(())
     }
 }
-
-// impl<P> Task for Committer<P>
-// where
-//     P: Publisher,
-// {
-//     type Request = Request;
-//
-//     type Response = ();
-//
-//     type Error = Error;
-//
-//     async fn handle_request(&mut self, _request: Self::Request) -> Result<Self::Response> {
-//         // for this case we don't care about request as it will alway be listening for the next tx
-//     }
-//
-//     async fn on_shutdown(&mut self) -> Result<()> {
-//         todo!()
-//     }
-// }

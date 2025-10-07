@@ -55,6 +55,7 @@ fn main() -> Result<()> {
                     .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
                 let cancel_token = node.cancel_token.clone();
 
+
                 // TODO: replace by implementation backed by a real queue
                 let q = mojave_msgio::dummy::Dummy;
 
@@ -80,6 +81,7 @@ fn main() -> Result<()> {
                         batch_producer_task.shutdown().await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
                         block_producer_task.shutdown().await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
                         proof_coordinator_task.shutdown().await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
+                        
                         let _ = committer_handle.await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
 
                         let node_config_path = PathBuf::from(node.data_dir).join("node_config.json");
