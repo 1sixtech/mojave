@@ -1,57 +1,222 @@
-use crate::traits::Task;
-use tokio::sync::{mpsc, oneshot};
+use mojave_utils::signal::wait_for_shutdown_signal;
+use tokio_util::sync::CancellationToken;
 
-pub type RequestSignal<T> = (
-    <T as Task>::Request,
-    oneshot::Sender<Result<<T as Task>::Response, <T as Task>::Error>>,
-);
-pub type ShutdownSignal<T> = oneshot::Sender<Result<(), <T as Task>::Error>>;
+/// A service that can be run and gracefully shutdown.
+#[trait_variant::make(Send)]
+pub trait Service {
+    type Error: std::error::Error + Send + 'static;
 
-pub struct TaskRunner<T: Task + 'static> {
-    request: mpsc::Receiver<RequestSignal<T>>,
-    shutdown: mpsc::Receiver<ShutdownSignal<T>>,
-    task: T,
+    /// Run the service. Called repeatedly until shutdown or error.
+    async fn run(&self) -> Result<(), Self::Error>;
+
+    /// Gracefully shutdown the service.
+    async fn shutdown(&self) -> Result<(), Self::Error>;
 }
 
-impl<T: Task + 'static> TaskRunner<T> {
-    pub fn new(
-        request: mpsc::Receiver<RequestSignal<T>>,
-        shutdown: mpsc::Receiver<ShutdownSignal<T>>,
-        task: T,
-    ) -> Self {
+/// A runner that manages a service with graceful shutdown support.
+///
+/// Continuously runs the service until shutdown is triggered by:
+/// - System shutdown signal (SIGTERM/SIGINT)
+/// - Cancellation token
+/// - Service error
+pub struct Runner<T: Service> {
+    service: T,
+    cancel_token: CancellationToken,
+}
+
+impl<T: Service> Runner<T> {
+    /// Create a new runner with the given service and cancellation token.
+    pub fn new(service: T, cancel_token: CancellationToken) -> Self {
         Self {
-            request,
-            shutdown,
-            task,
+            service,
+            cancel_token,
         }
     }
 
-    pub async fn listen(&mut self) {
-        if let Err(error) = self.task.on_start().await {
-            tracing::error!(
-                "Error while start task '{}'. Message: {}",
-                self.task.name(),
-                error
-            )
-        }
+    /// Spawn the runner in a background task using tokio.
+    pub fn spawn(mut self) -> tokio::task::JoinHandle<Result<(), T::Error>>
+    where
+        T: 'static,
+    {
+        tokio::spawn(async move { self.run().await })
+    }
+
+    /// Run the service until an error, shutdown, or cancellation is triggered.
+    pub async fn run(&mut self) -> Result<(), T::Error> {
         loop {
             tokio::select! {
-                request = self.request.recv() => {
-                    if let Some((request, sender)) = request {
-                        self.task.on_request_started(&request);
-                        let response = self.task.handle_request(request).await;
-                        self.task.on_request_finished(&response);
-                        let _ = sender.send(response);
-                    }
+                result = self.service.run() => {
+                    result?;
                 }
-                shutdown = self.shutdown.recv() => {
-                    if let Some(sender) = shutdown {
-                        let response = self.task.on_shutdown().await;
-                        let _ = sender.send(response);
-                        return;
-                    }
+                _ = wait_for_shutdown_signal() => {
+                    self.cancel_token.cancel();
+                    self.service.shutdown().await?;
+                    return Ok(());
+                }
+                _ = self.cancel_token.cancelled() => {
+                    self.service.shutdown().await?;
+                    return Ok(());
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    };
+
+    #[derive(Debug)]
+    struct TestError;
+
+    impl std::fmt::Display for TestError {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "Test error")
+        }
+    }
+
+    impl std::error::Error for TestError {}
+
+    struct MockService {
+        should_error: bool,
+        run_forever: bool,
+        run_called: Arc<AtomicBool>,
+        shutdown_called: Arc<AtomicBool>,
+    }
+
+    impl MockService {
+        fn new() -> Self {
+            Self {
+                should_error: false,
+                run_forever: true,
+                run_called: Arc::new(AtomicBool::new(false)),
+                shutdown_called: Arc::new(AtomicBool::new(false)),
+            }
+        }
+
+        fn with_error() -> Self {
+            Self {
+                should_error: true,
+                run_forever: false,
+                run_called: Arc::new(AtomicBool::new(false)),
+                shutdown_called: Arc::new(AtomicBool::new(false)),
+            }
+        }
+    }
+
+    impl Service for MockService {
+        type Error = TestError;
+
+        async fn run(&self) -> Result<(), Self::Error> {
+            self.run_called.store(true, Ordering::SeqCst);
+
+            if self.should_error {
+                return Err(TestError);
+            }
+
+            if self.run_forever {
+                std::future::pending().await
+            } else {
+                Ok(())
+            }
+        }
+
+        async fn shutdown(&self) -> Result<(), Self::Error> {
+            self.shutdown_called.store(true, Ordering::SeqCst);
+            Ok(())
+        }
+    }
+
+    #[tokio::test]
+    async fn test_runner_shutdown_via_cancel_token() {
+        let service = MockService::new();
+        let run_called = service.run_called.clone();
+        let shutdown_called = service.shutdown_called.clone();
+        let cancel_token = CancellationToken::new();
+        let runner = Runner::new(service, cancel_token.clone());
+
+        let runner_task = runner.spawn();
+
+        // Give it a moment to start running
+        tokio::task::yield_now().await;
+
+        // Verify the service started running
+        assert!(run_called.load(Ordering::SeqCst));
+
+        // Now cancel it
+        cancel_token.cancel();
+        let result = runner_task.await.unwrap();
+
+        assert!(result.is_ok());
+        assert!(shutdown_called.load(Ordering::SeqCst));
+    }
+
+    #[tokio::test]
+    async fn test_runner_service_error() {
+        let service = MockService::with_error();
+        let run_called = service.run_called.clone();
+        let shutdown_called = service.shutdown_called.clone();
+        let cancel_token = CancellationToken::new();
+        let mut runner = Runner::new(service, cancel_token);
+
+        let result = runner.run().await;
+
+        assert!(result.is_err());
+        assert!(run_called.load(Ordering::SeqCst));
+        assert!(!shutdown_called.load(Ordering::SeqCst));
+    }
+
+    #[tokio::test]
+    async fn test_runner_long_running_service_cancelled() {
+        let service = MockService::new();
+        let run_called = service.run_called.clone();
+        let shutdown_called = service.shutdown_called.clone();
+        let cancel_token = CancellationToken::new();
+        let runner = Runner::new(service, cancel_token.clone());
+
+        let runner_task = runner.spawn();
+
+        // Give it a moment to start running
+        tokio::task::yield_now().await;
+
+        // Verify the service started running
+        assert!(run_called.load(Ordering::SeqCst));
+
+        // Now cancel it
+        cancel_token.cancel();
+
+        let result = runner_task.await.unwrap();
+
+        assert!(result.is_ok());
+        assert!(run_called.load(Ordering::SeqCst));
+        assert!(shutdown_called.load(Ordering::SeqCst));
+    }
+
+    #[tokio::test]
+    async fn test_runner_spawn() {
+        let service = MockService::new();
+        let run_called = service.run_called.clone();
+        let shutdown_called = service.shutdown_called.clone();
+        let cancel_token = CancellationToken::new();
+        let runner = Runner::new(service, cancel_token.clone());
+
+        let handle = runner.spawn();
+
+        // Give it a moment to start running
+        tokio::task::yield_now().await;
+
+        // Verify the service started running
+        assert!(run_called.load(Ordering::SeqCst));
+
+        // Cancel and wait for completion
+        cancel_token.cancel();
+        let result = handle.await.unwrap();
+
+        assert!(result.is_ok());
+        assert!(shutdown_called.load(Ordering::SeqCst));
     }
 }

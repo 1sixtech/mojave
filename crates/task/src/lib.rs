@@ -2,11 +2,13 @@ mod constants;
 mod error;
 mod handle;
 mod runner;
+mod task_runner;
 mod traits;
 
 pub use constants::*;
 pub use error::Error;
 pub use handle::TaskHandle;
+pub use runner::Runner;
 pub use traits::Task;
 
 #[tokio::test]
@@ -17,7 +19,6 @@ async fn works() {
         if let Response::Block(value) = response {
             assert!(value == i);
         }
-        tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
     }
     handle.shutdown().await.unwrap();
 
