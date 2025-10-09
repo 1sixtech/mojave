@@ -12,7 +12,7 @@ use mojave_utils::network::Network;
 use secp256k1::SecretKey;
 use std::{
     net::{Ipv4Addr, SocketAddr},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 use tracing::{error, info};
 
@@ -110,9 +110,12 @@ pub async fn resolve_data_dir(data_dir: &str) -> Result<(PathBuf, String)> {
     Ok((path, s))
 }
 
-pub async fn get_bootnodes(bootnodes: Vec<Node>, network: &Network, data_dir: &str) -> Vec<Node> {
-    let mut bootnodes: Vec<Node> = bootnodes.clone();
-
+pub async fn get_bootnodes(
+    mut bootnodes: Vec<Node>,
+    network: &Network,
+    data_dir: &str,
+) -> Vec<Node> {
+    const NODE_CONFIG_FILE: &str = "node_config.json";
     match network {
         Network::Mainnet => {
             tracing::info!("Adding mainnet preset bootnodes");
@@ -131,7 +134,7 @@ pub async fn get_bootnodes(bootnodes: Vec<Node>, network: &Network, data_dir: &s
         );
     }
 
-    let config_file = PathBuf::from(data_dir.to_owned() + "/node_config.json");
+    let config_file = Path::new(data_dir).join(NODE_CONFIG_FILE);
 
     tracing::info!("Reading known peers from config file {:?}", config_file);
 
