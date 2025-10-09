@@ -18,11 +18,14 @@ use tracing::{error, info};
 
 impl NodeConfigFile {
     pub async fn new(table: Kademlia, node_record: NodeRecord) -> Self {
-        let mut connected_peers = vec![];
+        let connected_peers: Vec<Node> = table
+            .peers
+            .lock()
+            .await
+            .values()
+            .map(|p| p.node.clone())
+            .collect();
 
-        for (_, peer) in table.peers.lock().await.iter() {
-            connected_peers.push(peer.node.clone());
-        }
         NodeConfigFile {
             known_peers: connected_peers,
             node_record,
