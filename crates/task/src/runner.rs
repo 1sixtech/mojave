@@ -38,9 +38,9 @@ impl<T: Task + 'static> TaskRunner<T> {
             tokio::select! {
                 request = self.request.recv() => {
                     if let Some((request, sender)) = request {
-                        self.task.on_request_started(&request).await;
+                        self.task.on_request_started(&request);
                         let response = self.task.handle_request(request).await;
-                        self.task.on_request_finished(&response).await;
+                        self.task.on_request_finished(&response);
                         let _ = sender.send(response);
                     }
                 }

@@ -31,8 +31,16 @@ async fn works() {
         type Error = Error;
 
         async fn on_start(&mut self) -> Result<(), Self::Error> {
-            tracing::info!("Starting BlockProducer task");
+            println!("Starting BlockProducer test task");
             Ok(())
+        }
+
+        fn on_request_started(&mut self, req: &Self::Request) {
+            println!("Request {req:?} started");
+        }
+
+        fn on_request_finished(&mut self, res: &Result<Self::Response, Self::Error>) {
+            println!("Request finished. result: {res:?}");
         }
 
         async fn handle_request(
@@ -61,6 +69,7 @@ async fn works() {
         }
     }
 
+    #[derive(Debug)]
     pub enum Request {
         BuildBlock,
     }

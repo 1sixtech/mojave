@@ -23,12 +23,8 @@ pub trait Task: Sized + 'static {
         request: Self::Request,
     ) -> Result<Self::Response, Self::Error>;
 
-    async fn on_request_started(&mut self, _req: &Self::Request) {
-        async {}
-    }
-    async fn on_request_finished(&mut self, _res: &Result<Self::Response, Self::Error>) {
-        async {}
-    }
+    fn on_request_started(&mut self, _req: &Self::Request) {}
+    fn on_request_finished(&mut self, _res: &Result<Self::Response, Self::Error>) {}
 
     async fn on_shutdown(&mut self) -> Result<(), Self::Error>;
 
