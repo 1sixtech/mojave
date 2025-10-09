@@ -43,12 +43,15 @@ use std::{
 };
 use tracing::{debug, error, info};
 
+const MAX_BLOCK_TO_BROADCAST: usize = 10;
+
 #[derive(Clone)]
 pub struct BlockProducer {
     store: Store,
     blockchain: Arc<Blockchain>,
     rollup_store: StoreRollup,
     coinbase_address: Address,
+    broadcast: tokio::sync::broadcast::Sender<Block>,
 }
 
 impl Task for BlockProducer {
@@ -58,7 +61,17 @@ impl Task for BlockProducer {
 
     async fn handle_request(&mut self, request: Request) -> Result<Self::Response> {
         match request {
-            Request::BuildBlock => self.build_block().await,
+            Request::BuildBlock => {
+                let block = self.build_block().await;
+
+                match block {
+                    Ok(block) => {
+                        info!("New block created: {:?}", self.broadcast.send(block.clone()));
+                        Ok(block)
+                    },
+                    Err(e) => Err(e),
+                }
+            }
         }
     }
 
@@ -70,12 +83,19 @@ impl Task for BlockProducer {
 
 impl BlockProducer {
     pub fn new(node: MojaveNode) -> Self {
+        let (broadcast, _) = tokio::sync::broadcast::channel(MAX_BLOCK_TO_BROADCAST);
+
         BlockProducer {
             store: node.store.clone(),
             blockchain: node.blockchain.clone(),
             rollup_store: node.rollup_store.clone(),
             coinbase_address: node.genesis.coinbase,
+            broadcast: broadcast,
         }
+    }
+
+    pub fn subscribe(&self) -> tokio::sync::broadcast::Receiver<Block> {
+        self.broadcast.subscribe()
     }
 
     pub(crate) async fn build_block(&self) -> Result<Block> {
