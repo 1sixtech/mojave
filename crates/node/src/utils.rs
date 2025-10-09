@@ -8,7 +8,7 @@ use ethrex_p2p::{
     types::{Node, NodeRecord},
     utils::public_key_from_signing_key,
 };
-use mojave_utils::network::{MAINNET_BOOTNODES, Network, TESTNET_BOOTNODES};
+use mojave_utils::network::Network;
 use secp256k1::SecretKey;
 use std::{
     net::{Ipv4Addr, SocketAddr},
