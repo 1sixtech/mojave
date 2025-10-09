@@ -116,11 +116,11 @@ pub async fn get_bootnodes(bootnodes: Vec<Node>, network: &Network, data_dir: &s
     match network {
         Network::Mainnet => {
             tracing::info!("Adding mainnet preset bootnodes");
-            bootnodes.extend(MAINNET_BOOTNODES.clone());
+            bootnodes.extend(network.get_bootnodes());
         }
         Network::Testnet => {
             tracing::info!("Adding testnet preset bootnodes");
-            bootnodes.extend(TESTNET_BOOTNODES.clone());
+            bootnodes.extend(network.get_bootnodes());
         }
         _ => {}
     }
