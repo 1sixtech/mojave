@@ -107,10 +107,12 @@ pub async fn resolve_data_dir(data_dir: &str) -> Result<(PathBuf, String)> {
     Ok((path, s))
 }
 
-pub async fn get_bootnodes(bootnodes: Vec<Node>, network: &Network, data_dir: &str) -> Vec<Node> {
+pub async fn get_bootnodes(
+    mut bootnodes: Vec<Node>,
+    network: &Network,
+    data_dir: &str,
+) -> Vec<Node> {
     const NODE_CONFIG_FILE: &str = "node_config.json";
-    let mut bootnodes: Vec<Node> = bootnodes.clone();
-
     match network {
         Network::Mainnet => {
             tracing::info!("Adding mainnet preset bootnodes");
