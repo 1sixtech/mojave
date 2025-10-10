@@ -5,24 +5,22 @@ on:
   workflow_call:
 
 jobs:
-  fmt-lint:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@nightly
-        with:
-          toolchain: nightly
-          components: rustfmt
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo fmt --all --check
 
-  clippy-lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@nightly
+      - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly
-          components: clippy
+          components: clippy, rustfmt
+
       - uses: Swatinem/rust-cache@v2
-      - run: cargo clippy --all-targets --all-features --workspace -- -D warnings
+        with:
+          shared-key: ci
+
+      - name: Rustfmt
+        run: cargo fmt --all --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-features --all-targets --no-deps -- -D warnings

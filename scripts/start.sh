@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 NODE_HOST="127.0.0.1"
 SEQ_HOST="127.0.0.1"
 NODE_PORT="8545"
@@ -52,15 +54,6 @@ require_cmd() {
     if ! command -v "$1" >/dev/null 2>&1; then
         echo -e "${RED}[ERROR]${NC} Missing command: $1"
         exit 1
-    fi
-}
-
-load_env_if_present() {
-    if [[ -f .env ]]; then
-        # shellcheck disable=SC2046
-        export $(grep -v '^#' .env | xargs) || true
-    else
-        echo -e "${YELLOW}[WARN]${NC} .env not found; continuing without it."
     fi
 }
 
@@ -233,13 +226,34 @@ if port_in_use "$NODE_HOST" "$NODE_PORT"; then
 fi
 
 start_loggers
-build_binaries
+
+{
+  SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+  REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+  TARGET_DIR="${CARGO_TARGET_DIR:-$REPO_ROOT/target}/release"
+
+  BINS=(mojave-node mojave-prover mojave-sequencer)
+  missing=()
+
+  for b in "${BINS[@]}"; do
+    [[ -f "$TARGET_DIR/$b" ]] || missing+=("$b")
+  done
+
+  if (( ${#missing[@]} != 0 )) || [ "$GITHUB_ACTIONS" = "false" ] ; then
+    printf "%b[BUILD]%b Missing binaries: %s → building…\n" "$YELLOW" "$NC" "${missing[*]}"
+    build_binaries
+  else
+    printf "%b[BUILD]%b Release binaries present at %s. Skipping build.\n" "$GREEN" "$NC" "$TARGET_DIR"
+  fi
+}
+
 
 echo -e "${BLUE}[SEQUENCER]${NC} Starting sequencer…"
 (
     set -a
     set +a
-    exec cargo run --bin mojave-sequencer -- init \
+    exec target/release/mojave-sequencer init \
         --no-daemon \
         --network "$GENESIS" \
         --http.port "$SEQ_PORT" \
@@ -265,7 +279,7 @@ echo -e "${GREEN}[NODE]${NC} Starting full node…"
 
 # Build node command with optional bootnodes
 node_cmd=(
-    cargo run --bin mojave-node -- init
+    target/release/mojave-node init
     --no-daemon
     --network "$GENESIS"
     --discovery.port "$NODE_P2P_PORT"

@@ -38,9 +38,14 @@ jobs:
     uses: ./.github/workflows/task.build-prod.yml
     needs: [linters, cargo-linters]
 
+  dev-smoke:
+    name: Dev Command Smoke
+    uses: ./.github/workflows/task.dev-smoke.yml
+    needs: [build-prod]
+
   unlock-pr:
     name: Unlock PR
     needs: [build-prod]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
