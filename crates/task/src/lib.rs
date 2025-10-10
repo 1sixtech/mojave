@@ -30,11 +30,6 @@ async fn works() {
         type Response = Response;
         type Error = Error;
 
-        async fn on_start(&mut self) -> Result<(), Self::Error> {
-            println!("Starting BlockProducer test task");
-            Ok(())
-        }
-
         fn on_request_started(&mut self, req: &Self::Request) {
             println!("Request {req:?} started");
         }

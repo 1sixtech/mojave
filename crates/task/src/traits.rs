@@ -16,7 +16,10 @@ pub trait Task: Sized + 'static {
         std::any::type_name::<Self>()
     }
 
-    async fn on_start(&mut self) -> Result<(), Self::Error>;
+    // Default no-op startup hook
+    async fn on_start(&mut self) -> Result<(), Self::Error> {
+        std::future::ready(Ok(()))
+    }
 
     async fn handle_request(
         &mut self,
@@ -26,7 +29,10 @@ pub trait Task: Sized + 'static {
     fn on_request_started(&mut self, _req: &Self::Request) {}
     fn on_request_finished(&mut self, _res: &Result<Self::Response, Self::Error>) {}
 
-    async fn on_shutdown(&mut self) -> Result<(), Self::Error>;
+    // Default no-op shutdown hook
+    async fn on_shutdown(&mut self) -> Result<(), Self::Error> {
+        std::future::ready(Ok(()))
+    }
 
     fn spawn_with_capacity(self, capacity: usize) -> TaskHandle<Self> {
         let (request_sender, request_receiver) = mpsc::channel::<(
