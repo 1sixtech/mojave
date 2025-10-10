@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 NODE_HOST="127.0.0.1"
 SEQ_HOST="127.0.0.1"
 NODE_PORT="8545"
@@ -52,15 +54,6 @@ require_cmd() {
     if ! command -v "$1" >/dev/null 2>&1; then
         echo -e "${RED}[ERROR]${NC} Missing command: $1"
         exit 1
-    fi
-}
-
-load_env_if_present() {
-    if [[ -f .env ]]; then
-        # shellcheck disable=SC2046
-        export $(grep -v '^#' .env | xargs) || true
-    else
-        echo -e "${YELLOW}[WARN]${NC} .env not found; continuing without it."
     fi
 }
 
