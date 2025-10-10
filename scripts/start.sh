@@ -240,11 +240,11 @@ start_loggers
     [[ -f "$TARGET_DIR/$b" ]] || missing+=("$b")
   done
 
-  if (( ${#missing[@]} == 0 )); then
-    printf "%b[BUILD]%b Release binaries present at %s. Skipping build.\n" "$GREEN" "$NC" "$TARGET_DIR"
-  else
+  if (( ${#missing[@]} != 0 )) || [ "$GITHUB_ACTIONS" = "false" ] ; then
     printf "%b[BUILD]%b Missing binaries: %s → building…\n" "$YELLOW" "$NC" "${missing[*]}"
     build_binaries
+  else
+    printf "%b[BUILD]%b Release binaries present at %s. Skipping build.\n" "$GREEN" "$NC" "$TARGET_DIR"
   fi
 }
 
