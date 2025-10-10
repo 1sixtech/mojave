@@ -30,6 +30,14 @@ async fn works() {
         type Response = Response;
         type Error = Error;
 
+        fn on_request_started(&mut self, req: &Self::Request) {
+            println!("Request {req:?} started");
+        }
+
+        fn on_request_finished(&mut self, res: &Result<Self::Response, Self::Error>) {
+            println!("Request finished. result: {res:?}");
+        }
+
         async fn handle_request(
             &mut self,
             request: Self::Request,
@@ -56,6 +64,7 @@ async fn works() {
         }
     }
 
+    #[derive(Debug)]
     pub enum Request {
         BuildBlock,
     }
