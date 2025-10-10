@@ -66,9 +66,12 @@ impl Task for BlockProducer {
 
                 match block {
                     Ok(block) => {
-                        info!("New block created: {:?}", self.broadcast.send(block.clone()));
+                        info!(
+                            "New block created: {:?}",
+                            self.broadcast.send(block.clone())
+                        );
                         Ok(block)
-                    },
+                    }
                     Err(e) => Err(e),
                 }
             }
@@ -90,7 +93,7 @@ impl BlockProducer {
             blockchain: node.blockchain.clone(),
             rollup_store: node.rollup_store.clone(),
             coinbase_address: node.genesis.coinbase,
-            broadcast: broadcast,
+            broadcast,
         }
     }
 
