@@ -29,14 +29,14 @@ pub struct BuilderContext {
 
 pub fn create_inscription_tx(
     ctx: &BuilderContext,
-    payload: Vec<u8>,
+    payloads: &[Vec<u8>],
 ) -> Result<(Transaction, Transaction)> {
     // step 1: generate keypair
     let key_pair = generate_key_pair()?;
     let public_key = XOnlyPublicKey::from_keypair(&key_pair).0;
 
     // step 2: create reveal script
-    let reveal_script = build_reveal_script(&public_key, &payload)?;
+    let reveal_script = build_reveal_script(&public_key, payloads)?;
     let reveal_leaf = (reveal_script, LeafVersion::TapScript);
 
     // create merkle tree with a single leaf containing the reveal script
@@ -133,18 +133,22 @@ fn generate_key_pair() -> Result<UntweakedKeypair> {
     Ok(UntweakedKeypair::from_seckey_slice(SECP256K1, &rand_bytes)?)
 }
 
-fn build_reveal_script(taproot_public_key: &XOnlyPublicKey, payload: &[u8]) -> Result<ScriptBuf> {
+fn build_reveal_script(public_key: &XOnlyPublicKey, payloads: &[Vec<u8>]) -> Result<ScriptBuf> {
     let mut script_builder = script::Builder::new()
-        .push_x_only_key(taproot_public_key)
-        .push_opcode(bitcoin::opcodes::all::OP_CHECKSIG)
-        .push_opcode(bitcoin::opcodes::OP_FALSE)
-        .push_opcode(bitcoin::opcodes::all::OP_IF);
+        .push_x_only_key(public_key)
+        .push_opcode(bitcoin::opcodes::all::OP_CHECKSIG);
 
-    for chunk in payload.chunks(MAX_PUSH_SIZE) {
-        let data = script::PushBytesBuf::try_from(chunk.to_vec())?;
-        script_builder = script_builder.push_slice(data);
+    for payload in payloads {
+        script_builder = script_builder
+            .push_opcode(bitcoin::opcodes::OP_FALSE)
+            .push_opcode(bitcoin::opcodes::all::OP_IF);
+
+        for chunk in payload.chunks(MAX_PUSH_SIZE) {
+            let data = script::PushBytesBuf::try_from(chunk.to_vec())?;
+            script_builder = script_builder.push_slice(data);
+        }
+        script_builder = script_builder.push_opcode(bitcoin::opcodes::all::OP_ENDIF);
     }
-    script_builder = script_builder.push_opcode(bitcoin::opcodes::all::OP_ENDIF);
 
     Ok(script_builder.into_script())
 }
@@ -290,13 +294,21 @@ mod tests {
 
         let script = build_reveal_script(&public_key, &[]).unwrap();
         let expected_script = ScriptBuf::from_hex(
-            "204aa2ea0baac4158535936264f2027a3e7dc31bf1966c8f48b8a5087f256582f7ac006368",
+            "204aa2ea0baac4158535936264f2027a3e7dc31bf1966c8f48b8a5087f256582f7ac",
         )
         .unwrap();
         assert_eq!(script, expected_script);
 
-        let script = build_reveal_script(&public_key, b"Hello, world!").unwrap();
+        let script = build_reveal_script(&public_key, &[b"Hello, world!".to_vec()]).unwrap();
         let expected_script = ScriptBuf::from_hex("204aa2ea0baac4158535936264f2027a3e7dc31bf1966c8f48b8a5087f256582f7ac00630d48656c6c6f2c20776f726c642168").unwrap();
+        assert_eq!(script, expected_script);
+
+        let script = build_reveal_script(
+            &public_key,
+            &[vec![1, 2], vec![2, 3], vec![3, 4], vec![4], vec![5]],
+        )
+        .unwrap();
+        let expected_script = ScriptBuf::from_hex("204aa2ea0baac4158535936264f2027a3e7dc31bf1966c8f48b8a5087f256582f7ac00630201026800630202036800630203046800630104680063010568").unwrap();
         assert_eq!(script, expected_script);
     }
 
@@ -307,7 +319,7 @@ mod tests {
         let mut long_payload = vec![0; 60000];
         OsRng.fill_bytes(&mut long_payload);
 
-        let script = build_reveal_script(&public_key, &long_payload).unwrap();
+        let script = build_reveal_script(&public_key, &[long_payload.clone()]).unwrap();
 
         let mut expected_script_builder = script::Builder::new()
             .push_x_only_key(&public_key)
