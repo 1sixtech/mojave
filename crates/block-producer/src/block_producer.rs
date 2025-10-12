@@ -30,6 +30,7 @@ use ethrex_l2_common::{
         SIMPLE_TX_STATE_DIFF_SIZE, StateDiffError,
     },
 };
+use ethrex_p2p::{network::P2PContext, rlpx::{l2::messages::L2Message, mojave::messages::{MojaveBlock, MojaveMessage}, Message}};
 use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
 use ethrex_vm::BlockExecutionResult;
@@ -51,7 +52,7 @@ pub struct BlockProducer {
     blockchain: Arc<Blockchain>,
     rollup_store: StoreRollup,
     coinbase_address: Address,
-    broadcast: tokio::sync::broadcast::Sender<Block>,
+    p2p_context: P2PContext,
 }
 
 impl Task for BlockProducer {
@@ -66,9 +67,11 @@ impl Task for BlockProducer {
 
                 match block {
                     Ok(block) => {
-                        info!(
+                        tracing::event!(
+                            target:module_path!(),
+                            tracing::Level::INFO,
                             "New block created: {:?}",
-                            self.broadcast.send(block.clone())
+                            self.p2p_context.broadcast_mojave_message(Message::L2(L2Message::NewBlock()))
                         );
                         Ok(block)
                     }
@@ -86,19 +89,13 @@ impl Task for BlockProducer {
 
 impl BlockProducer {
     pub fn new(node: MojaveNode) -> Self {
-        let (broadcast, _) = tokio::sync::broadcast::channel(MAX_BLOCK_TO_BROADCAST);
-
         BlockProducer {
             store: node.store.clone(),
             blockchain: node.blockchain.clone(),
             rollup_store: node.rollup_store.clone(),
             coinbase_address: node.genesis.coinbase,
-            broadcast,
+            p2p_context: node.p2p_context.clone(),
         }
-    }
-
-    pub fn subscribe(&self) -> tokio::sync::broadcast::Receiver<Block> {
-        self.broadcast.subscribe()
     }
 
     pub(crate) async fn build_block(&self) -> Result<Block> {
