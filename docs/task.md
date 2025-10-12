@@ -54,7 +54,8 @@ impl mojave_task::Task for BlockProducer {
 }
 ```
 
-3. Define the shutdown behavior.
+3. (Optional) Override lifecycle hooks.
+By default, `on_start` and `on_shutdown` are no-ops that return `Ok(())`. Override them only if you need custom behavior.
 ```rust
 impl mojave_task::Task for BlockProducer {
     async fn handle_request(...

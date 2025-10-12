@@ -1,0 +1,123 @@
+---
+name: Task - Dev Command Smoke
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            relevant:
+              - '**/*.rs'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+              - 'justfile'
+              - 'scripts/**'
+              - '.github/workflows/**'
+
+      - name: Skip if no relevant changes
+        if: ${{ steps.changes.outputs.relevant != 'true' }}
+        run: echo "No relevant changes for dev smoke. Skipping." && exit 0
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ci
+          save-if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq just
+
+      - name: Download prod bins
+        id: dl
+        uses: actions/download-artifact@v4
+        with:
+            name: prod-bins
+            path: ${{ runner.temp }}/prod-bins
+
+      - name: Restore prod bins into target/release
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p target/release
+          shopt -s nullglob
+
+          if compgen -G "$RUNNER_TEMP/prod-bins/target/release/*" > /dev/null; then
+            cp -f "$RUNNER_TEMP/prod-bins/target/release/"* target/release/
+          fi
+
+          for dir in "$RUNNER_TEMP/prod-bins" "$RUNNER_TEMP/prod-bins/prod-bins"; do
+            if compgen -G "$dir/mojave-*" > /dev/null; then
+              cp -f "$dir"/mojave-* target/release/
+            fi
+          done
+
+          ls -la target/release || true
+          chmod +x target/release/mojave-* || true
+
+      - name: Decide BIN_DIR or fallback
+        id: decide
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f target/release/mojave-node && -f target/release/mojave-sequencer && -f target/release/mojave-prover ]]; then
+            echo "BIN_DIR=target/release" >> "$GITHUB_ENV"
+            echo "have_bins=true" >> "$GITHUB_OUTPUT"
+            echo "Using binaries in: target/release"
+          else
+            echo "have_bins=false" >> "$GITHUB_OUTPUT"
+            echo "No ready-made binaries in target/release (will fallback build)"
+          fi
+
+      - name: Build bins (fallback)
+        if: ${{ steps.decide.outputs.have_bins == 'false' }}
+        run: cargo build --bins --release --locked --quiet
+
+      - name: Set BIN_DIR after fallback
+        if: ${{ steps.decide.outputs.have_bins == 'false' }}
+        run: |
+          echo "BIN_DIR=target/release" >> "$GITHUB_ENV"
+          chmod +x target/release/mojave-* || true
+          echo "Using binaries in: target/release"
+
+      - name: Sanity check binary targets exist
+        shell: bash
+        run: |
+          set -euo pipefail
+          bins=$(cargo metadata -q --format-version=1 | jq -r '.packages[].targets[] | select(.kind[]=="bin") | .name')
+          for b in mojave-node mojave-sequencer mojave-prover; do
+            echo "$bins" | grep -x "$b" >/dev/null || { echo "Missing bin target: $b"; exit 1; }
+          done
+
+    #   - name: Install rex CLI
+    #     run: |
+    #       set -euo pipefail
+    #       git clone --depth 1 https://github.com/lambdaclass/rex /tmp/rex
+    #       make -C /tmp/rex cli
+    #       echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+    #       rex --version
+
+      - name: Run dev command smoke
+        run: |
+          chmod +x ./scripts/ci/run-dev-smoke-commands.sh
+          ./scripts/ci/run-dev-smoke-commands.sh

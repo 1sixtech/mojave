@@ -8,21 +8,24 @@ use ethrex_p2p::{
     types::{Node, NodeRecord},
     utils::public_key_from_signing_key,
 };
-use mojave_utils::network::{MAINNET_BOOTNODES, Network, TESTNET_BOOTNODES};
+use mojave_utils::network::Network;
 use secp256k1::SecretKey;
 use std::{
     net::{Ipv4Addr, SocketAddr},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 use tracing::{error, info};
 
 impl NodeConfigFile {
     pub async fn new(table: Kademlia, node_record: NodeRecord) -> Self {
-        let mut connected_peers = vec![];
+        let connected_peers: Vec<Node> = table
+            .peers
+            .lock()
+            .await
+            .values()
+            .map(|p| p.node.clone())
+            .collect();
 
-        for (_, peer) in table.peers.lock().await.iter() {
-            connected_peers.push(peer.node.clone());
-        }
         NodeConfigFile {
             known_peers: connected_peers,
             node_record,
@@ -107,17 +110,20 @@ pub async fn resolve_data_dir(data_dir: &str) -> Result<(PathBuf, String)> {
     Ok((path, s))
 }
 
-pub async fn get_bootnodes(bootnodes: Vec<Node>, network: &Network, data_dir: &str) -> Vec<Node> {
-    let mut bootnodes: Vec<Node> = bootnodes.clone();
-
+pub async fn get_bootnodes(
+    mut bootnodes: Vec<Node>,
+    network: &Network,
+    data_dir: &str,
+) -> Vec<Node> {
+    const NODE_CONFIG_FILE: &str = "node_config.json";
     match network {
         Network::Mainnet => {
             tracing::info!("Adding mainnet preset bootnodes");
-            bootnodes.extend(MAINNET_BOOTNODES.clone());
+            bootnodes.extend(network.get_bootnodes());
         }
         Network::Testnet => {
             tracing::info!("Adding testnet preset bootnodes");
-            bootnodes.extend(TESTNET_BOOTNODES.clone());
+            bootnodes.extend(network.get_bootnodes());
         }
         _ => {}
     }
@@ -128,7 +134,7 @@ pub async fn get_bootnodes(bootnodes: Vec<Node>, network: &Network, data_dir: &s
         );
     }
 
-    let config_file = PathBuf::from(data_dir.to_owned() + "/node_config.json");
+    let config_file = Path::new(data_dir).join(NODE_CONFIG_FILE);
 
     tracing::info!("Reading known peers from config file {:?}", config_file);
 

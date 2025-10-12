@@ -25,7 +25,7 @@ jobs:
             system: linux-amd64
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: cargo build --release
       - run: mv target/release/mojave-node target/release/${{ matrix.system }}-mojave-node
       - run: mv target/release/mojave-prover target/release/${{ matrix.system }}-mojave-prover

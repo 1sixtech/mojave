@@ -8,8 +8,12 @@ jobs:
   toml-lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - run: cargo install taplo-cli
+      - uses: actions/checkout@v4
+
+      # Install prebuilt binary (more fast)
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: taplo-cli
       - run: |
           taplo check --default-schema-catalogs
           taplo fmt --check --diff

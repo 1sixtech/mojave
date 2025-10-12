@@ -81,8 +81,11 @@ impl Network {
     }
 
     pub fn get_bootnodes(&self) -> Vec<Node> {
-        // TODO: add testnet and mainnet bootnodes
-        vec![]
+        match self {
+            Network::Mainnet => MAINNET_BOOTNODES.clone(),
+            Network::Testnet => TESTNET_BOOTNODES.clone(),
+            Network::DefaultNet | Network::GenesisPath(_) => Vec::new(),
+        }
     }
 }
 
