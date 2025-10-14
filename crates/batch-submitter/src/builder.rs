@@ -295,12 +295,12 @@ mod tests {
     #[test]
     fn test_build_reveal_script_empty_payloads() {
         let public_key = get_public_key();
- 
+
         let result = build_reveal_script(&public_key, &[]);
         assert!(result.is_err());
         assert!(matches!(result, Err(Error::Internal(msg)) if msg == "Payloads cannot be empty"));
     }
-    
+
     #[test]
     fn test_build_reveal_script_small_payload() {
         let public_key = get_public_key();
