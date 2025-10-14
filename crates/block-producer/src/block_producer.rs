@@ -32,7 +32,10 @@ use ethrex_l2_common::{
 };
 use ethrex_p2p::{
     network::P2PContext,
-    rlpx::{mojave::messages::{MojaveBlock, MojaveMessage}, Message}
+    rlpx::{
+        Message,
+        mojave::messages::{MojaveBlock, MojaveMessage},
+    },
 };
 use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
