@@ -3,7 +3,8 @@ use ethrex_blockchain::Blockchain;
 use ethrex_common::types::Genesis;
 pub use ethrex_p2p::types::Node;
 use ethrex_p2p::{
-    kademlia::Kademlia, network::P2PContext, peer_handler::PeerHandler, sync_manager::SyncManager, types::NodeRecord
+    kademlia::Kademlia, network::P2PContext, peer_handler::PeerHandler, sync_manager::SyncManager,
+    types::NodeRecord,
 };
 use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
