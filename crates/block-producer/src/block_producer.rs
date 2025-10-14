@@ -30,7 +30,13 @@ use ethrex_l2_common::{
         SIMPLE_TX_STATE_DIFF_SIZE, StateDiffError,
     },
 };
-use ethrex_p2p::{network::P2PContext, rlpx::{l2::messages::L2Message, mojave::messages::{MojaveBlock, MojaveMessage}, Message}};
+use ethrex_p2p::{
+    network::P2PContext,
+    rlpx::{
+        Message,
+        mojave::messages::{MojaveBlock, MojaveMessage},
+    },
+};
 use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
 use ethrex_vm::BlockExecutionResult;
@@ -43,8 +49,6 @@ use std::{
     time::{Instant, SystemTime},
 };
 use tracing::{debug, error, info};
-
-const MAX_BLOCK_TO_BROADCAST: usize = 10;
 
 #[derive(Clone)]
 pub struct BlockProducer {
@@ -71,7 +75,7 @@ impl Task for BlockProducer {
                             target:module_path!(),
                             tracing::Level::INFO,
                             "New block created: {:?}",
-                            self.p2p_context.broadcast_mojave_message(Message::L2(L2Message::NewBlock()))
+                            self.p2p_context.broadcast_mojave_message(Message::Mojave(MojaveMessage::Block(MojaveBlock::new(block.clone(), None))))
                         );
                         Ok(block)
                     }
