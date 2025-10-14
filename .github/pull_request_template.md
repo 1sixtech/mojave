@@ -1,6 +1,6 @@
 ## Why is this change necessary?
 
-<!-- Why does this pull request exists? -->
+<!-- Why does this pull request exist? -->
 
 ## Description
 
