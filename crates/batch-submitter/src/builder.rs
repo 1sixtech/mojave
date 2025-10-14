@@ -134,6 +134,10 @@ fn generate_key_pair() -> Result<UntweakedKeypair> {
 }
 
 fn build_reveal_script(public_key: &XOnlyPublicKey, payloads: &[Vec<u8>]) -> Result<ScriptBuf> {
+    if payloads.is_empty() {
+        return Err(Error::Internal("Payloads cannot be empty".to_string()));
+    }
+
     let mut script_builder = script::Builder::new()
         .push_x_only_key(public_key)
         .push_opcode(bitcoin::opcodes::all::OP_CHECKSIG);
@@ -288,6 +292,15 @@ mod tests {
         let _public_key = XOnlyPublicKey::from_keypair(&key_pair).0;
     }
 
+    #[test]
+    fn test_build_reveal_script_empty_payloads() {
+        let public_key = get_public_key();
+ 
+        let result = build_reveal_script(&public_key, &[]);
+        assert!(result.is_err());
+        assert!(matches!(result, Err(Error::Internal(msg)) if msg == "Payloads cannot be empty"));
+    }
+    
     #[test]
     fn test_build_reveal_script_small_payload() {
         let public_key = get_public_key();
