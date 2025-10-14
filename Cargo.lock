@@ -4486,6 +4486,7 @@ dependencies = [
  "reqwest 0.12.23",
  "serde",
  "serde_json",
+ "thiserror 2.0.17",
  "tiny-keccak",
  "tokio",
  "tracing",

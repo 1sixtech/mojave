@@ -23,7 +23,7 @@ pub async fn enqueue_proof_input(
         sequencer_url: sequencer_addr,
     };
     ctx.job_store.insert_job(job_id.clone()).await;
-    ctx.sender
+    ctx.job_sender
         .send(record)
         .await
         .map_err(|e| Error::Internal(format!("Error sending job to channel: {e}")))?;
@@ -68,6 +68,7 @@ mod tests {
     use super::*;
     use crate::{
         job::{JobRecord, JobStore},
+        notifier::{self, Notifier},
         rpc::ProverRpcContext,
     };
     use guest_program::input::ProgramInput;
@@ -83,11 +84,14 @@ mod tests {
 
     fn make_ctx(cap: usize) -> (ProverRpcContext, mpsc::Receiver<JobRecord>) {
         let (tx, rx) = mpsc::channel::<JobRecord>(cap);
+        let (proof_tx, _proof_rx) = mpsc::channel::<ProofResponse>(cap);
+        let notifier = Notifier::new(proof_tx);
         (
             ProverRpcContext {
                 aligned_mode: false,
                 job_store: JobStore::default(),
-                sender: tx,
+                job_sender: tx,
+                notifier,
             },
             rx,
         )

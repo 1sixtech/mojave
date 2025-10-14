@@ -25,6 +25,7 @@ hex = { workspace = true }
 reqwest = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
+thiserror = { workspace = true }
 tiny-keccak = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }

@@ -50,6 +50,7 @@ mod tests {
     use super::*;
     use crate::{
         job::{JobRecord, JobStore},
+        notifier::Notifier,
         rpc::{ProverRpcContext, types::SendProofInputRequest},
     };
     use guest_program::input::ProgramInput;
@@ -66,13 +67,18 @@ mod tests {
     }
 
     fn make_ctx(capacity: usize) -> (Arc<ProverRpcContext>, mpsc::Receiver<JobRecord>) {
-        let (tx, rx) = mpsc::channel::<JobRecord>(capacity);
-        let ctx = Arc::new(ProverRpcContext {
-            aligned_mode: false,
-            job_store: JobStore::default(),
-            sender: tx,
-        });
-        (ctx, rx)
+        let (tx, rx) = mpsc::channel::<JobRecord>(cap);
+        let (proof_tx, _proof_rx) = mpsc::channel::<ProofResponse>(cap);
+        let notifier = Notifier::new(proof_tx);
+        (
+            Arc::new(ProverRpcContext {
+                aligned_mode: false,
+                job_store: JobStore::default(),
+                job_sender: tx,
+                notifier,
+            }),
+            rx,
+        )
     }
 
     #[tokio::test]

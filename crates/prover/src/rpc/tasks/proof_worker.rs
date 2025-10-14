@@ -5,7 +5,10 @@ use ethrex_rpc::RpcErr;
 use mojave_client::types::{ProofResponse, ProofResult};
 use tokio::{sync::mpsc, task::JoinHandle};
 
-use crate::rpc::{ProverRpcContext, types::JobRecord};
+use crate::{
+    notifier::ProofEvents,
+    rpc::{ProverRpcContext, types::JobRecord},
+};
 
 pub(crate) fn spawn_proof_worker(
     ctx: Arc<ProverRpcContext>,
@@ -47,7 +50,7 @@ pub(crate) fn spawn_proof_worker(
                         .upsert_proof(&proof_response.job_id, proof_response.clone())
                         .await;
 
-                    todo!("Send proof to sequencer")
+                    let _ = ctx.notifier.on_proof_generated(proof_response);
                 }
                 None => {
                     tracing::info!("Proof worker channel closed; stopping");

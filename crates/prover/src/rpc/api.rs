@@ -1,7 +1,9 @@
 use crate::{
     job::{JobRecord, JobStore},
+    notifier::Notifier,
     rpc::{ProverRpcContext, tasks::spawn_proof_worker},
 };
+use mojave_client::types::ProofResponse;
 use mojave_rpc_server::{RpcRegistry, RpcService};
 use mojave_utils::rpc::error::{Error, Result};
 
@@ -16,10 +18,13 @@ pub async fn start_api(
     queue_capacity: usize,
 ) -> Result<()> {
     let (job_sender, job_receiver) = mpsc::channel::<JobRecord>(queue_capacity);
+    let (proof_sender, mut proof_receiver) = mpsc::channel::<ProofResponse>(queue_capacity);
+    let notifier = Notifier::new(proof_sender);
     let context = Arc::new(ProverRpcContext {
         aligned_mode,
         job_store: JobStore::default(),
-        sender: job_sender,
+        job_sender,
+        notifier,
     });
     tracing::info!(aligned_mode = %aligned_mode, "Prover RPC context initialized");
 
@@ -50,6 +55,26 @@ pub async fn start_api(
             proof_worker_handle
                 .await
                 .map_err(|e| Error::Internal(e.to_string()))
+        },
+        //spawn dummy consumer
+        async {
+            tokio::spawn({
+                async move {
+                    loop {
+                        match proof_receiver.recv().await {
+                            Some(proof) => {
+                                tracing::info!("Receive proof: {proof:?}")
+                            }
+                            None => {
+                                tracing::warn!("Receiver dropped");
+                                break;
+                            }
+                        }
+                    }
+                }
+            })
+            .await
+            .map_err(|e| Error::Internal(e.to_string()))
         }
     )
     .inspect_err(|e| tracing::error!("Error shutting down server:{e:?}"));

@@ -1,4 +1,5 @@
 pub mod job;
+mod notifier;
 mod rpc;
 pub mod services;
 

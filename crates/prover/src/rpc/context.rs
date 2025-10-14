@@ -1,9 +1,10 @@
 use tokio::sync::mpsc;
 
-use crate::{job::JobStore, rpc::types::JobRecord};
+use crate::{job::JobStore, notifier::Notifier, rpc::types::JobRecord};
 
 pub struct ProverRpcContext {
     pub aligned_mode: bool,
     pub job_store: JobStore,
-    pub sender: mpsc::Sender<JobRecord>,
+    pub job_sender: mpsc::Sender<JobRecord>,
+    pub notifier: Notifier,
 }
