@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::{constants::DEFAULT_TASK_CAPACITY, handle::TaskHandle, runner::TaskRunner};
+use crate::{constants::DEFAULT_TASK_CAPACITY, handle::TaskHandle, task_runner::TaskRunner};
 use tokio::{
     sync::{mpsc, oneshot},
     time::{MissedTickBehavior, interval},

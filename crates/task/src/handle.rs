@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{
     error::Error,
-    runner::{RequestSignal, ShutdownSignal},
+    task_runner::{RequestSignal, ShutdownSignal},
     traits::Task,
 };
 use tokio::sync::{mpsc, oneshot};

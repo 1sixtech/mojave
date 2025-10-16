@@ -12,8 +12,11 @@ readme.workspace = true
 keywords.workspace = true
 
 [dependencies]
+mojave-utils = { workspace = true }
+
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["macros", "sync", "rt"] }
+tokio-util = { workspace = true }
 tracing = { workspace = true }
 trait-variant = "0.1.2"
 
