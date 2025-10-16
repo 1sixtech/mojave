@@ -71,7 +71,7 @@ impl MojaveNode {
 
         let tracker = TaskTracker::new();
 
-        start_network(
+        let p2p_context = start_network(
             options.bootnodes.clone(),
             &options.network,
             &data_dir_str,
@@ -111,6 +111,7 @@ impl MojaveNode {
             syncer,
             peer_table,
             peer_handler,
+            p2p_context,
         })
     }
 

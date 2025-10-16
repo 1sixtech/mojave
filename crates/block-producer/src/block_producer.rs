@@ -30,6 +30,13 @@ use ethrex_l2_common::{
         SIMPLE_TX_STATE_DIFF_SIZE, StateDiffError,
     },
 };
+use ethrex_p2p::{
+    network::P2PContext,
+    rlpx::{
+        Message,
+        mojave::messages::{MojaveBlock, MojaveMessage},
+    },
+};
 use ethrex_storage::Store;
 use ethrex_storage_rollup::StoreRollup;
 use ethrex_vm::BlockExecutionResult;
@@ -49,6 +56,7 @@ pub struct BlockProducer {
     blockchain: Arc<Blockchain>,
     rollup_store: StoreRollup,
     coinbase_address: Address,
+    p2p_context: P2PContext,
 }
 
 impl Task for BlockProducer {
@@ -58,7 +66,22 @@ impl Task for BlockProducer {
 
     async fn handle_request(&mut self, request: Request) -> Result<Self::Response> {
         match request {
-            Request::BuildBlock => self.build_block().await,
+            Request::BuildBlock => {
+                let block = self.build_block().await;
+
+                match block {
+                    Ok(block) => {
+                        tracing::event!(
+                            target:module_path!(),
+                            tracing::Level::INFO,
+                            "New block created: {:?}",
+                            self.p2p_context.broadcast_mojave_message(Message::Mojave(MojaveMessage::Block(MojaveBlock::new(block.clone(), None))))
+                        );
+                        Ok(block)
+                    }
+                    Err(e) => Err(e),
+                }
+            }
         }
     }
 
@@ -75,6 +98,7 @@ impl BlockProducer {
             blockchain: node.blockchain.clone(),
             rollup_store: node.rollup_store.clone(),
             coinbase_address: node.genesis.coinbase,
+            p2p_context: node.p2p_context.clone(),
         }
     }
 
