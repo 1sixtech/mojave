@@ -18,10 +18,10 @@ pub struct Options {
     pub network: Network,
 
     #[arg(
-    	long = "bootnodes",
-     	value_parser = clap::value_parser!(Node),
-      	value_name = "BOOTNODE_LIST",
-       	value_delimiter = ',',
+        long = "bootnodes",
+        value_parser = clap::value_parser!(Node),
+        value_name = "BOOTNODE_LIST",
+        value_delimiter = ',',
         num_args = 1..,
         help = "Comma separated enode URLs for P2P discovery bootstrap.",
         help_heading = "P2P options"

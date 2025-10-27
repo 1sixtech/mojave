@@ -22,4 +22,12 @@ pub enum Error {
     TaprootError(#[from] bitcoin::taproot::TaprootBuilderError),
     #[error("Push bytes error: {0}")]
     PushBytesError(#[from] bitcoin::script::PushBytesError),
+    #[error("RecvError: {0}")]
+    RecvError(#[from] tokio::sync::broadcast::error::RecvError),
+    #[error("MsgIO error: {0}")]
+    MsgIOError(#[from] mojave_msgio::error::Error),
+    #[error("Bincode error: {0}")]
+    BincodeError(#[from] bincode::Error),
+    #[error("P2P NetworkError: {0}")]
+    P2PNetworkError(#[from] ethrex_p2p::network::NetworkError),
 }

@@ -1,5 +1,5 @@
 use ethrex_blockchain::error::ChainError;
-use ethrex_common::types::BlobsBundleError;
+use ethrex_common::types::{BlobsBundleError, batch::Batch};
 use ethrex_l2_common::{
     privileged_transactions::PrivilegedTransactionError, state_diff::StateDiffError,
 };
@@ -36,4 +36,12 @@ pub enum Error {
     Unreachable(String),
     #[error("Privileged Transaction error: {0}")]
     PrivilegedTransactionError(#[from] PrivilegedTransactionError),
+    #[error("Send error on channel: {0}")]
+    BroadcastError(#[from] Box<tokio::sync::broadcast::error::SendError<Batch>>),
+}
+
+impl From<tokio::sync::broadcast::error::SendError<Batch>> for Error {
+    fn from(err: tokio::sync::broadcast::error::SendError<Batch>) -> Self {
+        Error::BroadcastError(Box::new(err))
+    }
 }

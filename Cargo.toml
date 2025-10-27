@@ -27,6 +27,7 @@ members = [
   "crates/block-producer",
   "crates/btc-watcher",
   "crates/client",
+  "crates/msgio",
   "crates/node",
   "crates/proof-coordinator",
   "crates/prover",
@@ -43,8 +44,10 @@ resolver = "2"
 
 [workspace.dependencies]
 mojave-batch-producer = { path = "crates/batch-producer" }
+mojave-batch-submitter = { path = "crates/batch-submitter" }
 mojave-block-producer = { path = "crates/block-producer" }
 mojave-client = { path = "crates/client" }
+mojave-msgio = { path = "crates/msgio" }
 mojave-node-lib = { path = "crates/node" }
 mojave-proof-coordinator = { path = "crates/proof-coordinator" }
 mojave-prover-lib = { path = "crates/prover" }
@@ -69,6 +72,7 @@ ethrex-vm = { git = "https://github.com/1sixtech/ethrex", branch = "dh-mojave-p2
 guest_program = { git = "https://github.com/1sixtech/ethrex", branch = "dh-mojave-p2p", default-features = false }
 
 anyhow = { version = "1.0" }
+async-trait = "0.1"
 axum = { version = "0.8" }
 bincode = { version = "1.3" }
 bitcoin = { version = "0.32", default-features = false }
