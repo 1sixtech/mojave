@@ -70,7 +70,7 @@ pub fn create_inscription_tx(
     // step 3: build the commit tx
     let unfunded_commit_tx = build_unfunded_commit_tx(&reveal_address, commit_value)?;
 
-    // Fund the commit tx. Additional utxos might be added to the output set
+    // Fund the commit tx. Additional UTxOs might be added to the output set
     let unsigned_commit_tx = fund_tx(ctx, &unfunded_commit_tx)?;
 
     let outpoints: Vec<OutPoint> = unsigned_commit_tx
@@ -79,7 +79,7 @@ pub fn create_inscription_tx(
         .map(|tx_in| tx_in.previous_output)
         .collect();
 
-    // Use a closure to scope the operations that can fail after locking UTXOs.
+    // Use a closure to scope the operations that can fail after locking UTxOs.
     let result = (|| {
         // Verify that the first TxIn of the funded commit tx is our commitment
         if unsigned_commit_tx.output[0] != unfunded_commit_tx.output[0] {
@@ -105,9 +105,9 @@ pub fn create_inscription_tx(
         Ok((signed_commit_tx, signed_reveal_tx))
     })();
 
-    // If the closure returned an error, unlock the UTXOs before returning.
+    // If the closure returned an error, unlock the UTxOs before returning.
     if result.is_err() {
-        // Unlock the UTXOs. We'll ignore the result of this call, since the original
+        // Unlock the UTxOs. We'll ignore the result of this call, since the original
         // error is more important to return. A logging library would be useful here.
         let _ = ctx.rpc_client.unlock_unspent(&outpoints);
     }
