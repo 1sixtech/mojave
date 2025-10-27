@@ -70,31 +70,49 @@ pub fn create_inscription_tx(
     // step 3: build the commit tx
     let unfunded_commit_tx = build_unfunded_commit_tx(&reveal_address, commit_value)?;
 
-    // Fund the commit tx. Additional utxos might be added to the output set
+    // Fund the commit tx. Additional UTxOs might be added to the output set
     let unsigned_commit_tx = fund_tx(ctx, &unfunded_commit_tx)?;
 
-    // Verify that the first TxIn of the funded commit tx is our commitment
-    if unsigned_commit_tx.output[0] != unfunded_commit_tx.output[0] {
-        return Err(Error::Internal("Unexpected error".to_string()));
+    let outpoints: Vec<OutPoint> = unsigned_commit_tx
+        .input
+        .iter()
+        .map(|tx_in| tx_in.previous_output)
+        .collect();
+
+    // Use a closure to scope the operations that can fail after locking UTxOs.
+    let result = (|| {
+        // Verify that the first TxIn of the funded commit tx is our commitment
+        if unsigned_commit_tx.output[0] != unfunded_commit_tx.output[0] {
+            return Err(Error::Internal("Unexpected error".to_string()));
+        }
+
+        // step 4: build and sign the reveal tx
+        let signed_reveal_tx = build_and_sign_reveal_tx(
+            ctx.amount,
+            &ctx.operator_l1_addr,
+            &unsigned_commit_tx,
+            &reveal_leaf.0,
+            &control_block,
+            &key_pair,
+        )?;
+
+        // step 5: sign the commit tx
+        let signed_commit_tx = ctx
+            .rpc_client
+            .sign_raw_transaction_with_wallet(&unsigned_commit_tx, None, None)?
+            .transaction()?;
+
+        Ok((signed_commit_tx, signed_reveal_tx))
+    })();
+
+    // If the closure returned an error, unlock the UTxOs before returning.
+    if result.is_err() {
+        // Unlock the UTxOs. We'll ignore the result of this call, since the original
+        // error is more important to return. A logging library would be useful here.
+        let _ = ctx.rpc_client.unlock_unspent(&outpoints);
     }
 
-    // step 4: build and sign the reveal tx
-    let signed_reveal_tx = build_and_sign_reveal_tx(
-        ctx.amount,
-        &ctx.operator_l1_addr,
-        &unsigned_commit_tx,
-        &reveal_leaf.0,
-        &control_block,
-        &key_pair,
-    )?;
-
-    // step 5: sign the commit tx
-    let signed_commit_tx = ctx
-        .rpc_client
-        .sign_raw_transaction_with_wallet(&unsigned_commit_tx, None, None)?
-        .transaction()?;
-
-    Ok((signed_commit_tx, signed_reveal_tx))
+    result
 }
 
 /// Encode tx in non-segwit format.
@@ -118,6 +136,7 @@ fn fund_tx(ctx: &BuilderContext, tx: &Transaction) -> Result<Transaction> {
             Some(&FundRawTransactionOptions {
                 fee_rate: ctx.fee_rate.fee_vb(1000), // convert to sat/kvB
                 change_position: Some(1),
+                lock_unspents: Some(true),
                 ..Default::default()
             }),
             None,
