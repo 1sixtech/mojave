@@ -15,6 +15,7 @@ mojave-rpc-core = { workspace = true }
 
 anyhow = { workspace = true }
 daemonize = { workspace = true }
+hex = { workspace = true }
 lazy_static = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -23,6 +24,7 @@ thiserror = { workspace = true }
 tokio = { workspace = true, features = ["signal", "sync"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+tiny-keccak = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = [

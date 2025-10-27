@@ -32,7 +32,7 @@ pub struct SignedProofResponse {
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Serialize, Deserialize)]
-pub struct JobId(String);
+pub struct JobId(pub String);
 
 impl JobId {
     pub fn is_empty(&self) -> bool {

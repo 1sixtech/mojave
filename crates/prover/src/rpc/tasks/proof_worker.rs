@@ -3,6 +3,8 @@ use std::sync::Arc;
 use ethrex_prover_lib::{backend::Backend, prove, to_batch_proof};
 use ethrex_rpc::RpcErr;
 use mojave_client::types::{ProofResponse, ProofResult};
+use mojave_msgio::types::{Message, MessageHeader};
+use mojave_utils::hash;
 use tokio::{sync::mpsc, task::JoinHandle};
 
 use crate::rpc::{ProverRpcContext, types::JobRecord};
@@ -47,7 +49,40 @@ pub(crate) fn spawn_proof_worker(
                         .upsert_proof(&proof_response.job_id, proof_response.clone())
                         .await;
 
-                    todo!("Send proof to sequencer")
+                    let msg_id = hash::compute_keccak(proof_response.job_id.0.as_bytes());
+
+                    // TODO: change in memory dedup
+                    {
+                        let mut g = ctx.sent_ids.lock().await;
+                        if g.contains(&msg_id) {
+                            tracing::warn!(%msg_id, "duplicate proof publish suppressed");
+                            continue;
+                        }
+                        g.insert(msg_id.clone());
+                    }
+
+                    let msg = Message {
+                        header: MessageHeader {
+                            version: 1,
+                            kind: mojave_msgio::types::MessageKind::ProofResponse,
+                            message_id: msg_id,
+                            seq: 1,
+                            last_seq: 1,
+                        },
+                        body: &proof_response,
+                    };
+
+                    let msg_byte = match bincode::serialize(&msg) {
+                        Ok(byte) => byte,
+                        Err(e) => {
+                            tracing::error!(error = %e, "Failed to serialize envelope");
+                            continue;
+                        }
+                    };
+
+                    if let Err(error) = ctx.publisher.publish(msg_byte.into()).await {
+                        tracing::error!("Error {:?}", error)
+                    }
                 }
                 None => {
                     tracing::info!("Proof worker channel closed; stopping");

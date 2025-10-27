@@ -88,6 +88,8 @@ mod tests {
                 aligned_mode: false,
                 job_store: JobStore::default(),
                 sender: tx,
+                publisher: todo!(),
+                sent_ids: todo!(),
             },
             rx,
         )

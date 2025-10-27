@@ -4408,6 +4408,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "bytes",
+ "serde",
  "thiserror 2.0.17",
 ]
 
@@ -4495,6 +4496,7 @@ dependencies = [
  "guest_program",
  "hex",
  "mojave-client",
+ "mojave-msgio",
  "mojave-rpc-core",
  "mojave-rpc-macros",
  "mojave-rpc-server",
@@ -4602,12 +4604,14 @@ dependencies = [
  "daemonize",
  "ethrex-common",
  "ethrex-p2p",
+ "hex",
  "lazy_static",
  "mojave-rpc-core",
  "serde",
  "serde_json",
  "sysinfo",
  "thiserror 2.0.17",
+ "tiny-keccak",
  "tokio",
  "tracing",
  "tracing-subscriber",

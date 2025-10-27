@@ -12,6 +12,7 @@ documentation = { workspace = true }
 [dependencies]
 async-trait = { workspace = true }
 bytes = { workspace = true }
+serde = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
