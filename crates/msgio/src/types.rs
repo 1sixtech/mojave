@@ -22,7 +22,6 @@ pub struct MessageHeader {
     pub kind: MessageKind,
     pub message_id: String,
     pub seq: u64,
-    pub last_seq: u64,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

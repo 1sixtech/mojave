@@ -51,7 +51,7 @@ pub(crate) fn spawn_proof_worker(
 
                     let msg_id = hash::compute_keccak(proof_response.job_id.0.as_bytes());
 
-                    // TODO: change in memory dedup
+                    // TODO: change this in memory dedup in future
                     {
                         let mut g = ctx.sent_ids.lock().await;
                         if g.contains(&msg_id) {
@@ -67,7 +67,6 @@ pub(crate) fn spawn_proof_worker(
                             kind: mojave_msgio::types::MessageKind::ProofResponse,
                             message_id: msg_id,
                             seq: 1,
-                            last_seq: 1,
                         },
                         body: &proof_response,
                     };

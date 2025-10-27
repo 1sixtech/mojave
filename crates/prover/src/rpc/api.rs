@@ -19,6 +19,7 @@ pub async fn start_api(
     queue_capacity: usize,
 ) -> Result<()> {
     let (job_sender, job_receiver) = mpsc::channel::<JobRecord>(queue_capacity);
+    // use dummy publisher for now
     let publisher = Arc::new(
         mojave_msgio::dummy::Dummy::new()
             .await
