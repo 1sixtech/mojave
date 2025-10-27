@@ -12,6 +12,7 @@ use tokio::sync::oneshot::error::RecvError;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("BlockProducer failed because of a ChainError error: {0}")]

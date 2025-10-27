@@ -71,12 +71,16 @@ impl Task for BlockProducer {
 
                 match block {
                     Ok(block) => {
-                        tracing::event!(
-                            target:module_path!(),
-                            tracing::Level::INFO,
-                            "New block created: {:?}",
-                            self.p2p_context.broadcast_mojave_message(Message::Mojave(MojaveMessage::Block(MojaveBlock::new(block.clone(), None))))
-                        );
+                        info!("New block created: {:x}", block.hash());
+
+                        let msg = Message::Mojave(MojaveMessage::Block(MojaveBlock::new(
+                            block.clone(),
+                            None,
+                        )));
+                        if let Err(e) = self.p2p_context.broadcast_mojave_message(msg) {
+                            error!(target: module_path!(), "Failed to broadcast new block: {e:?}");
+                        }
+
                         Ok(block)
                     }
                     Err(e) => Err(e),
