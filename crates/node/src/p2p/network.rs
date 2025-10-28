@@ -43,12 +43,10 @@ pub async fn start_network(
         based_context,
     )
     .await?;
+    // TODO: remove this and get a real sync going on and let etherx set blockchain synced
     blockchain.set_synced();
     ethrex_p2p::start_network(context.clone(), bootnodes.clone()).await?;
-    tracing::info!(
-        "----------- - --- P2P network started with {} bootnodes",
-        bootnodes.len()
-    );
+
     tracker.spawn(ethrex_p2p::periodically_show_peer_stats(
         blockchain,
         peer_table.peers,

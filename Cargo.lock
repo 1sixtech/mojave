@@ -4348,6 +4348,7 @@ dependencies = [
  "ethrex-common",
  "ethrex-l2",
  "ethrex-l2-common",
+ "ethrex-p2p",
  "ethrex-storage",
  "ethrex-storage-rollup",
  "ethrex-vm",
@@ -7654,6 +7655,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasm-bindgen-backend"
+version = "0.2.104"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "671c9a5a66f49d8a47345ab942e2cb93c7d1d0339065d4f8139c486121b43b19"
+dependencies = [
+ "bumpalo",
+ "log",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.108",
+ "wasm-bindgen-shared",
+]
+
+[[package]]
 name = "wasm-bindgen-futures"
 version = "0.4.55"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7686,6 +7701,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.108",
+ "wasm-bindgen-backend",
  "wasm-bindgen-shared",
 ]
 

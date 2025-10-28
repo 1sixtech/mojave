@@ -1,4 +1,5 @@
 use ethrex_blockchain::error::{ChainError, InvalidForkChoice};
+use ethrex_common::types::Block;
 use ethrex_l2::sequencer::errors::BlockProducerError;
 use ethrex_l2_common::{
     privileged_transactions::PrivilegedTransactionError, state_diff::StateDiffError,
@@ -11,6 +12,7 @@ use tokio::sync::oneshot::error::RecvError;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("BlockProducer failed because of a ChainError error: {0}")]
@@ -53,4 +55,12 @@ pub enum Error {
     FailedToGetInformationFromStorage(String),
     #[error("Privileged Transaction error: {0}")]
     PrivilegedTransactionError(#[from] PrivilegedTransactionError),
+    #[error("Send error on channel: {0}")]
+    BroadcastError(#[from] Box<tokio::sync::broadcast::error::SendError<Block>>),
+}
+
+impl From<tokio::sync::broadcast::error::SendError<Block>> for Error {
+    fn from(err: tokio::sync::broadcast::error::SendError<Block>) -> Self {
+        Error::BroadcastError(Box::new(err))
+    }
 }
