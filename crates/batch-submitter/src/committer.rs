@@ -2,7 +2,10 @@ use bytes::Bytes;
 use ethrex_common::types::batch::Batch;
 use ethrex_p2p::{
     network::P2PContext,
-    rlpx::mojave::messages::{Message as P2PMessage, MojaveBatch, MojaveMessage},
+    rlpx::{
+        message::Message as RlpxMessage,
+        mojave::messages::{MojaveBatch, MojaveMessage},
+    },
 };
 use mojave_msgio::types::{self, Publisher};
 use mojave_task::Service;
@@ -66,7 +69,7 @@ where
         self.queue.publish(data).await?;
 
         self.p2p_context
-            .broadcast_mojave_message(P2PMessage::Mojave(MojaveMessage::Batch(
+            .broadcast_mojave_message(RlpxMessage::Mojave(MojaveMessage::Batch(
                 MojaveBatch::new(batch),
             )))?;
 

@@ -54,9 +54,10 @@ mod tests {
     };
     use guest_program::input::ProgramInput;
     use mojave_client::types::{ProofResponse, ProofResult, ProverData};
+    use mojave_msgio::{dummy::Dummy as MsgioPublisher, types::Publisher};
     use reqwest::Url;
-    use std::sync::Arc;
-    use tokio::sync::mpsc;
+    use std::{collections::HashSet, sync::Arc};
+    use tokio::sync::{Mutex, mpsc};
 
     fn dummy_prover_data() -> ProverData {
         ProverData {
@@ -65,21 +66,22 @@ mod tests {
         }
     }
 
-    fn make_ctx(capacity: usize) -> (Arc<ProverRpcContext>, mpsc::Receiver<JobRecord>) {
+    async fn make_ctx(capacity: usize) -> (Arc<ProverRpcContext>, mpsc::Receiver<JobRecord>) {
         let (tx, rx) = mpsc::channel::<JobRecord>(capacity);
+        let publisher: Arc<dyn Publisher> = Arc::new(MsgioPublisher::new().await.unwrap());
         let ctx = Arc::new(ProverRpcContext {
             aligned_mode: false,
             job_store: JobStore::default(),
             sender: tx,
-            publisher: todo!(),
-            sent_ids: todo!(),
+            publisher,
+            sent_ids: Mutex::new(HashSet::new()),
         });
         (ctx, rx)
     }
 
     #[tokio::test]
     async fn send_proof_input_accepts_tuple_and_emits_record() {
-        let (ctx, mut rx) = make_ctx(8);
+        let (ctx, mut rx) = make_ctx(8).await;
         let url = Url::parse("http://localhost:1234").unwrap();
 
         super::send_proof_input(
@@ -97,7 +99,7 @@ mod tests {
 
     #[tokio::test]
     async fn send_proof_input_accepts_object_and_emits_record() {
-        let (ctx, mut rx) = make_ctx(8);
+        let (ctx, mut rx) = make_ctx(8).await;
         let url = Url::parse("http://localhost:4321").unwrap();
 
         super::send_proof_input(
@@ -118,8 +120,8 @@ mod tests {
 
     #[tokio::test]
     async fn send_proof_input_idempotency_scoped_by_context() {
-        let (ctx_a, _rx_a) = make_ctx(8);
-        let (ctx_b, _rx_b) = make_ctx(8);
+        let (ctx_a, _rx_a) = make_ctx(8).await;
+        let (ctx_b, _rx_b) = make_ctx(8).await;
         let url = Url::parse("http://localhost:1234").unwrap();
 
         super::send_proof_input(
@@ -149,7 +151,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_pending_job_ids_returns_json_array_of_ids() {
-        let (ctx, _rx) = make_ctx(1);
+        let (ctx, _rx) = make_ctx(1).await;
         ctx.job_store.insert_job("abbaa12".into()).await;
         ctx.job_store.insert_job("baa2b1b".into()).await;
         ctx.job_store.insert_job("cac3c3c".into()).await;
@@ -172,7 +174,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_proof_serializes_proof_to_json() {
-        let (ctx, _rx) = make_ctx(1);
+        let (ctx, _rx) = make_ctx(1).await;
         let job_id = JobId::from("job-1");
         let expected = ProofResponse {
             job_id: job_id.clone(),
