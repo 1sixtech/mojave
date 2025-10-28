@@ -10,11 +10,11 @@ documentation = { workspace = true }
 
 [dependencies]
 mojave-client = { workspace = true }
+mojave-msgio = { workspace = true }
 mojave-rpc-core = { workspace = true }
 mojave-rpc-macros = { workspace = true }
 mojave-rpc-server = { workspace = true }
 mojave-utils = { workspace = true }
-mojave-msgio = { workspace = true }
 
 ethrex-prover = { workspace = true }
 ethrex-rpc = { workspace = true }
