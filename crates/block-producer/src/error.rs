@@ -56,5 +56,11 @@ pub enum Error {
     #[error("Privileged Transaction error: {0}")]
     PrivilegedTransactionError(#[from] PrivilegedTransactionError),
     #[error("Send error on channel: {0}")]
-    BroadcastError(#[from] tokio::sync::broadcast::error::SendError<Block>),
+    BroadcastError(#[from] Box<tokio::sync::broadcast::error::SendError<Block>>),
+}
+
+impl From<tokio::sync::broadcast::error::SendError<Block>> for Error {
+    fn from(err: tokio::sync::broadcast::error::SendError<Block>) -> Self {
+        Error::BroadcastError(Box::new(err))
+    }
 }
