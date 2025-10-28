@@ -45,7 +45,7 @@ impl crate::types::Signer for SigningKey {
         let message_bytes =
             bincode::serialize(message).map_err(|error| EcdsaError::Sign(error.into()))?;
         let msg_hash = Sha256::digest(message_bytes);
-        let message = Message::from_digest_slice(msg_hash.as_slice())
+        let message = Message::from_digest_slice(&msg_hash)
             .map_err(|error| EcdsaError::Sign(error.into()))?;
         let secp256k1 = &SECP256K1_SIGNING;
         let signature = secp256k1.sign_ecdsa(&message, &self.0).serialize_compact();

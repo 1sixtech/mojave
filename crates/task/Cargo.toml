@@ -18,8 +18,7 @@ thiserror = { workspace = true }
 tokio = { workspace = true, features = ["macros", "sync", "rt"] }
 tokio-util = { workspace = true }
 tracing = { workspace = true }
-tokio-util = { workspace = true }
-tracing = { workspace = true }
+
 trait-variant = "0.1.2"
 
 [dev-dependencies]

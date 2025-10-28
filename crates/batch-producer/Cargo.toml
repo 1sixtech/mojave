@@ -22,5 +22,3 @@ ethrex-vm = { workspace = true, default-features = false }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["sync"] }
 tracing = { workspace = true }
-tokio = { workspace = true, features = ["sync"] }
-tracing = { workspace = true }
