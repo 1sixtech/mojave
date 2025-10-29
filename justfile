@@ -21,7 +21,8 @@ full: clean
 node:
     export $(cat .env | xargs) && \
     cargo run --release --bin mojave-node init \
-        --network {{current-dir}}/data/testnet-genesis.json
+        --network {{current-dir}}/data/testnet-genesis.json \
+        --no-deamon
 
 sequencer:
     export $(cat .env | xargs) && \

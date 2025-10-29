@@ -4416,6 +4416,7 @@ dependencies = [
  "mojave-rpc-core",
  "mojave-rpc-server",
  "mojave-utils",
+ "tokio",
  "tracing",
 ]
 
