@@ -14,7 +14,8 @@ use ethrex_blockchain::{Blockchain, vm::StoreVmDatabase};
 use ethrex_common::{
     H256,
     types::{
-        AccountUpdate, BlobsBundle, Block, BlockNumber, PrivilegedL2Transaction, batch::Batch,
+        AccountUpdate, BlobsBundle, Block, BlockNumber, PrivilegedL2Transaction,
+        batch::{self, Batch},
     },
 };
 use ethrex_l2_common::{
@@ -53,7 +54,7 @@ impl Task for BatchProducer {
                 match batch {
                     Ok(batch) => {
                         if let Some(batch) = &batch {
-                            info!("New batch created: {:?}", batch);
+                            info!(bach_number = batch.number, "New batch created");
                             self.broadcast.send(batch.clone())?;
                         } else {
                             warn!("No new batch created");

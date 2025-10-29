@@ -22,28 +22,30 @@ node:
     export $(cat .env | xargs) && \
     cargo run --release --bin mojave-node init \
         --network {{current-dir}}/data/testnet-genesis.json \
-        --no-deamon
+        --no-deamon \
+		--bootnodes=enode://9c0f475a94c4025c16daeeb271844fb9fd5fec16e3670f54678f35c6ff5254596925f82fb16f0d6b3ad6b5a48d327b1566d56a4635f74858f4a08762f6bd80eb@10.96.225.19:30305
 
 sequencer:
     export $(cat .env | xargs) && \
     cargo run --release --bin mojave-sequencer init \
-        --http.port 1739 \
         --private_key 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
         --network {{current-dir}}/data/testnet-genesis.json \
-        --no-daemon
+        --no-daemon \
+        --p2p.port 30305 \
+        --discovery.port 30305
 
 # Run bitcoin regtest in docker
 bitcoin-start:
-	docker run -d --name bitcoin-regtest \
-	 --restart unless-stopped \
-	 -p 18443:18443 \
-	 -p 18444:18444 \
-	 -v {{current-dir}}/bitcoin/:/bitcoin \
-	 -v {{current-dir}}/bitcoin/bitcoin.conf:/bitcoin/bitcoin.conf \
-	 -v {{current-dir}}/scripts/bitcoin-regtest.sh:/usr/local/bin/bitcoin-regtest.sh \
-	 --entrypoint /bin/bash \
-	 ruimarinho/bitcoin-core \
-	 /usr/local/bin/bitcoin-regtest.sh
+    docker run -d --name bitcoin-regtest \
+        --restart unless-stopped \
+        -p 18443:18443 \
+        -p 18444:18444 \
+        -v {{current-dir}}/bitcoin/:/bitcoin \
+        -v {{current-dir}}/bitcoin/bitcoin.conf:/bitcoin/bitcoin.conf \
+        -v {{current-dir}}/scripts/bitcoin-regtest.sh:/usr/local/bin/bitcoin-regtest.sh \
+        --entrypoint /bin/bash \
+        ruimarinho/bitcoin-core \
+        /usr/local/bin/bitcoin-regtest.sh
 
 bitcoin-stop:
 	docker stop bitcoin-regtest
