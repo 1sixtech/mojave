@@ -59,6 +59,7 @@ where
                 version: 1,
                 kind: types::MessageKind::BatchSubmit,
                 message_id: msg_id,
+                // Only one message is sent per batch, so sequence number is always 1.
                 seq: 1,
             },
             body: &batch,

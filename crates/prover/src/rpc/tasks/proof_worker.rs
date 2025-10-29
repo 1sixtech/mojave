@@ -3,7 +3,7 @@ use std::sync::Arc;
 use ethrex_prover_lib::{backend::Backend, prove, to_batch_proof};
 use ethrex_rpc::RpcErr;
 use mojave_client::types::{ProofResponse, ProofResult};
-use mojave_msgio::types::{Message, MessageHeader};
+use mojave_msgio::types::{Message, MessageHeader, MessageKind};
 use mojave_utils::hash;
 use tokio::{sync::mpsc, task::JoinHandle};
 
@@ -49,7 +49,7 @@ pub(crate) fn spawn_proof_worker(
                         .upsert_proof(&proof_response.job_id, proof_response.clone())
                         .await;
 
-                    let msg_id = hash::compute_keccak(proof_response.job_id.0.as_bytes());
+                    let msg_id = hash::compute_keccak(proof_response.job_id.as_str().as_bytes());
 
                     // TODO: change this in memory dedup in future
                     {
@@ -64,8 +64,9 @@ pub(crate) fn spawn_proof_worker(
                     let msg = Message {
                         header: MessageHeader {
                             version: 1,
-                            kind: mojave_msgio::types::MessageKind::ProofResponse,
+                            kind: MessageKind::ProofResponse,
                             message_id: msg_id,
+                            // Sequence number is currently unused; always set to 1 as a placeholder.
                             seq: 1,
                         },
                         body: &proof_response,
@@ -80,7 +81,7 @@ pub(crate) fn spawn_proof_worker(
                     };
 
                     if let Err(error) = ctx.publisher.publish(msg_byte.into()).await {
-                        tracing::error!("Error {:?}", error)
+                        tracing::error!(error = ?error, "Failed to publish proof response");
                     }
                 }
                 None => {
