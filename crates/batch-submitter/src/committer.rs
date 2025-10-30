@@ -52,7 +52,7 @@ where
         self.commit_next_batch_to_l1(batch.clone())?;
 
         // didn't check about dedup here
-        let msg_id = hash::compute_keccak(&batch.number.to_ne_bytes());
+        let msg_id = hex::encode(hash::compute_keccak(&batch.number.to_ne_bytes()));
 
         let msg = types::Message {
             header: types::MessageHeader {

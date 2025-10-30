@@ -4325,6 +4325,7 @@ dependencies = [
  "bytes",
  "ethrex-common",
  "ethrex-p2p",
+ "hex",
  "mojave-msgio",
  "mojave-task",
  "mojave-utils",
@@ -4493,7 +4494,6 @@ dependencies = [
  "reqwest 0.12.24",
  "serde",
  "serde_json",
- "tiny-keccak",
  "tokio",
  "tracing",
 ]
@@ -4561,12 +4561,12 @@ dependencies = [
  "cfg-if 1.0.4",
  "ed25519-dalek",
  "hex",
+ "mojave-utils",
  "secp256k1 0.30.0",
  "serde",
  "serde_json",
  "sha2",
  "thiserror 2.0.17",
- "tiny-keccak",
 ]
 
 [[package]]
@@ -4593,7 +4593,6 @@ dependencies = [
  "daemonize",
  "ethrex-common",
  "ethrex-p2p",
- "hex",
  "lazy_static",
  "mojave-rpc-core",
  "serde",

@@ -15,7 +15,6 @@ mojave-rpc-core = { workspace = true }
 
 anyhow = { workspace = true }
 daemonize = { workspace = true }
-hex = { workspace = true }
 lazy_static = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

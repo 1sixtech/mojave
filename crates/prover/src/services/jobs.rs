@@ -1,9 +1,11 @@
 use crate::{job::JobRecord, rpc::ProverRpcContext};
 use guest_program::input::ProgramInput;
 use mojave_client::types::{JobId, ProofResponse, ProverData};
-use mojave_utils::rpc::error::{Error, Result};
+use mojave_utils::{
+    hash::compute_keccak,
+    rpc::error::{Error, Result},
+};
 use reqwest::Url;
-use tiny_keccak::{Hasher, Keccak};
 
 pub async fn enqueue_proof_input(
     ctx: &ProverRpcContext,
@@ -54,11 +56,7 @@ fn calculate_job_id(prover_input: &ProgramInput) -> Result<JobId> {
     let serialized_block_hashes = bincode::serialize(&block_hashes)
         .map_err(|err| Error::Internal(format!("Error to serialize program input: {err}")))?;
 
-    let mut hasher = Keccak::v256();
-    hasher.update(&serialized_block_hashes);
-    let mut hash = [0_u8; 32];
-    hasher.finalize(&mut hash);
-    let job_id = hex::encode(hash);
+    let job_id = hex::encode(compute_keccak(&serialized_block_hashes));
     tracing::trace!(job_id = %job_id, "Calculated job_id");
     Ok(job_id.into())
 }

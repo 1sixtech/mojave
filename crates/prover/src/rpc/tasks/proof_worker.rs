@@ -49,7 +49,9 @@ pub(crate) fn spawn_proof_worker(
                         .upsert_proof(&proof_response.job_id, proof_response.clone())
                         .await;
 
-                    let msg_id = hash::compute_keccak(proof_response.job_id.as_str().as_bytes());
+                    let msg_id = hex::encode(hash::compute_keccak(
+                        proof_response.job_id.as_str().as_bytes(),
+                    ));
 
                     // TODO: change this in memory dedup in future
                     {
