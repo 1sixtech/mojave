@@ -8,10 +8,10 @@ use ethrex_p2p::{
     types::{Node, NodeRecord},
     utils::public_key_from_signing_key,
 };
-use mojave_utils::network::Network;
+use mojave_utils::network::{Network, parse_socket_addr};
 use secp256k1::SecretKey;
 use std::{
-    net::{Ipv4Addr, SocketAddr},
+    net::Ipv4Addr,
     path::{Path, PathBuf},
 };
 use tracing::{error, info};
@@ -146,21 +146,6 @@ pub async fn get_bootnodes(
     bootnodes
 }
 
-pub async fn parse_socket_addr(addr: &str, port: &str) -> Result<SocketAddr> {
-    let mut addrs = tokio::net::lookup_host(format!("{addr}:{port}")).await?;
-    addrs
-        .next()
-        .ok_or_else(|| Error::Custom(format!("Could not resolve address: {addr}:{port}")))
-}
-
-pub async fn get_http_socket_addr(http_addr: &str, http_port: &str) -> Result<SocketAddr> {
-    parse_socket_addr(http_addr, http_port).await
-}
-
-pub async fn get_authrpc_socket_addr(authrpc_addr: &str, authrpc_port: &str) -> Result<SocketAddr> {
-    parse_socket_addr(authrpc_addr, authrpc_port).await
-}
-
 pub async fn get_local_p2p_node(
     discovery_addr: &str,
     discovery_port: &str,
@@ -200,6 +185,7 @@ pub async fn get_local_p2p_node(
 mod tests {
     use super::*;
     use hex::FromHex;
+    use mojave_utils::network::{get_authrpc_socket_addr, get_http_socket_addr};
     use std::{
         path::Path,
         time::{SystemTime, UNIX_EPOCH},
@@ -337,28 +323,6 @@ mod tests {
         assert_eq!(out.len(), 1);
 
         let _ = fs::remove_dir_all(&tmp).await;
-    }
-
-    #[tokio::test]
-    async fn parse_socket_addr_ok_and_helpers_delegate() {
-        let socket_addr1 = parse_socket_addr("127.0.0.1", "18123").await.unwrap();
-        assert_eq!(socket_addr1.port(), 18123);
-
-        let socket_addr2 = get_http_socket_addr("localhost", "18124").await.unwrap();
-        assert_eq!(socket_addr2.port(), 18124);
-
-        let socket_addr3 = get_authrpc_socket_addr("127.0.0.1", "18125").await.unwrap();
-        assert_eq!(socket_addr3.port(), 18125);
-    }
-
-    #[tokio::test]
-    async fn parse_socket_addr_invalid_host_errors() {
-        let err = parse_socket_addr("invalid.domain.com", "80")
-            .await
-            .unwrap_err();
-
-        let s = format!("{err:?}").to_lowercase();
-        assert!(s.contains("could not") || s.contains("failed") || s.contains("resolve"));
     }
 
     #[tokio::test]
