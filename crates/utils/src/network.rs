@@ -1,5 +1,6 @@
 use std::{
     fmt,
+    net::SocketAddr,
     path::{Path, PathBuf},
 };
 
@@ -7,6 +8,8 @@ use ethrex_common::types::{Genesis, GenesisError};
 use ethrex_p2p::types::Node;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
+
+use crate::error::{NetworkError as Error, NetworkResult as Result};
 
 pub const TESTNET_GENESIS_PATH: &str = "data/testnet-genesis.json";
 // Just a placeholder for now, will be replaced with real file later
@@ -27,6 +30,61 @@ fn read_bootnodes(path: &str) -> Vec<Node> {
             })
         })
         .unwrap_or_default()
+}
+
+/// Ensures a TCP port is available by attempting to bind to it and immediately
+/// releasing the socket. Returns Ok(()) if the port can be bound, otherwise
+/// returns an Error describing why it is unavailable.
+pub async fn ensure_tcp_port_available(addr: &str, port: &str) -> Result<()> {
+    let socket_addr = parse_socket_addr(addr, port).await?;
+
+    match tokio::net::TcpListener::bind(socket_addr).await {
+        Ok(listener) => {
+            drop(listener);
+            Ok(())
+        }
+        Err(e) if e.kind() == std::io::ErrorKind::AddrInUse => Err(Error::Custom(format!(
+            "TCP port {} already in use at {}",
+            socket_addr.port(),
+            socket_addr.ip()
+        ))),
+        Err(e) => Err(Error::Io(e)),
+    }
+}
+
+/// Ensures a UDP port is available by attempting to bind to it and immediately
+/// releasing the socket. Returns Ok(()) if the port can be bound, otherwise
+/// returns an Error describing why it is unavailable.
+pub async fn ensure_udp_port_available(addr: &str, port: &str) -> Result<()> {
+    let socket_addr = parse_socket_addr(addr, port).await?;
+
+    match tokio::net::UdpSocket::bind(socket_addr).await {
+        Ok(socket) => {
+            drop(socket);
+            Ok(())
+        }
+        Err(e) if e.kind() == std::io::ErrorKind::AddrInUse => Err(Error::Custom(format!(
+            "UDP port {} already in use at {}",
+            socket_addr.port(),
+            socket_addr.ip()
+        ))),
+        Err(e) => Err(Error::Io(e)),
+    }
+}
+
+pub async fn parse_socket_addr(addr: &str, port: &str) -> Result<SocketAddr> {
+    let mut addrs = tokio::net::lookup_host(format!("{addr}:{port}")).await?;
+    addrs
+        .next()
+        .ok_or_else(|| Error::Custom(format!("Could not resolve address: {addr}:{port}")))
+}
+
+pub async fn get_http_socket_addr(http_addr: &str, http_port: &str) -> Result<SocketAddr> {
+    parse_socket_addr(http_addr, http_port).await
+}
+
+pub async fn get_authrpc_socket_addr(authrpc_addr: &str, authrpc_port: &str) -> Result<SocketAddr> {
+    parse_socket_addr(authrpc_addr, authrpc_port).await
 }
 
 lazy_static! {
@@ -72,7 +130,7 @@ impl Network {
             Network::GenesisPath(s) => s,
         }
     }
-    pub fn get_genesis(&self) -> Result<Genesis, GenesisError> {
+    pub fn get_genesis(&self) -> core::result::Result<Genesis, GenesisError> {
         // If DefaultNet, construct a default genesis
         if let Network::DefaultNet = self {
             return Ok(Genesis::default());
@@ -154,5 +212,79 @@ mod tests {
             err,
             GenesisError::File(ref e) if e.kind() == std::io::ErrorKind::NotFound
         ));
+    }
+
+    #[tokio::test]
+    async fn parse_socket_addr_ok_and_helpers_delegate() {
+        let socket_addr1 = parse_socket_addr("127.0.0.1", "18123").await.unwrap();
+        assert_eq!(socket_addr1.port(), 18123);
+
+        let socket_addr2 = get_http_socket_addr("localhost", "18124").await.unwrap();
+        assert_eq!(socket_addr2.port(), 18124);
+
+        let socket_addr3 = get_authrpc_socket_addr("127.0.0.1", "18125").await.unwrap();
+        assert_eq!(socket_addr3.port(), 18125);
+    }
+
+    #[tokio::test]
+    async fn parse_socket_addr_invalid_host_errors() {
+        let err = parse_socket_addr("invalid.domain.com", "80")
+            .await
+            .unwrap_err();
+
+        let s = format!("{err:?}").to_lowercase();
+        assert!(s.contains("could not") || s.contains("failed") || s.contains("resolve"));
+    }
+
+    #[tokio::test]
+    async fn ensure_tcp_port_available_returns_ok_for_ephemeral() {
+        // Binding to port 0 lets the OS choose a free port; this should always succeed
+        ensure_tcp_port_available("127.0.0.1", "0")
+            .await
+            .expect("port 0 should be bindable");
+    }
+
+    #[tokio::test]
+    async fn ensure_tcp_port_available_errors_when_taken() {
+        // First bind a listener to reserve a real port
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind first listener");
+        let port = listener.local_addr().expect("local addr").port();
+
+        // Now validating availability should fail
+        let err = ensure_tcp_port_available("127.0.0.1", &port.to_string())
+            .await
+            .expect_err("should detect port in use");
+
+        let s = format!("{err:?}").to_lowercase();
+        assert!(s.contains("already in use") || s.contains("in use"));
+
+        // drop listener to cleanup
+        drop(listener);
+    }
+
+    #[tokio::test]
+    async fn ensure_udp_port_available_returns_ok_for_ephemeral() {
+        ensure_udp_port_available("127.0.0.1", "0")
+            .await
+            .expect("port 0 should be bindable for UDP");
+    }
+
+    #[tokio::test]
+    async fn ensure_udp_port_available_errors_when_taken() {
+        let socket = tokio::net::UdpSocket::bind("127.0.0.1:0")
+            .await
+            .expect("bind first udp socket");
+        let port = socket.local_addr().expect("local addr").port();
+
+        let err = ensure_udp_port_available("127.0.0.1", &port.to_string())
+            .await
+            .expect_err("should detect UDP port in use");
+
+        let s = format!("{err:?}").to_lowercase();
+        assert!(s.contains("already in use") || s.contains("in use"));
+
+        drop(socket);
     }
 }

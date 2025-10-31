@@ -5,10 +5,10 @@ current-dir := `pwd`
 
 # List all of the available commands.
 default:
-	just --list
+    just --list
 
 build-mojave:
-	cargo build --release
+    cargo build --release
 
 clean:
 	killall mojave-node mojave-sequencer mojave-prover || true
@@ -23,7 +23,7 @@ node:
     cargo run --release --bin mojave-node init \
         --network {{current-dir}}/data/testnet-genesis.json \
         --no-deamon \
-		--bootnodes=enode://9c0f475a94c4025c16daeeb271844fb9fd5fec16e3670f54678f35c6ff5254596925f82fb16f0d6b3ad6b5a48d327b1566d56a4635f74858f4a08762f6bd80eb@10.96.225.19:30305
+        --bootnodes=enode://9c0f475a94c4025c16daeeb271844fb9fd5fec16e3670f54678f35c6ff5254596925f82fb16f0d6b3ad6b5a48d327b1566d56a4635f74858f4a08762f6bd80eb@10.96.225.19:30305
 
 sequencer:
     export $(cat .env | xargs) && \
