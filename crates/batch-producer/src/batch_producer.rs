@@ -14,8 +14,7 @@ use ethrex_blockchain::{Blockchain, vm::StoreVmDatabase};
 use ethrex_common::{
     H256,
     types::{
-        AccountUpdate, BlobsBundle, Block, BlockNumber, PrivilegedL2Transaction,
-        batch::{self, Batch},
+        AccountUpdate, BlobsBundle, Block, BlockNumber, PrivilegedL2Transaction, batch::Batch,
     },
 };
 use ethrex_l2_common::{
