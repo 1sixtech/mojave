@@ -10,29 +10,60 @@ default:
 build-mojave:
 	cargo build --release
 
-clean:
-	killall mojave-node mojave-sequencer mojave-prover || true
-	rm -rf {{home-dir}}/.mojave/
+kill-node:
+	kill `cat .mojave/node.pid` || true
 
-# Run both node and sequencer in parallel, with sequencer waiting for node
-full: clean
+kill-sequencer:
+	kill `cat .mojave/sequencer.pid` || true
+
+clean:
+    rm -rf {{home-dir}}/.mojave/
+
+# Run both node and sequencer in foreground with prefixed logs
+full: 
 	./scripts/start.sh
+
 
 node:
     export $(cat .env | xargs) && \
-    cargo run --release --bin mojave-node init \
+    NODE_IP=$(ip addr show | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | cut -d/ -f1 | head -n1) && \
+    cargo build --bin mojave-node && \
+    ( \
+    target/debug/mojave-node init \
         --network {{current-dir}}/data/testnet-genesis.json \
-        --no-deamon \
-		--bootnodes=enode://9c0f475a94c4025c16daeeb271844fb9fd5fec16e3670f54678f35c6ff5254596925f82fb16f0d6b3ad6b5a48d327b1566d56a4635f74858f4a08762f6bd80eb@10.96.225.19:30305
+        --bootnodes=enode://3e9c8a6bc193671ef87ea714ba2bcc979ae820672d5c93ff0ed265129b22180264eecebeae70ba947a6ffad76ab47eef41031838039f8f0ba84ea98b4d8734e5@$NODE_IP:30305 \
+        --no-daemon & \
+        pid=$!; \
+        echo "$pid" > .mojave/node.pid; \
+        echo "node pid: $pid"; \
+        trap 'kill -INT $pid' INT; \
+        trap 'kill -TERM $pid' TERM; \
+        wait $pid \
+    )
 
 sequencer:
     export $(cat .env | xargs) && \
-    cargo run --release --bin mojave-sequencer init \
+    mkdir -p {{home-dir}}/.mojave/sequencer && \
+    echo "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" > {{home-dir}}/.mojave/sequencer/node.key && \
+    cargo build --bin mojave-sequencer && \
+    ( \
+    target/debug/mojave-sequencer init \
         --private_key 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
         --network {{current-dir}}/data/testnet-genesis.json \
-        --no-daemon \
+        --http.port 18545 \
+        --authrpc.port 18551 \
         --p2p.port 30305 \
-        --discovery.port 30305
+        --discovery.port 30305 \
+        --no-daemon & \
+        pid=$!; \
+        echo "$pid" > .mojave/sequencer.pid; \
+        echo "sequencer pid: $pid"; \
+        trap 'kill -INT $pid' INT; \
+        trap 'kill -TERM $pid' TERM; \
+        wait $pid \
+    )
+
+# Print PID helpers (foreground runs don’t create pidfiles)
 
 # Run bitcoin regtest in docker
 bitcoin-start:
@@ -108,13 +139,13 @@ image-prefix := "1sixtech"
 # Build the docker image for a specific binary
 # Binary name should be one of: mojave-node, mojave-sequencer, mojave-prover
 docker-build bin:
-	role="{{bin}}"; \
-	role="${role#mojave-}"; \
-	docker build \
-	  -f "docker/Dockerfile.$role" \
-	  -t "{{image-prefix}}/{{bin}}" \
-	  --build-arg "TARGET_BIN={{bin}}" \
-	  .
+    role="{{bin}}"; \
+    role="${role#mojave-}"; \
+    docker build \
+        -f "docker/Dockerfile.$role" \
+        -t "{{image-prefix}}/{{bin}}" \
+        --build-arg "TARGET_BIN={{bin}}" \
+        .
 
 docker-run bin *ARGS:
 	docker run -p 8545:8545 -p 1739:1739 -p 30304:30304 "{{image-prefix}}/{{bin}}" {{ARGS}}
