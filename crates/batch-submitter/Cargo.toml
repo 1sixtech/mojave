@@ -11,6 +11,7 @@ documentation = { workspace = true }
 [dependencies]
 mojave-msgio = { workspace = true }
 mojave-task = { workspace = true }
+mojave-utils = { workspace = true }
 
 ethrex-common = { workspace = true }
 ethrex-p2p = { workspace = true }
@@ -20,6 +21,7 @@ bitcoin = { workspace = true, features = ["std", "secp-recovery"] }
 bytes = { workspace = true }
 
 bitcoincore-rpc = { workspace = true }
+hex = { workspace = true }
 rand = { workspace = true }
 # TODO: make sure when we update bitcoin that this is still needed
 # this is mandatory to handle 2 version of secp256k1 as bitcoin lib await this version right now

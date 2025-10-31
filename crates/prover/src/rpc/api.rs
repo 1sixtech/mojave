@@ -5,8 +5,11 @@ use crate::{
 use mojave_rpc_server::{RpcRegistry, RpcService};
 use mojave_utils::rpc::error::{Error, Result};
 
-use std::sync::Arc;
-use tokio::{net::TcpListener, sync::mpsc};
+use std::{collections::HashSet, sync::Arc};
+use tokio::{
+    net::TcpListener,
+    sync::{Mutex, mpsc},
+};
 use tracing::info;
 
 pub async fn start_api(
@@ -16,10 +19,18 @@ pub async fn start_api(
     queue_capacity: usize,
 ) -> Result<()> {
     let (job_sender, job_receiver) = mpsc::channel::<JobRecord>(queue_capacity);
+    // use dummy publisher for now
+    let publisher = Arc::new(
+        mojave_msgio::dummy::Dummy::new()
+            .await
+            .map_err(|e| Error::Internal(e.to_string()))?,
+    );
     let context = Arc::new(ProverRpcContext {
         aligned_mode,
         job_store: JobStore::default(),
         sender: job_sender,
+        publisher,
+        sent_ids: Mutex::new(HashSet::new()),
     });
     tracing::info!(aligned_mode = %aligned_mode, "Prover RPC context initialized");
 

@@ -8,7 +8,6 @@ use secp256k1::{
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{str::FromStr, sync::LazyLock};
-use tiny_keccak::{Hasher, Keccak};
 
 static SECP256K1_SIGNING: LazyLock<Secp256k1<secp256k1::SignOnly>> =
     LazyLock::new(Secp256k1::signing_only);
@@ -117,14 +116,8 @@ impl crate::types::Verifier for VerifyingKey {
 
 impl VerifyingKey {
     pub fn to_address(&self) -> String {
-        let publick_key_byte = PublicKey::serialize_uncompressed(&self.0);
-
-        let mut hasher = Keccak::v256();
-        // remove from
-        hasher.update(&publick_key_byte[1..]);
-        let mut hash = [0u8; 32];
-        hasher.finalize(&mut hash);
-
+        let public_key_byte = PublicKey::serialize_uncompressed(&self.0);
+        let hash = mojave_utils::hash::compute_keccak(&public_key_byte[1..]);
         hex::encode(&hash[12..32])
     }
 }
