@@ -53,7 +53,7 @@ impl Task for BatchProducer {
                 match batch {
                     Ok(batch) => {
                         if let Some(batch) = &batch {
-                            info!("New batch created: {:?}", batch);
+                            info!(bach_number = batch.number, "New batch created");
                             self.broadcast.send(batch.clone())?;
                         } else {
                             warn!("No new batch created");

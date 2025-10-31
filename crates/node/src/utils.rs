@@ -161,6 +161,46 @@ pub async fn get_authrpc_socket_addr(authrpc_addr: &str, authrpc_port: &str) -> 
     parse_socket_addr(authrpc_addr, authrpc_port).await
 }
 
+/// Ensures a TCP port is available by attempting to bind to it and immediately
+/// releasing the socket. Returns Ok(()) if the port can be bound, otherwise
+/// returns an Error describing why it is unavailable.
+pub async fn ensure_tcp_port_available(addr: &str, port: &str) -> Result<()> {
+    let socket_addr = parse_socket_addr(addr, port).await?;
+
+    match tokio::net::TcpListener::bind(socket_addr).await {
+        Ok(listener) => {
+            drop(listener);
+            Ok(())
+        }
+        Err(e) if e.kind() == std::io::ErrorKind::AddrInUse => Err(Error::Config(format!(
+            "TCP port {} already in use at {}",
+            socket_addr.port(),
+            socket_addr.ip()
+        ))),
+        Err(e) => Err(Error::Io(e)),
+    }
+}
+
+/// Ensures a UDP port is available by attempting to bind to it and immediately
+/// releasing the socket. Returns Ok(()) if the port can be bound, otherwise
+/// returns an Error describing why it is unavailable.
+pub async fn ensure_udp_port_available(addr: &str, port: &str) -> Result<()> {
+    let socket_addr = parse_socket_addr(addr, port).await?;
+
+    match tokio::net::UdpSocket::bind(socket_addr).await {
+        Ok(socket) => {
+            drop(socket);
+            Ok(())
+        }
+        Err(e) if e.kind() == std::io::ErrorKind::AddrInUse => Err(Error::Config(format!(
+            "UDP port {} already in use at {}",
+            socket_addr.port(),
+            socket_addr.ip()
+        ))),
+        Err(e) => Err(Error::Io(e)),
+    }
+}
+
 pub async fn get_local_p2p_node(
     discovery_addr: &str,
     discovery_port: &str,
@@ -359,6 +399,58 @@ mod tests {
 
         let s = format!("{err:?}").to_lowercase();
         assert!(s.contains("could not") || s.contains("failed") || s.contains("resolve"));
+    }
+
+    #[tokio::test]
+    async fn ensure_tcp_port_available_returns_ok_for_ephemeral() {
+        // Binding to port 0 lets the OS choose a free port; this should always succeed
+        ensure_tcp_port_available("127.0.0.1", "0")
+            .await
+            .expect("port 0 should be bindable");
+    }
+
+    #[tokio::test]
+    async fn ensure_tcp_port_available_errors_when_taken() {
+        // First bind a listener to reserve a real port
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind first listener");
+        let port = listener.local_addr().expect("local addr").port();
+
+        // Now validating availability should fail
+        let err = ensure_tcp_port_available("127.0.0.1", &port.to_string())
+            .await
+            .expect_err("should detect port in use");
+
+        let s = format!("{err:?}").to_lowercase();
+        assert!(s.contains("already in use") || s.contains("in use"));
+
+        // drop listener to cleanup
+        drop(listener);
+    }
+
+    #[tokio::test]
+    async fn ensure_udp_port_available_returns_ok_for_ephemeral() {
+        ensure_udp_port_available("127.0.0.1", "0")
+            .await
+            .expect("port 0 should be bindable for UDP");
+    }
+
+    #[tokio::test]
+    async fn ensure_udp_port_available_errors_when_taken() {
+        let socket = tokio::net::UdpSocket::bind("127.0.0.1:0")
+            .await
+            .expect("bind first udp socket");
+        let port = socket.local_addr().expect("local addr").port();
+
+        let err = ensure_udp_port_available("127.0.0.1", &port.to_string())
+            .await
+            .expect_err("should detect UDP port in use");
+
+        let s = format!("{err:?}").to_lowercase();
+        assert!(s.contains("already in use") || s.contains("in use"));
+
+        drop(socket);
     }
 
     #[tokio::test]

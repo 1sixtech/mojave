@@ -5,8 +5,9 @@ use crate::{
     rpc::{context::RpcApiContext, start_api},
     types::{MojaveNode, NodeConfigFile, NodeOptions},
     utils::{
-        get_authrpc_socket_addr, get_http_socket_addr, get_local_p2p_node, read_jwtsecret_file,
-        resolve_data_dir, store_node_config_file,
+        ensure_tcp_port_available, ensure_udp_port_available, get_authrpc_socket_addr,
+        get_http_socket_addr, get_local_p2p_node, read_jwtsecret_file, resolve_data_dir,
+        store_node_config_file,
     },
 };
 use ethrex_blockchain::BlockchainType;
@@ -160,6 +161,18 @@ impl MojaveNode {
             }
         }
 
+        Ok(())
+    }
+
+    pub async fn validate_node_options(options: &NodeOptions) -> Result<()> {
+        ensure_udp_port_available(&options.p2p_addr, &options.p2p_port).await?;
+        ensure_tcp_port_available(&options.http_addr, &options.http_port).await?;
+        ensure_tcp_port_available(&options.authrpc_addr, &options.authrpc_port).await?;
+        ensure_udp_port_available(&options.discovery_addr, &options.discovery_port).await?;
+
+        if options.metrics_enabled {
+            ensure_tcp_port_available(&options.metrics_addr, &options.metrics_port).await?;
+        }
         Ok(())
     }
 }
