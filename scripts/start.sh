@@ -16,9 +16,9 @@ just node > .mojave/node.log 2>&1 &
 node_job=$!
 
 # Stream logs to stdout with prefixes
-tail -n +1 -F .mojave/sequencer.log | awk '{ print "[sequencer] "$0 }' &
+tail -n +1 -F .mojave/sequencer.log | sed 's/^/[sequencer] /' &
 seq_tail=$!
-tail -n +1 -F .mojave/node.log | awk '{ print "[full-node] "$0 }' &
+tail -n +1 -F .mojave/node.log | sed 's/^/[full-node] /' &
 node_tail=$!
 
 cleanup() {
