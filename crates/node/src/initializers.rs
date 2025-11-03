@@ -66,6 +66,7 @@ pub async fn get_signer(data_dir: &str) -> Result<SecretKey> {
             let mut perms = tokio::fs::metadata(&key_path).await?.permissions();
             perms.set_mode(0o600);
             tokio::fs::set_permissions(&key_path, perms).await?;
+
             Ok(signer)
         }
     }

@@ -5,10 +5,10 @@ current-dir := `pwd`
 
 # List all of the available commands.
 default:
-	just --list
+    just --list
 
 build-mojave:
-	cargo build --release
+    cargo build --release
 
 kill-node:
 	kill `cat .mojave/node.pid` || true

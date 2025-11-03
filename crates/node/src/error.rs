@@ -41,4 +41,6 @@ pub enum Error {
     StoreRollup(#[from] RollupStoreError),
     #[error(transparent)]
     NodeError(#[from] ethrex_p2p::types::NodeError),
+    #[error(transparent)]
+    UtilsNetworkError(#[from] mojave_utils::error::NetworkError),
 }

@@ -4,11 +4,7 @@ use crate::{
     p2p::network::start_network,
     rpc::{context::RpcApiContext, start_api},
     types::{MojaveNode, NodeConfigFile, NodeOptions},
-    utils::{
-        ensure_tcp_port_available, ensure_udp_port_available, get_authrpc_socket_addr,
-        get_http_socket_addr, get_local_p2p_node, read_jwtsecret_file, resolve_data_dir,
-        store_node_config_file,
-    },
+    utils::{get_local_p2p_node, read_jwtsecret_file, resolve_data_dir, store_node_config_file},
 };
 use ethrex_blockchain::BlockchainType;
 use ethrex_p2p::{
@@ -17,7 +13,13 @@ use ethrex_p2p::{
 };
 use ethrex_storage_rollup::{EngineTypeRollup, StoreRollup};
 use mojave_rpc_server::RpcRegistry;
-use mojave_utils::unique_heap::AsyncUniqueHeap;
+use mojave_utils::{
+    network::{
+        ensure_tcp_port_available, ensure_udp_port_available, get_authrpc_socket_addr,
+        get_http_socket_addr,
+    },
+    unique_heap::AsyncUniqueHeap,
+};
 use std::{path::PathBuf, sync::Arc};
 use tokio::sync::Mutex;
 use tokio_util::task::TaskTracker;
