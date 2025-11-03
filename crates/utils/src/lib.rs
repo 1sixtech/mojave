@@ -2,6 +2,7 @@ pub mod block_on;
 pub mod constants;
 pub mod convert;
 pub mod daemon;
+pub mod error;
 pub mod hash;
 pub mod logging;
 pub mod network;

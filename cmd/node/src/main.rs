@@ -29,11 +29,8 @@ fn main() -> Result<()> {
                 .enable_all()
                 .build()?;
 
-            let node_options_clone = node_options.clone();
             if let Err(e) =
-                rt.block_on(
-                    async move { MojaveNode::validate_node_options(&node_options_clone).await },
-                )
+                rt.block_on(async { MojaveNode::validate_node_options(&node_options).await })
             {
                 error!("Failed to validate node options: {}", e);
                 std::process::exit(1);
