@@ -22,6 +22,7 @@ use mojave_utils::{
     p2p::public_key_from_signing_key,
 };
 use std::{path::PathBuf, time::Duration};
+use tracing::{error, info};
 
 const PID_FILE_NAME: &str = "sequencer.pid";
 const LOG_FILE_NAME: &str = "sequencer.log";
@@ -41,6 +42,20 @@ fn main() -> Result<()> {
         } => {
             let mut node_options: mojave_node_lib::types::NodeOptions = (&options).into();
             node_options.datadir = cli.datadir.clone();
+            let rt = tokio::runtime::Builder::new_multi_thread()
+                .enable_all()
+                .build()?;
+
+            let node_options_clone = node_options.clone();
+            if let Err(e) =
+                rt.block_on(
+                    async move { MojaveNode::validate_node_options(&node_options_clone).await },
+                )
+            {
+                error!("Failed to validate node options: {}", e);
+                std::process::exit(1);
+            }
+
             let block_producer_options: BlockProducerOptions = (&sequencer_options).into();
             let proof_coordinator_options: ProofCoordinatorOptions = (&sequencer_options).into();
             let daemon_opts = DaemonOptions {
@@ -75,7 +90,7 @@ fn main() -> Result<()> {
                 tokio::select! {
                     // TODO: replace with api task
                     _ = mojave_utils::signal::wait_for_shutdown_signal()  => {
-                        tracing::info!("Termination signal received, shutting down sequencer..");
+                        info!("Termination signal received, shutting down sequencer..");
                         cancel_token.cancel();
                         batch_producer_task.shutdown().await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
                         block_producer_task.shutdown().await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
@@ -83,22 +98,22 @@ fn main() -> Result<()> {
                         let _ = committer_handle.await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
 
                         let node_config_path = PathBuf::from(node.data_dir).join("node_config.json");
-                        tracing::info!("Storing config at {:?}...", node_config_path);
+                        info!("Storing config at {:?}...", node_config_path);
 
                         let node_config = NodeConfigFile::new(node.peer_table.clone(), node.local_node_record.lock().await.clone()).await;
                         store_node_config_file(node_config, node_config_path).await;
 
                         // TODO: wait for api to stop here
                         // if let Err(_elapsed) = tokio::time::timeout(std::time::Duration::from_secs(10), api_task).await {
-                        //     tracing::warn!("Timed out waiting for API to stop");
+                        //     warn!("Timed out waiting for API to stop");
                         // }
 
-                        tracing::info!("Successfully shut down the sequencer.");
+                        info!("Successfully shut down the sequencer.");
                         Ok(())
                     }
                 }
             })
-                .unwrap_or_else(|err| tracing::error!("Failed to start daemonized sequencer: {}", err));
+                .unwrap_or_else(|err| error!("Failed to start daemonized sequencer: {}", err));
         }
         Command::Stop => stop_daemonized(PathBuf::from(cli.datadir.clone()).join(PID_FILE_NAME))?,
         Command::GetPubKey => {
