@@ -10,7 +10,7 @@ pub struct Options {
     #[arg(
         long = "network",
         default_value_t = Network::default(),
-        value_name = "GENESIS_FILE_PATH",
+        value_name = "GENESIS_FILE_PATH",       
         help = "Receives a `Genesis` struct in json format. This is the only argument which is required. You can look at some example genesis files at `test_data/genesis*`.",
         long_help = "Alternatively, the name of a known network can be provided instead to use its preset genesis file and include its preset bootnodes. The networks currently supported include holesky, sepolia, hoodi and mainnet.",
         help_heading = "Node options",
@@ -20,10 +20,10 @@ pub struct Options {
     pub network: Network,
 
     #[arg(
-    	long = "bootnodes",
-     	value_parser = clap::value_parser!(Node),
-      	value_name = "BOOTNODE_LIST",
-       	value_delimiter = ',',
+        long = "bootnodes",
+        value_parser = clap::value_parser!(Node),
+        value_name = "BOOTNODE_LIST",
+        value_delimiter = ',',
         num_args = 1..,
         help = "Comma separated enode URLs for P2P discovery bootstrap.",
         help_heading = "P2P options"
@@ -84,57 +84,10 @@ pub struct Options {
     pub metrics_enabled: bool,
 
     #[arg(
-        long = "http.addr",
-        default_value = "0.0.0.0",
-        value_name = "ADDRESS",
-        help = "Listening address for the http rpc server.",
-        help_heading = "RPC options",
-        env = "ETHREX_HTTP_ADDR"
-    )]
-    pub http_addr: String,
-
-    #[arg(
-        long = "http.port",
-        default_value = "8545",
-        value_name = "PORT",
-        help = "Listening port for the http rpc server.",
-        help_heading = "RPC options",
-        env = "ETHREX_HTTP_PORT"
-    )]
-    pub http_port: String,
-
-    #[arg(
-        long = "authrpc.addr",
-        default_value = "localhost",
-        value_name = "ADDRESS",
-        help = "Listening address for the authenticated rpc server.",
-        help_heading = "RPC options"
-    )]
-    pub authrpc_addr: String,
-
-    #[arg(
-        long = "authrpc.port",
-        default_value = "8551",
-        value_name = "PORT",
-        help = "Listening port for the authenticated rpc server.",
-        help_heading = "RPC options"
-    )]
-    pub authrpc_port: String,
-
-    #[arg(
-        long = "authrpc.jwtsecret",
-        default_value = "jwt.hex",
-        value_name = "JWTSECRET_PATH",
-        help = "Receives the jwt secret used for authenticated rpc requests.",
-        help_heading = "RPC options"
-    )]
-    pub authrpc_jwtsecret: String,
-
-    #[arg(
-    	long = "p2p.enabled",
-     	default_value = "true",
-      	value_name = "P2P_ENABLED",
-       	action = ArgAction::SetTrue,
+        long = "p2p.enabled",
+        default_value = "true",
+        value_name = "P2P_ENABLED",
+        action = ArgAction::SetTrue,
         help_heading = "P2P options"
     )]
     pub p2p_enabled: bool,
@@ -184,11 +137,11 @@ pub struct Options {
 impl From<&Options> for mojave_node_lib::types::NodeOptions {
     fn from(options: &Options) -> Self {
         Self {
-            http_addr: options.http_addr.clone(),
-            http_port: options.http_port.clone(),
-            authrpc_addr: options.authrpc_addr.clone(),
-            authrpc_port: options.authrpc_port.clone(),
-            authrpc_jwtsecret: options.authrpc_jwtsecret.clone(),
+            http_addr: None,
+            http_port: None,
+            authrpc_addr: None,
+            authrpc_port: None,
+            authrpc_jwtsecret: None,
             p2p_enabled: options.p2p_enabled,
             p2p_addr: options.p2p_addr.clone(),
             p2p_port: options.p2p_port.clone(),
@@ -345,11 +298,11 @@ mod tests {
         };
 
         // Node Options defaults
-        assert_eq!(options.http_addr, "0.0.0.0");
-        assert_eq!(options.http_port, "8545");
-        assert_eq!(options.authrpc_addr, "localhost");
-        assert_eq!(options.authrpc_port, "8551");
-        assert_eq!(options.authrpc_jwtsecret, "jwt.hex");
+        //assert_eq!(options.http_addr, "0.0.0.0");
+        //assert_eq!(options.http_port, "8545");
+        //assert_eq!(options.authrpc_addr, "localhost");
+        //assert_eq!(options.authrpc_port, "8551");
+        //assert_eq!(options.authrpc_jwtsecret, "jwt.hex");
         assert!(options.p2p_enabled, "p2p.enabled default should be true");
         assert_eq!(options.p2p_addr, "0.0.0.0");
         assert_eq!(options.p2p_port, "30303");
@@ -380,16 +333,6 @@ mod tests {
             "2500",
             "--private_key",
             "0xmojave",
-            "--http.addr",
-            "127.0.0.1",
-            "--http.port",
-            "9000",
-            "--authrpc.addr",
-            "127.0.0.1",
-            "--authrpc.port",
-            "9001",
-            "--authrpc.jwtsecret",
-            "custom.jwt",
             "--p2p.addr",
             "127.0.0.1",
             "--p2p.port",
@@ -422,11 +365,11 @@ mod tests {
                 assert_eq!(sequencer_options.block_time, 2500);
                 assert_eq!(sequencer_options.private_key, "0xmojave");
 
-                assert_eq!(options.http_addr, "127.0.0.1");
-                assert_eq!(options.http_port, "9000");
-                assert_eq!(options.authrpc_addr, "127.0.0.1");
-                assert_eq!(options.authrpc_port, "9001");
-                assert_eq!(options.authrpc_jwtsecret, "custom.jwt");
+                //assert_eq!(options.http_addr, "127.0.0.1");
+                //assert_eq!(options.http_port, "9000");
+                //assert_eq!(options.authrpc_addr, "127.0.0.1");
+                //assert_eq!(options.authrpc_port, "9001");
+                //assert_eq!(options.authrpc_jwtsecret, "custom.jwt");
                 assert_eq!(options.p2p_addr, "127.0.0.1");
                 assert_eq!(options.p2p_port, "30304");
                 assert_eq!(options.discovery_addr, "127.0.0.1");
@@ -483,16 +426,6 @@ mod tests {
             "init",
             "--private_key",
             "0xabc",
-            "--http.addr",
-            "1.2.3.4",
-            "--http.port",
-            "9999",
-            "--authrpc.addr",
-            "8.8.8.8",
-            "--authrpc.port",
-            "8552",
-            "--authrpc.jwtsecret",
-            "jwt2.hex",
             "--p2p.addr",
             "127.0.0.1",
             "--p2p.port",
@@ -522,11 +455,11 @@ mod tests {
             _ => panic!("expected Start"),
         };
 
-        assert_eq!(node_opts.http_addr, "1.2.3.4");
-        assert_eq!(node_opts.http_port, "9999");
-        assert_eq!(node_opts.authrpc_addr, "8.8.8.8");
-        assert_eq!(node_opts.authrpc_port, "8552");
-        assert_eq!(node_opts.authrpc_jwtsecret, "jwt2.hex");
+        //assert_eq!(node_opts.http_addr, "1.2.3.4");
+        //assert_eq!(node_opts.http_port, "9999");
+        //assert_eq!(node_opts.authrpc_addr, "8.8.8.8");
+        //assert_eq!(node_opts.authrpc_port, "8552");
+        //assert_eq!(node_opts.authrpc_jwtsecret, "jwt2.hex");
         assert_eq!(node_opts.p2p_addr, "127.0.0.1");
         assert_eq!(node_opts.p2p_port, "30306");
         assert_eq!(node_opts.discovery_addr, "127.0.0.1");

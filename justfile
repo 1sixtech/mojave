@@ -50,8 +50,6 @@ sequencer:
     target/debug/mojave-sequencer init \
         --private_key 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
         --network {{current-dir}}/data/testnet-genesis.json \
-        --http.port 18545 \
-        --authrpc.port 18551 \
         --p2p.port 30305 \
         --discovery.port 30305 \
         --no-daemon & \
@@ -152,3 +150,4 @@ docker-run bin *ARGS:
 
 test: clean
 	bash tests/tests-e2e.sh
+

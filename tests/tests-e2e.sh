@@ -60,8 +60,44 @@ wait_for_jsonrpc() {
     return 1
 }
 
-echo "Waiting for sequencer readiness..."
-if ! wait_for_jsonrpc "http://localhost:1739" 120; then
+# discv4/RLPx readiness: detect when the sequencer's P2P stack is up
+# Actively probes the TCP RLPx port; optionally infers port from logs.
+can_connect_tcp() {
+    local host="$1" port="$2"
+    if command -v nc >/dev/null 2>&1; then
+        nc -z "$host" "$port" >/dev/null 2>&1
+        return $?
+    fi
+    # Fallback to bash's /dev/tcp
+    (exec 3<>"/dev/tcp/${host}/${port}") >/dev/null 2>&1
+}
+
+wait_for_discv4() {
+    local host="${1:-127.0.0.1}"
+    local p2p_port="${2:-}"
+    local log_file="${3:-.mojave/sequencer.log}"
+    local timeout="${4:-120}"
+    local elapsed=0
+
+    while (( elapsed < timeout )); do
+        # Infer port from enode in logs if not provided yet
+        if [ -z "$p2p_port" ] && [ -f "$log_file" ]; then
+            p2p_port=$(grep -Eo 'enode://[^ ]+@[0-9.]+:[0-9]+' "$log_file" 2>/dev/null | tail -n1 | sed -E 's/.*:([0-9]+)$/\1/')
+        fi
+        # Fallback to default P2P port used by justfile if still empty
+        if [ -z "$p2p_port" ]; then p2p_port=30305; fi
+
+        if can_connect_tcp "$host" "$p2p_port"; then
+            return 0
+        fi
+        sleep 2
+        elapsed=$((elapsed + 2))
+    done
+    return 1
+}
+
+echo "Waiting for sequencer readiness (discv4/RLPx)..."
+if ! wait_for_discv4 "127.0.0.1" "30305" ".mojave/sequencer.log" 120; then
     echo "ERROR: Sequencer did not become ready in time"
     exit 1
 fi
