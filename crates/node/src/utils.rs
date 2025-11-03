@@ -185,7 +185,6 @@ pub async fn get_local_p2p_node(
 mod tests {
     use super::*;
     use hex::FromHex;
-    use mojave_utils::network::{get_authrpc_socket_addr, get_http_socket_addr};
     use std::{
         path::Path,
         time::{SystemTime, UNIX_EPOCH},
