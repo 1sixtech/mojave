@@ -14,10 +14,10 @@ ed25519 = ["dep:ed25519-dalek"]
 secp256k1 = ["dep:secp256k1"]
 
 [dependencies]
-mojave-utils = { workspace = true }
 # Core dependencies, always included
 bincode = { workspace = true }
 hex = { workspace = true }
+mojave-utils = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 sha2 = "0.10"
