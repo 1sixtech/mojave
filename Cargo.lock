@@ -4325,8 +4325,10 @@ dependencies = [
  "bytes",
  "ethrex-common",
  "ethrex-p2p",
+ "hex",
  "mojave-msgio",
  "mojave-task",
+ "mojave-utils",
  "rand 0.8.5",
  "secp256k1 0.29.1",
  "thiserror 2.0.17",
@@ -4396,6 +4398,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "bytes",
+ "serde",
  "thiserror 2.0.17",
 ]
 
@@ -4484,6 +4487,7 @@ dependencies = [
  "guest_program",
  "hex",
  "mojave-client",
+ "mojave-msgio",
  "mojave-rpc-core",
  "mojave-rpc-macros",
  "mojave-rpc-server",
@@ -4491,7 +4495,6 @@ dependencies = [
  "reqwest 0.12.24",
  "serde",
  "serde_json",
- "tiny-keccak",
  "tokio",
  "tracing",
 ]
@@ -4559,12 +4562,12 @@ dependencies = [
  "cfg-if 1.0.4",
  "ed25519-dalek",
  "hex",
+ "mojave-utils",
  "secp256k1 0.30.0",
  "serde",
  "serde_json",
  "sha2",
  "thiserror 2.0.17",
- "tiny-keccak",
 ]
 
 [[package]]
@@ -4597,6 +4600,7 @@ dependencies = [
  "serde_json",
  "sysinfo",
  "thiserror 2.0.17",
+ "tiny-keccak",
  "tokio",
  "tracing",
  "tracing-subscriber",

@@ -17,11 +17,11 @@ secp256k1 = ["dep:secp256k1"]
 # Core dependencies, always included
 bincode = { workspace = true }
 hex = { workspace = true }
+mojave-utils = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 sha2 = "0.10"
 thiserror = { workspace = true }
-tiny-keccak = { workspace = true, features = ["keccak"] }
 
 # Optional crypto libraries
 ed25519-dalek = { workspace = true, optional = true }

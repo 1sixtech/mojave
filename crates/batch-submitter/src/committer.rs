@@ -3,12 +3,13 @@ use ethrex_common::types::batch::Batch;
 use ethrex_p2p::{
     network::P2PContext,
     rlpx::{
-        Message,
+        message::Message as RlpxMessage,
         mojave::messages::{MojaveBatch, MojaveMessage},
     },
 };
-use mojave_msgio::types::Publisher;
+use mojave_msgio::types::{self, Publisher};
 use mojave_task::Service;
+use mojave_utils::hash;
 use tokio::sync::broadcast;
 
 use crate::error::{Error, Result};
@@ -50,14 +51,28 @@ where
 
         self.commit_next_batch_to_l1(batch.clone())?;
 
-        let data = bincode::serialize(&batch)?;
+        // didn't check about dedup here
+        let msg_id = hex::encode(hash::compute_keccak(&batch.number.to_le_bytes()));
+
+        let msg = types::Message {
+            header: types::MessageHeader {
+                version: 1,
+                kind: types::MessageKind::BatchSubmit,
+                message_id: msg_id,
+                // Only one message is sent per batch, so sequence number is always 1.
+                seq: 1,
+            },
+            body: &batch,
+        };
+
+        let data = bincode::serialize(&msg)?;
         let data = Bytes::from(data);
         self.queue.publish(data).await?;
 
         self.p2p_context
-            .broadcast_mojave_message(Message::Mojave(MojaveMessage::Batch(MojaveBatch::new(
-                batch,
-            ))))?;
+            .broadcast_mojave_message(RlpxMessage::Mojave(MojaveMessage::Batch(
+                MojaveBatch::new(batch),
+            )))?;
 
         Ok(())
     }

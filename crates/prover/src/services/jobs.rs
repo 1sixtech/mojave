@@ -1,9 +1,11 @@
 use crate::{job::JobRecord, rpc::ProverRpcContext};
 use guest_program::input::ProgramInput;
 use mojave_client::types::{JobId, ProofResponse, ProverData};
-use mojave_utils::rpc::error::{Error, Result};
+use mojave_utils::{
+    hash::compute_keccak,
+    rpc::error::{Error, Result},
+};
 use reqwest::Url;
-use tiny_keccak::{Hasher, Keccak};
 
 pub async fn enqueue_proof_input(
     ctx: &ProverRpcContext,
@@ -54,17 +56,15 @@ fn calculate_job_id(prover_input: &ProgramInput) -> Result<JobId> {
     let serialized_block_hashes = bincode::serialize(&block_hashes)
         .map_err(|err| Error::Internal(format!("Error to serialize program input: {err}")))?;
 
-    let mut hasher = Keccak::v256();
-    hasher.update(&serialized_block_hashes);
-    let mut hash = [0_u8; 32];
-    hasher.finalize(&mut hash);
-    let job_id = hex::encode(hash);
+    let job_id = hex::encode(compute_keccak(&serialized_block_hashes));
     tracing::trace!(job_id = %job_id, "Calculated job_id");
     Ok(job_id.into())
 }
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use super::*;
     use crate::{
         job::{JobRecord, JobStore},
@@ -72,7 +72,7 @@ mod tests {
     };
     use guest_program::input::ProgramInput;
     use mojave_client::types::{ProofResponse, ProofResult, ProverData};
-    use tokio::sync::mpsc;
+    use tokio::sync::{Mutex, mpsc};
 
     fn dummy_data() -> ProverData {
         ProverData {
@@ -81,13 +81,15 @@ mod tests {
         }
     }
 
-    fn make_ctx(cap: usize) -> (ProverRpcContext, mpsc::Receiver<JobRecord>) {
+    async fn make_ctx(cap: usize) -> (ProverRpcContext, mpsc::Receiver<JobRecord>) {
         let (tx, rx) = mpsc::channel::<JobRecord>(cap);
         (
             ProverRpcContext {
                 aligned_mode: false,
                 job_store: JobStore::default(),
                 sender: tx,
+                publisher: Arc::new(mojave_msgio::dummy::Dummy::new().await.unwrap()),
+                sent_ids: Mutex::new(std::collections::HashSet::new()),
             },
             rx,
         )
@@ -95,7 +97,7 @@ mod tests {
 
     #[tokio::test]
     async fn enqueue_proof_input_enqueues_and_returns_job_id() {
-        let (ctx, mut rx) = make_ctx(8);
+        let (ctx, mut rx) = make_ctx(8).await;
         let url = Url::parse("http://localhost:1234").unwrap();
 
         let job_id = enqueue_proof_input(&ctx, dummy_data(), url.clone())
@@ -112,7 +114,7 @@ mod tests {
 
     #[tokio::test]
     async fn enqueue_proof_input_rejects_duplicate() {
-        let (ctx, _rx) = make_ctx(8);
+        let (ctx, _rx) = make_ctx(8).await;
         let url = Url::parse("http://localhost:1234").unwrap();
 
         let _enqueue = enqueue_proof_input(&ctx, dummy_data(), url.clone()).await;
@@ -125,7 +127,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_proof_returns_existing_or_err() {
-        let (ctx, _rx) = make_ctx(8);
+        let (ctx, _rx) = make_ctx(8).await;
         let job_id = JobId::from("job-1");
 
         let expected = ProofResponse {

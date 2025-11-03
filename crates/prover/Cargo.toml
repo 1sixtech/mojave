@@ -10,6 +10,7 @@ documentation = { workspace = true }
 
 [dependencies]
 mojave-client = { workspace = true }
+mojave-msgio = { workspace = true }
 mojave-rpc-core = { workspace = true }
 mojave-rpc-macros = { workspace = true }
 mojave-rpc-server = { workspace = true }
@@ -25,7 +26,6 @@ hex = { workspace = true }
 reqwest = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
-tiny-keccak = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 
