@@ -122,7 +122,7 @@ trap cleanup INT TERM EXIT
 
 # Deploy with bytecode
 RPC_URL="http://localhost:8545"
-CONTRACT_ADDRESS=$(rex deploy "$COUNTER_CONTRACT_BYTE_CODE" 0 "$PRIVATE_KEY" --rpc-url "$RPC_URL" --print-address)
+CONTRACT_ADDRESS=$(rex deploy --bytecode "$COUNTER_CONTRACT_BYTE_CODE" 0 "$PRIVATE_KEY" --rpc-url "$RPC_URL" --print-address)
 
 echo "Contract address: $CONTRACT_ADDRESS"
 
