@@ -41,7 +41,7 @@ cleanup() {
 
 echo "Starting all services"
 
-bash scripts/start.sh &
+bash scripts/start.sh release &
 
 # Wait for services to be ready
 wait_for_jsonrpc() {

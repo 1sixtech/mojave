@@ -2,6 +2,24 @@
 
 set -e
 
+# Usage: ./scripts/start.sh [debug|release]
+# If omitted, defaults to debug (normal sequencer recipe).
+mode="${1:-debug}"
+case "$mode" in
+  release|--release)
+    SEQ_RECIPE="sequencer-release"
+    ;;
+  debug|--debug|"")
+    SEQ_RECIPE="sequencer"
+    ;;
+  *)
+    echo "Usage: $0 [debug|release]" >&2
+    exit 1
+    ;;
+esac
+
+echo "Starting sequencer using recipe: $SEQ_RECIPE"
+
 # Ensure repo-local log directory exists
 mkdir -p .mojave
 
@@ -9,7 +27,7 @@ mkdir -p .mojave
 just kill-node kill-sequencer clean || true
 
 # Start services and tee their logs to files
-just sequencer > .mojave/sequencer.log 2>&1 &
+just "$SEQ_RECIPE" > .mojave/sequencer.log 2>&1 &
 seq_job=$!
 sleep 1
 just node > .mojave/node.log 2>&1 &
