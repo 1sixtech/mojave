@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mojave-sequencer-deployment
+  labels:
+    app: mojave-sequencer
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mojave-sequencer
+  template:
+    metadata:
+      labels:
+        app: mojave-sequencer
+    spec:
+      containers:
+      - name: mojave-sequencer-v01
+        image: starkgiwook/mojave-sequencer:v0.1.1
+        args:
+          - "init"
+          - "--private_key"
+          - "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          - "--network"
+          - "/data/testnet-genesis.json" # Dockerfile에서 복사한 경로
+          - "--http.port"
+          - "18545"
+          - "--authrpc.port"
+          - "18551"
+          - "--p2p.port"
+          - "30305"
+          - "--discovery.port"
+          - "30305"
+          - "--no-daemon" # & 와 wait 없이 포어그라운드로 실행
+        ports:
+          - containerPort: 18545
+            name: http
+          - containerPort: 18551
+            name: auth-rpc
+          - containerPort: 30305 # TCP/UDP 둘 다일 수 있음
+            name: p2p
+            protocol: TCP
+      imagePullPolicy: Always
+      ports:
+      - containerPort: 1739
+        name: http

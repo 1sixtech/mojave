@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mojave-sequencer-service
+spec:
+  type: ClusterIP
+  selector:
+    app: mojave-sequencer
+  ports:
+    - name: http
+      protocol: TCP
+
+      port: 1739
+      targetPort: 1739
