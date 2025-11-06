@@ -27,9 +27,9 @@ full:
 node:
     export $(cat .env | xargs) && \
     NODE_IP=$(ip addr show | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | cut -d/ -f1 | head -n1) && \
-    cargo build --bin mojave-node && \
+    if [ -z "$SKIP_BUILD" ]; then cargo build --bin mojave-node; fi && \
     ( \
-    target/debug/mojave-node init \
+    "${BIN_DIR:-target/debug}"/mojave-node init \
         --network {{current-dir}}/data/testnet-genesis.json \
         --bootnodes=enode://3e9c8a6bc193671ef87ea714ba2bcc979ae820672d5c93ff0ed265129b22180264eecebeae70ba947a6ffad76ab47eef41031838039f8f0ba84ea98b4d8734e5@$NODE_IP:30305 \
         --no-daemon & \
@@ -45,9 +45,9 @@ node:
 node-release:
     export $(cat .env | xargs) && \
     NODE_IP=$(ip addr show | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | cut -d/ -f1 | head -n1) && \
-    cargo build --release --bin mojave-node && \
+    if [ -z "$SKIP_BUILD" ]; then cargo build --release --bin mojave-node; fi && \
     ( \
-    target/release/mojave-node init \
+    "${BIN_DIR:-target/release}"/mojave-node init \
         --network {{current-dir}}/data/testnet-genesis.json \
         --bootnodes=enode://3e9c8a6bc193671ef87ea714ba2bcc979ae820672d5c93ff0ed265129b22180264eecebeae70ba947a6ffad76ab47eef41031838039f8f0ba84ea98b4d8734e5@$NODE_IP:30305 \
         --no-daemon & \
@@ -63,9 +63,9 @@ sequencer:
     export $(cat .env | xargs) && \
     mkdir -p {{home-dir}}/.mojave/sequencer && \
     echo "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" > {{home-dir}}/.mojave/sequencer/node.key && \
-    cargo build --bin mojave-sequencer && \
+    if [ -z "$SKIP_BUILD" ]; then cargo build --bin mojave-sequencer; fi && \
     ( \
-    target/debug/mojave-sequencer init \
+    "${BIN_DIR:-target/debug}"/mojave-sequencer init \
         --private_key 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
         --network {{current-dir}}/data/testnet-genesis.json \
         --p2p.port 30305 \
@@ -84,9 +84,9 @@ sequencer-release:
     export $(cat .env | xargs) && \
     mkdir -p {{home-dir}}/.mojave/sequencer && \
     echo "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" > {{home-dir}}/.mojave/sequencer/node.key && \
-    cargo build --release --bin mojave-sequencer && \
+    if [ -z "$SKIP_BUILD" ]; then cargo build --release --bin mojave-sequencer; fi && \
     ( \
-    target/release/mojave-sequencer init \
+    "${BIN_DIR:-target/release}"/mojave-sequencer init \
         --private_key 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
         --network {{current-dir}}/data/testnet-genesis.json \
         --p2p.port 30305 \
