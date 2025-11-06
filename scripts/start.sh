@@ -8,9 +8,11 @@ mode="${1:-debug}"
 case "$mode" in
   release|--release)
     SEQ_RECIPE="sequencer-release"
+    NODE_RECIPE="node-release"
     ;;
   debug|--debug|"")
     SEQ_RECIPE="sequencer"
+    NODE_RECIPE="node"
     ;;
   *)
     echo "Usage: $0 [debug|release]" >&2
@@ -30,7 +32,7 @@ just kill-node kill-sequencer clean || true
 just "$SEQ_RECIPE" > .mojave/sequencer.log 2>&1 &
 seq_job=$!
 sleep 1
-just node > .mojave/node.log 2>&1 &
+just "$NODE_RECIPE" > .mojave/node.log 2>&1 &
 node_job=$!
 
 # Stream logs to stdout with prefixes
