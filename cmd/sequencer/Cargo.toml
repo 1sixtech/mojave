@@ -23,5 +23,6 @@ clap = { workspace = true }
 hex = { workspace = true }
 kube = { workspace = true }
 kube-leader-election = { workspace = true }
+k8s-openapi = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt", "sync", "time", "signal"] }
 tracing = { workspace = true }
