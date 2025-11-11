@@ -21,5 +21,7 @@ mojave-utils = { workspace = true }
 anyhow = { workspace = true }
 clap = { workspace = true }
 hex = { workspace = true }
-tokio = { workspace = true, features = ["macros", "rt", "sync"] }
+kube = { workspace = true }
+kube-leader-election = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt", "sync", "time", "signal"] }
 tracing = { workspace = true }
