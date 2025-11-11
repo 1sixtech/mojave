@@ -14,9 +14,12 @@ spec:
       labels:
         app: mojave-sequencer
     spec:
+      serviceAccountName: mojave-sequencer-sa
+      terminationGracePeriodSeconds: 30
       containers:
-      - name: mojave-sequencer-v01
+      - name: mojave-sequencer
         image: starkgiwook/mojave-sequencer:v0.1.1
+        imagePullPolicy: Always
         env:
           - name: POD_NAME
             valueFrom:
@@ -26,12 +29,16 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
+          - name: LEASE_NAME
+            value: sequencer-leader
+          - name: LEASE_TTL_SECONDS
+            value: "15"
         args:
           - "init"
           - "--private_key"
           - "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           - "--network"
-          - "/data/testnet-genesis.json" # Dockerfile에서 복사한 경로
+          - "/data/testnet-genesis.json"
           - "--http.port"
           - "18545"
           - "--authrpc.port"
@@ -40,16 +47,22 @@ spec:
           - "30305"
           - "--discovery.port"
           - "30305"
-          - "--no-daemon" # & 와 wait 없이 포어그라운드로 실행
+          - "--no-daemon"
         ports:
-          - containerPort: 18545
-            name: http
-          - containerPort: 18551
-            name: auth-rpc
-          - containerPort: 30305 # TCP/UDP 둘 다일 수 있음
-            name: p2p
+          - name: http
+            containerPort: 18545
+          - name: auth-rpc
+            containerPort: 18551
+          - name: p2p
+            containerPort: 30305
             protocol: TCP
-      imagePullPolicy: Always
-      ports:
-      - containerPort: 1739
-        name: http
+        livenessProbe:
+          tcpSocket:
+            port: 18545
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 18545
+          initialDelaySeconds: 10
+          periodSeconds: 5
