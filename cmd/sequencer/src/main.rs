@@ -1,32 +1,29 @@
 pub mod cli;
+mod k8s_leader;
 
-use crate::cli::Command;
+use crate::{
+    cli::Command,
+    k8s_leader::{is_k8s_env, run_with_k8s_coordination, start_leader_tasks, stop_leader_tasks},
+};
 use anyhow::Result;
 
-use mojave_batch_producer::{BatchProducer, types::Request as BatchProducerRequest};
-use mojave_batch_submitter::committer::Committer;
-use mojave_block_producer::{
-    BlockProducer,
-    types::{BlockProducerOptions, Request as BlockProducerRequest},
-};
+use mojave_block_producer::types::BlockProducerOptions;
 use mojave_node_lib::{
     initializers::get_signer,
     types::{MojaveNode, NodeConfigFile},
     utils::store_node_config_file,
 };
-use mojave_proof_coordinator::{ProofCoordinator, types::ProofCoordinatorOptions};
-use mojave_task::{Runner, Task};
+use mojave_proof_coordinator::types::ProofCoordinatorOptions;
 use mojave_utils::{
     block_on::block_on_current_thread,
     daemon::{DaemonOptions, run_daemonized, stop_daemonized},
     p2p::public_key_from_signing_key,
 };
-use std::{path::PathBuf, time::Duration};
+use std::path::PathBuf;
 use tracing::{error, info};
 
 const PID_FILE_NAME: &str = "sequencer.pid";
 const LOG_FILE_NAME: &str = "sequencer.log";
-const BLOCK_PRODUCER_CAPACITY: usize = 100;
 
 fn main() -> Result<()> {
     mojave_utils::logging::init();
@@ -65,50 +62,46 @@ fn main() -> Result<()> {
                 let node = MojaveNode::init(&node_options)
                     .await
                     .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
-                let cancel_token = node.cancel_token.clone();
 
-                // TODO: replace by implementation backed by a real queue
-                let q = mojave_msgio::dummy::Dummy;
+                let use_k8s = is_k8s_env();
 
-                let batch_producer = BatchProducer::new(node.clone(), 0);
-                let block_producer = BlockProducer::new(node.clone());
-                let proof_coordinator = ProofCoordinator::new(node.clone(), &node_options, &proof_coordinator_options)?;
+                if use_k8s {
+                    run_with_k8s_coordination(
+                        node.clone(),
+                        node_options.clone(),
+                        block_producer_options,
+                        proof_coordinator_options,
+                    )
+                    .await?;
+                } else {
+                    let lt = start_leader_tasks(
+                        node.clone(),
+                        &node_options,
+                        &block_producer_options,
+                        &proof_coordinator_options,
+                    )
+                    .await?;
 
-                let batch_producer_task = batch_producer.clone()
-                    .spawn_periodic(Duration::from_millis(10_000), || BatchProducerRequest::BuildBatch);
+                    tokio::select! {
+                        _ = mojave_utils::signal::wait_for_shutdown_signal() => {
+                            info!("Termination signal received, shutting down sequencer..");
+                            stop_leader_tasks(lt).await?;
 
-                let block_producer_task = block_producer
-                    .spawn_with_capacity_periodic(BLOCK_PRODUCER_CAPACITY, Duration::from_millis(block_producer_options.block_time), || BlockProducerRequest::BuildBlock);
+                            let node_config_path = PathBuf::from(node.data_dir).join("node_config.json");
+                            info!("Storing config at {:?}...", node_config_path);
+                            let node_config = NodeConfigFile::new(node.peer_table.clone(), node.local_node_record.lock().await.clone()).await;
+                            store_node_config_file(node_config, node_config_path).await;
 
-                let committer_handle = Runner::new(Committer::new(batch_producer.subscribe(), q, node.p2p_context.clone()), cancel_token.clone()).spawn();
+                            // TODO: wait for api to stop here
+                            // if let Err(_elapsed) = tokio::time::timeout(std::time::Duration::from_secs(10), api_task).await {
+                            //     warn!("Timed out waiting for API to stop");
+                            // }
 
-                let proof_coordinator_task = proof_coordinator.spawn();
-
-                tokio::select! {
-                    // TODO: replace with api task
-                    _ = mojave_utils::signal::wait_for_shutdown_signal()  => {
-                        info!("Termination signal received, shutting down sequencer..");
-                        cancel_token.cancel();
-                        batch_producer_task.shutdown().await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
-                        block_producer_task.shutdown().await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
-                        proof_coordinator_task.shutdown().await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
-                        let _ = committer_handle.await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
-
-                        let node_config_path = PathBuf::from(node.data_dir).join("node_config.json");
-                        info!("Storing config at {:?}...", node_config_path);
-
-                        let node_config = NodeConfigFile::new(node.peer_table.clone(), node.local_node_record.lock().await.clone()).await;
-                        store_node_config_file(node_config, node_config_path).await;
-
-                        // TODO: wait for api to stop here
-                        // if let Err(_elapsed) = tokio::time::timeout(std::time::Duration::from_secs(10), api_task).await {
-                        //     warn!("Timed out waiting for API to stop");
-                        // }
-
-                        info!("Successfully shut down the sequencer.");
-                        Ok(())
+                            info!("Successfully shut down the sequencer.");
+                        }
                     }
                 }
+                Ok(())
             })
                 .unwrap_or_else(|err| error!("Failed to start daemonized sequencer: {}", err));
         }

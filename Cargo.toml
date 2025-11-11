@@ -83,6 +83,8 @@ daemonize = "0.5"
 ed25519-dalek = { version = "2.1.1", features = ["rand_core", "serde"] }
 futures = "0.3"
 hex = "0.4.3"
+kube = { version = "2.0.1", features = ["runtime", "derive", "client", "rustls-tls"] }
+kube-leader-election = "0.42"
 lazy_static = "1.5.0"
 local-ip-address = { version = "0.6" }
 proc-macro2 = "1"
