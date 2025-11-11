@@ -26,7 +26,11 @@ full:
 
 node:
     export $(cat .env | xargs) && \
-    NODE_IP=$(ip addr show | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | cut -d/ -f1 | head -n1) && \
+    NODE_IP=$(if command -v ip >/dev/null 2>&1; then \
+        ip addr show | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | cut -d/ -f1 | head -n1; \
+    else \
+        ifconfig | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | head -n1; \
+    fi) && \
     if [ -z "$SKIP_BUILD" ]; then cargo build --bin mojave-node; fi && \
     ( \
     "${BIN_DIR:-target/debug}"/mojave-node init \
@@ -44,7 +48,11 @@ node:
 # Release profile variant (special name)
 node-release:
     export $(cat .env | xargs) && \
-    NODE_IP=$(ip addr show | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | cut -d/ -f1 | head -n1) && \
+    NODE_IP=$(if command -v ip >/dev/null 2>&1; then \
+        ip addr show | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | cut -d/ -f1 | head -n1; \
+    else \
+        ifconfig | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | head -n1; \
+    fi) && \
     if [ -z "$SKIP_BUILD" ]; then cargo build --release --bin mojave-node; fi && \
     ( \
     "${BIN_DIR:-target/release}"/mojave-node init \
