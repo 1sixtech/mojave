@@ -124,10 +124,37 @@ impl MojaveNode {
         registry: RpcRegistry<RpcApiContext>,
     ) -> Result<()> {
         let rpc_shutdown = self.cancel_token.child_token();
-        let jwt_secret = read_jwtsecret_file(&options.authrpc_jwtsecret).await?;
+
+        let jwt_secret = read_jwtsecret_file(
+            options
+                .authrpc_jwtsecret
+                .as_deref()
+                .ok_or_else(|| Error::Config("missing authrpc_jwtsecret".to_string()))?,
+        )
+        .await?;
         let api_task = start_api(
-            get_http_socket_addr(&options.http_addr, &options.http_port).await?,
-            get_authrpc_socket_addr(&options.authrpc_addr, &options.authrpc_port).await?,
+            get_http_socket_addr(
+                options
+                    .http_addr
+                    .as_deref()
+                    .ok_or_else(|| Error::Config("missing http_addr".to_string()))?,
+                options
+                    .http_port
+                    .as_deref()
+                    .ok_or_else(|| Error::Config("missing http_port".to_string()))?,
+            )
+            .await?,
+            get_authrpc_socket_addr(
+                options
+                    .authrpc_addr
+                    .as_deref()
+                    .ok_or_else(|| Error::Config("missing authrpc_addr".to_string()))?,
+                options
+                    .authrpc_port
+                    .as_deref()
+                    .ok_or_else(|| Error::Config("missing authrpc_port".to_string()))?,
+            )
+            .await?,
             self.store,
             self.blockchain,
             jwt_secret,
@@ -168,8 +195,12 @@ impl MojaveNode {
 
     pub async fn validate_node_options(options: &NodeOptions) -> Result<()> {
         ensure_udp_port_available(&options.p2p_addr, &options.p2p_port).await?;
-        ensure_tcp_port_available(&options.http_addr, &options.http_port).await?;
-        ensure_tcp_port_available(&options.authrpc_addr, &options.authrpc_port).await?;
+        if let (Some(addr), Some(port)) = (&options.http_addr, &options.http_port) {
+            ensure_tcp_port_available(addr, port).await?;
+        }
+        if let (Some(addr), Some(port)) = (&options.authrpc_addr, &options.authrpc_port) {
+            ensure_tcp_port_available(addr, port).await?;
+        }
         ensure_udp_port_available(&options.discovery_addr, &options.discovery_port).await?;
 
         if options.metrics_enabled {

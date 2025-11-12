@@ -25,7 +25,7 @@ EOF
 fi
 
 # Source code: https://github.com/Drizzle210/Counter/blob/main/src/Counter.sol
-COUNTER_CONTRACT_BYTE_CODE=0x6080604052348015600e575f5ffd5b5060015f819055506101e1806100235f395ff3fe608060405234801561000f575f5ffd5b506004361061003f575f3560e01c80633fb5c1cb146100435780638381f58a1461005f578063d09de08a1461007d575b5f5ffd5b61005d600480360381019061005891906100e4565b610087565b005b610067610090565b604051610074919061011e565b60405180910390f35b610085610095565b005b805f8190555050565b5f5481565b5f5f8154809291906100a690610164565b9190505550565b5f5ffd5b5f819050919050565b6100c3816100b1565b81146100cd575f5ffd5b50565b5f813590506100de816100ba565b92915050565b5f602082840312156100f9576100f86100ad565b5b5f610106848285016100d0565b91505092915050565b610118816100b1565b82525050565b5f6020820190506101315f83018461010f565b92915050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52601160045260245ffd5b5f61016e826100b1565b91507fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff82036101a05761019f610137565b5b60018201905091905056fea264697066735822122035036984d9cda9d8b7e24e9a8d12e922bc40578a5e3f11d8594eefda13b952f864736f6c634300081c0033
+COUNTER_CONTRACT_BYTE_CODE=0x6080604052348015600e575f5ffd5b5060015f819055506101e1806100235f395ff3fe608060405234801561000f575f5ffd5b506004361061003f575f3560e01c80633fb5c1cb146100435780638381f58a1461005f578063d09de08a1461007d575b5f5ffd5b61005d600480360381019061005891906100e4565b610087565b005b610067610090565b604051610074919061011e565b60405180910390f35b610085610095565b005b805f8190555050565b5f5481565b5f5f8154809291906100a690610164565b9190505550565b5f5ffd5b5f819050919050565b6100c3816100b1565b81146100cd575f5ffd5b50565b5f813590506100de816100ba565b92915050565b5f602082840312156100f9576100f86100ad565b5b5f610106848285016100d0565b91505092915050565b610118816100b1565b82525050565b5f6020820190506101315f83018461010f565b92915050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52601160045260245ffd5b5f61016e826100b1565b91507fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff82036101a05761019f610137565b5b60018201905091905056fea2646970667358221220eae701fa18f33b036fc7f42e24ebce60615e3e6f6d8299b230408e1f64eed2bf64736f6c634300081e0033
 PRIVATE_KEY=0xc97833ebdbc5d3b280eaee0c826f2bd3b5959fb902d60a167d75a035c694f282
 
 # ================================
@@ -41,7 +41,7 @@ cleanup() {
 
 echo "Starting all services"
 
-bash scripts/start.sh &
+bash scripts/start.sh release &
 
 # Wait for services to be ready
 wait_for_jsonrpc() {
@@ -60,8 +60,45 @@ wait_for_jsonrpc() {
     return 1
 }
 
-echo "Waiting for sequencer readiness..."
-if ! wait_for_jsonrpc "http://localhost:1739" 120; then
+# discv4/RLPx readiness: detect when the sequencer's P2P stack is up
+# Actively probes the TCP RLPx port; optionally infers port from logs.
+can_connect_tcp() {
+    local host="$1" port="$2"
+    if command -v nc >/dev/null 2>&1; then
+        nc -z "$host" "$port" >/dev/null 2>&1
+        return $?
+    fi
+    # Fallback to bash's /dev/tcp
+    (exec 3<>"/dev/tcp/${host}/${port}") >/dev/null 2>&1
+}
+
+wait_for_discv4() {
+    local host
+    host=$(ip addr show | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | cut -d/ -f1 | head -n1)
+    local p2p_port="${2:-}"
+    local log_file="${3:-.mojave/sequencer.log}"
+    local timeout="${4:-120}"
+    local elapsed=0
+
+    while (( elapsed < timeout )); do
+        # Infer port from enode in logs if not provided yet
+        if [ -z "$p2p_port" ] && [ -f "$log_file" ]; then
+            p2p_port=$(grep -Eo 'enode://[^ ]+@[0-9.]+:[0-9]+' "$log_file" 2>/dev/null | tail -n1 | sed -E 's/.*:([0-9]+)$/\1/')
+        fi
+        # Fallback to default P2P port used by justfile if still empty
+        if [ -z "$p2p_port" ]; then p2p_port=30305; fi
+
+        if can_connect_tcp "$host" "$p2p_port"; then
+            return 0
+        fi
+        sleep 2
+        elapsed=$((elapsed + 2))
+    done
+    return 1
+}
+
+echo "Waiting for sequencer readiness (discv4/RLPx)..."
+if ! wait_for_discv4 "127.0.0.1" "30305" ".mojave/sequencer.log" 120; then
     echo "ERROR: Sequencer did not become ready in time"
     exit 1
 fi
@@ -85,7 +122,7 @@ trap cleanup INT TERM EXIT
 
 # Deploy with bytecode
 RPC_URL="http://localhost:8545"
-CONTRACT_ADDRESS=$(rex deploy "$COUNTER_CONTRACT_BYTE_CODE" 0 "$PRIVATE_KEY" --rpc-url "$RPC_URL" --print-address)
+CONTRACT_ADDRESS=$(rex deploy --bytecode "$COUNTER_CONTRACT_BYTE_CODE" 0 "$PRIVATE_KEY" --rpc-url "$RPC_URL" --print-address)
 
 echo "Contract address: $CONTRACT_ADDRESS"
 

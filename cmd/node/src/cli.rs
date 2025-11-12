@@ -175,11 +175,11 @@ pub struct Options {
 impl From<&Options> for mojave_node_lib::types::NodeOptions {
     fn from(options: &Options) -> Self {
         Self {
-            http_addr: options.http_addr.clone(),
-            http_port: options.http_port.clone(),
-            authrpc_addr: options.authrpc_addr.clone(),
-            authrpc_port: options.authrpc_port.clone(),
-            authrpc_jwtsecret: options.authrpc_jwtsecret.clone(),
+            http_addr: Some(options.http_addr.clone()),
+            http_port: Some(options.http_port.clone()),
+            authrpc_addr: Some(options.authrpc_addr.clone()),
+            authrpc_port: Some(options.authrpc_port.clone()),
+            authrpc_jwtsecret: Some(options.authrpc_jwtsecret.clone()),
             p2p_enabled: options.p2p_enabled,
             p2p_addr: options.p2p_addr.clone(),
             p2p_port: options.p2p_port.clone(),
@@ -314,11 +314,14 @@ mod tests {
         assert_eq!(cli.datadir, ".mojave/node");
 
         let node_opts: NodeOptions = options.into();
-        assert_eq!(node_opts.http_addr, options.http_addr);
-        assert_eq!(node_opts.http_port, options.http_port);
-        assert_eq!(node_opts.authrpc_addr, options.authrpc_addr);
-        assert_eq!(node_opts.authrpc_port, options.authrpc_port);
-        assert_eq!(node_opts.authrpc_jwtsecret, options.authrpc_jwtsecret);
+        assert_eq!(node_opts.http_addr, Some(options.http_addr.clone()));
+        assert_eq!(node_opts.http_port, Some(options.http_port.clone()));
+        assert_eq!(node_opts.authrpc_addr, Some(options.authrpc_addr.clone()));
+        assert_eq!(node_opts.authrpc_port, Some(options.authrpc_port.clone()));
+        assert_eq!(
+            node_opts.authrpc_jwtsecret,
+            Some(options.authrpc_jwtsecret.clone())
+        );
         assert_eq!(node_opts.p2p_enabled, options.p2p_enabled);
         assert_eq!(node_opts.p2p_addr, options.p2p_addr);
         assert_eq!(node_opts.p2p_port, options.p2p_port);
