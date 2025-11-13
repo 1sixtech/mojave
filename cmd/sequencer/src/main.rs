@@ -62,50 +62,84 @@ fn main() -> Result<()> {
             };
 
             run_daemonized(daemon_opts, || async move {
-                let node = MojaveNode::init(&node_options)
-                    .await
-                    .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
-                let cancel_token = node.cancel_token.clone();
+                // Enclose the entire startup (including all ::new and spawns)
+                // so Ctrl+C during any phase exits cleanly.
+                let startup_and_run = async move {
+                    let node = MojaveNode::init(&node_options)
+                        .await
+                        .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
 
-                // TODO: replace by implementation backed by a real queue
-                let q = mojave_msgio::dummy::Dummy;
+                    let cancel_token = node.cancel_token.clone();
 
-                let batch_producer = BatchProducer::new(node.clone(), 0);
-                let block_producer = BlockProducer::new(node.clone());
-                let proof_coordinator = ProofCoordinator::new(node.clone(), &node_options, &proof_coordinator_options)?;
+                    // TODO: replace by implementation backed by a real queue
+                    let q = mojave_msgio::dummy::Dummy;
 
-                let batch_producer_task = batch_producer.clone()
-                    .spawn_periodic(Duration::from_millis(10_000), || BatchProducerRequest::BuildBatch);
+                    let batch_producer = BatchProducer::new(node.clone(), 0);
+                    let block_producer = BlockProducer::new(node.clone());
+                    let proof_coordinator = ProofCoordinator::new(
+                        node.clone(),
+                        &node_options,
+                        &proof_coordinator_options,
+                    )?;
 
-                let block_producer_task = block_producer
-                    .spawn_with_capacity_periodic(BLOCK_PRODUCER_CAPACITY, Duration::from_millis(block_producer_options.block_time), || BlockProducerRequest::BuildBlock);
+                    let batch_producer_task = batch_producer.clone().spawn_periodic(
+                        Duration::from_millis(10_000),
+                        || BatchProducerRequest::BuildBatch,
+                    );
 
-                let committer_handle = Runner::new(Committer::new(batch_producer.subscribe(), q, node.p2p_context.clone()), cancel_token.clone()).spawn();
+                    let block_producer_task = block_producer.spawn_with_capacity_periodic(
+                        BLOCK_PRODUCER_CAPACITY,
+                        Duration::from_millis(block_producer_options.block_time),
+                        || BlockProducerRequest::BuildBlock,
+                    );
 
-                let proof_coordinator_task = proof_coordinator.spawn();
+                    let committer_handle = Runner::new(
+                        Committer::new(
+                            batch_producer.subscribe(),
+                            q,
+                            node.p2p_context.clone(),
+                        ),
+                        cancel_token.clone(),
+                    )
+                    .spawn();
+
+                    let proof_coordinator_task = proof_coordinator.spawn();
+
+                    tokio::select! {
+                        // TODO: replace with api task
+                        _ = mojave_utils::signal::wait_for_shutdown_signal()  => {
+                            info!("Termination signal received, shutting down sequencer..");
+                            cancel_token.cancel();
+                            batch_producer_task.shutdown().await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
+                            block_producer_task.shutdown().await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
+                            proof_coordinator_task.shutdown().await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
+                            let _ = committer_handle.await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
+
+                            let node_config_path = PathBuf::from(node.data_dir).join("node_config.json");
+                            info!("Storing config at {:?}...", node_config_path);
+
+                            let node_config = NodeConfigFile::new(
+                                node.peer_table.clone(),
+                                node.local_node_record.lock().await.clone(),
+                            )
+                            .await;
+                            store_node_config_file(node_config, node_config_path).await;
+
+                            // TODO: wait for api to stop here
+                            // if let Err(_elapsed) = tokio::time::timeout(std::time::Duration::from_secs(10), api_task).await {
+                            //     warn!("Timed out waiting for API to stop");
+                            // }
+
+                            info!("Successfully shut down the sequencer.");
+                            Ok(())
+                        }
+                    }
+                };
 
                 tokio::select! {
-                    // TODO: replace with api task
-                    _ = mojave_utils::signal::wait_for_shutdown_signal()  => {
-                        info!("Termination signal received, shutting down sequencer..");
-                        cancel_token.cancel();
-                        batch_producer_task.shutdown().await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
-                        block_producer_task.shutdown().await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
-                        proof_coordinator_task.shutdown().await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
-                        let _ = committer_handle.await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
-
-                        let node_config_path = PathBuf::from(node.data_dir).join("node_config.json");
-                        info!("Storing config at {:?}...", node_config_path);
-
-                        let node_config = NodeConfigFile::new(node.peer_table.clone(), node.local_node_record.lock().await.clone()).await;
-                        store_node_config_file(node_config, node_config_path).await;
-
-                        // TODO: wait for api to stop here
-                        // if let Err(_elapsed) = tokio::time::timeout(std::time::Duration::from_secs(10), api_task).await {
-                        //     warn!("Timed out waiting for API to stop");
-                        // }
-
-                        info!("Successfully shut down the sequencer.");
+                    res = startup_and_run => res,
+                    _ = mojave_utils::signal::wait_for_shutdown_signal() => {
+                        info!("Termination signal received during startup, exiting sequencer..");
                         Ok(())
                     }
                 }

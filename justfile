@@ -31,7 +31,7 @@ node:
     else \
         ifconfig | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | head -n1; \
     fi) && \
-    if [ -z "$SKIP_BUILD" ]; then cargo build --bin mojave-node; fi && \
+    if [ -z "${SKIP_BUILD:-}" ]; then cargo build --bin mojave-node; fi && \
     ( \
     "${BIN_DIR:-target/debug}"/mojave-node init \
         --network {{current-dir}}/data/testnet-genesis.json \
@@ -53,7 +53,7 @@ node-release:
     else \
         ifconfig | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | head -n1; \
     fi) && \
-    if [ -z "$SKIP_BUILD" ]; then cargo build --release --bin mojave-node; fi && \
+    if [ -z "${SKIP_BUILD:-}" ]; then cargo build --release --bin mojave-node; fi && \
     ( \
     "${BIN_DIR:-target/release}"/mojave-node init \
         --network {{current-dir}}/data/testnet-genesis.json \
@@ -71,7 +71,7 @@ sequencer:
     export $(cat .env | xargs) && \
     mkdir -p {{home-dir}}/.mojave/sequencer && \
     echo "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" > {{home-dir}}/.mojave/sequencer/node.key && \
-    if [ -z "$SKIP_BUILD" ]; then cargo build --bin mojave-sequencer; fi && \
+    if [ -z "${SKIP_BUILD:-}" ]; then cargo build --bin mojave-sequencer; fi && \
     ( \
     "${BIN_DIR:-target/debug}"/mojave-sequencer init \
         --private_key 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
@@ -92,7 +92,7 @@ sequencer-release:
     export $(cat .env | xargs) && \
     mkdir -p {{home-dir}}/.mojave/sequencer && \
     echo "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" > {{home-dir}}/.mojave/sequencer/node.key && \
-    if [ -z "$SKIP_BUILD" ]; then cargo build --release --bin mojave-sequencer; fi && \
+    if [ -z "${SKIP_BUILD:-}" ]; then cargo build --release --bin mojave-sequencer; fi && \
     ( \
     "${BIN_DIR:-target/release}"/mojave-sequencer init \
         --private_key 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \

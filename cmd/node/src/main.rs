@@ -43,23 +43,34 @@ fn main() -> Result<()> {
                 log_file_path: PathBuf::from(cli.datadir).join(LOG_FILE_NAME),
             };
             run_daemonized(daemon_opts, || async move {
-                let node = MojaveNode::init(&node_options)
-                    .await
-                    .unwrap_or_else(|error| {
-                        error!("Failed to initialize the node: {}", error);
-                        std::process::exit(1);
-                    });
+                // Enclose full startup (including ::new work) for clean shutdowns.
+                let startup_and_run = async move {
+                    let node = MojaveNode::init(&node_options)
+                        .await
+                        .map_err(|error| {
+                            error!("Failed to initialize the node: {}", error);
+                            Box::new(error) as Box<dyn std::error::Error>
+                        })?;
 
-                let registry = RpcRegistry::new().with_fallback(
-                    mojave_rpc_core::types::Namespace::Eth,
-                    |req, ctx: RpcApiContext| {
-                        Box::pin(ethrex_rpc::map_eth_requests(req, ctx.l1_context))
-                    },
-                );
+                    let registry = RpcRegistry::new().with_fallback(
+                        mojave_rpc_core::types::Namespace::Eth,
+                        |req, ctx: RpcApiContext| {
+                            Box::pin(ethrex_rpc::map_eth_requests(req, ctx.l1_context))
+                        },
+                    );
 
-                node.run(&node_options, registry)
-                    .await
-                    .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
+                    node.run(&node_options, registry)
+                        .await
+                        .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
+                };
+
+                tokio::select! {
+                    res = startup_and_run => res,
+                    _ = mojave_utils::signal::wait_for_shutdown_signal() => {
+                        tracing::info!("Termination signal received during startup, exiting node..");
+                        Ok(())
+                    }
+                }
             })
             .unwrap_or_else(|err| {
                 error!(error = %err, "Failed to start daemonized node");
