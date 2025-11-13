@@ -37,8 +37,11 @@ pub async fn run_with_k8s_coordination(
     let namespace = env::var("POD_NAMESPACE").unwrap_or_else(|_| "default".to_string());
 
     let lease_name = env::var("LEASE_NAME").unwrap_or_else(|_| "sequencer-leader".to_string());
-    let lease_ttl_sec = 15_u64;
-    let renew_every_secs = lease_ttl_sec / 3; // 1/3 of TTL
+    let lease_ttl_sec = env::var("LEASE_TTL_SECONDS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(15_u64);
+    let renew_every_secs = lease_ttl_sec / 5; // 1/5 of TTL
 
     let lease_lock = LeaseLock::new(
         client,
@@ -81,6 +84,7 @@ pub async fn run_with_k8s_coordination(
 
                         if !am_i_leader && became_leader {
                             // GW - Do I need to add Sleep here to wait all the leader task stop?
+                            sleep(Duration::from_secs(2)).await;
 
                             info!("Became a leader. Start leader tasks");
                             leader_tasks = Some(
@@ -131,7 +135,7 @@ pub async fn start_leader_tasks(
 
     let batch = batch_producer
         .clone()
-        .spawn_periodic(Duration::from_millis(10_000), || {
+        .spawn_periodic(Duration::from_millis(100_000), || {
             BatchProducerRequest::BuildBatch
         });
 
@@ -165,7 +169,12 @@ pub async fn stop_leader_tasks(lt: LeaderTasks) -> Result<(), Box<dyn std::error
     Ok(())
 }
 
-// 간단한 K8s 환경 감지
 pub fn is_k8s_env() -> bool {
-    std::env::var("KUBERNETES_SERVICE_HOST").is_ok()
+    match std::env::var("KUBERNETES_SERVICE_HOST") {
+        Ok(_) => {
+            info!("Starting service as K8s version");
+            true
+        }
+        _ => false,
+    }
 }

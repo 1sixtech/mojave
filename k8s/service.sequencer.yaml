@@ -9,6 +9,13 @@ spec:
   ports:
     - name: http
       protocol: TCP
-
       port: 1739
       targetPort: 1739
+    - name: p2p
+      protocol: TCP
+      port: 30305
+      targetPort: 30305
+    - name: p2p-udp
+      protocol: UDP
+      port: 30305
+      targetPort: 30305
