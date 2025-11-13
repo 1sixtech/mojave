@@ -14,11 +14,11 @@ spec:
       labels:
         app: mojave-sequencer
     spec:
-      serviceAccountName: mojave-sequencer-sa
+      serviceAccountName: sequencer-sa
       terminationGracePeriodSeconds: 30
       containers:
       - name: mojave-sequencer
-        image: starkgiwook/mojave-sequencer:v0.1.1
+        image: starkgiwook/mojave-sequencer:v0.1.2
         imagePullPolicy: Always
         env:
           - name: POD_NAME
@@ -48,6 +48,8 @@ spec:
           - "--discovery.port"
           - "30305"
           - "--no-daemon"
+          - "--bootnodes"
+          - "enode://2e4b1f1631ce86cf29c2656c8108cf51f6551dcaafcae7241dcef9d075d5c5c3542b56051eb9ae2841b24e139cad3b1b4e140f334b4c54770c1be2c8a92ef155@10.244.0.46:30305"
         ports:
           - name: http
             containerPort: 18545
@@ -56,6 +58,9 @@ spec:
           - name: p2p
             containerPort: 30305
             protocol: TCP
+          - name: p2p-udp
+            containerPort: 30305
+            protocol: UDP
         livenessProbe:
           tcpSocket:
             port: 18545
