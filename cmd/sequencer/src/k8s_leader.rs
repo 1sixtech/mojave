@@ -1,6 +1,6 @@
 use kube::Client;
 use kube_leader_election::{LeaseLock, LeaseLockParams};
-use std::{env, path::PathBuf, result::Result::*, time::Duration};
+use std::{env, result::Result::*, time::Duration};
 use tokio::time::sleep;
 
 use mojave_batch_producer::{BatchProducer, types::Request as BatchProducerRequest};
@@ -69,7 +69,8 @@ pub async fn run_with_k8s_coordination(
                     }
                 }
 
-                let node_config_path = PathBuf::from(node.data_dir.clone()).join("node_config.json");
+                let (data_dir, _) = mojave_node_lib::utils::resolve_data_dir(&node_options.datadir).await?;
+                let node_config_path = data_dir.join("node_config.json");
                 info!("Storing config at {:?}...", node_config_path);
                 let node_config = NodeConfigFile::new(node.peer_table.clone(), node.local_node_record.lock().await.clone()).await;
                 store_node_config_file(node_config, node_config_path).await;

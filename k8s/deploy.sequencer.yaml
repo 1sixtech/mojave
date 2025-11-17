@@ -18,7 +18,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
       - name: mojave-sequencer
-        image: starkgiwook/mojave-sequencer:v0.1.2
+        image: starkgiwook/mojave-sequencer:v0.1.5
         imagePullPolicy: Always
         env:
           - name: POD_NAME
@@ -39,6 +39,8 @@ spec:
           - "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           - "--network"
           - "/data/testnet-genesis.json"
+          - "--datadir"
+          - "/Users/Shared/mojave/sequencer"
           - "--http.port"
           - "18545"
           - "--authrpc.port"
@@ -48,8 +50,9 @@ spec:
           - "--discovery.port"
           - "30305"
           - "--no-daemon"
-          - "--bootnodes"
-          - "enode://2e4b1f1631ce86cf29c2656c8108cf51f6551dcaafcae7241dcef9d075d5c5c3542b56051eb9ae2841b24e139cad3b1b4e140f334b4c54770c1be2c8a92ef155@10.244.0.46:30305"
+        volumeMounts:
+          - name: sequencer-datadir
+            mountPath: /Users/Shared/mojave
         ports:
           - name: http
             containerPort: 18545
@@ -61,13 +64,7 @@ spec:
           - name: p2p-udp
             containerPort: 30305
             protocol: UDP
-        livenessProbe:
-          tcpSocket:
-            port: 18545
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          tcpSocket:
-            port: 18545
-          initialDelaySeconds: 10
-          periodSeconds: 5
+      volumes:
+        - name: sequencer-datadir
+          persistentVolumeClaim:
+            claimName: sequencer-pvc
