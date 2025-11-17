@@ -26,7 +26,7 @@ full:
 
 node:
     export $(cat .env | xargs) && \
-    NODE_IP=$(ifconfig | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | cut -d/ -f1 | head -n1) && \
+    NODE_IP=$(ip addr show | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | cut -d/ -f1 | head -n1) && \
     cargo build --bin mojave-node && \
     ( \
     target/debug/mojave-node init \
