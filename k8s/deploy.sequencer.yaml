@@ -18,7 +18,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
       - name: mojave-sequencer
-        image: starkgiwook/mojave-sequencer:v0.1.5
+        image: starkgiwook/mojave-sequencer:latest
         imagePullPolicy: Always
         env:
           - name: POD_NAME

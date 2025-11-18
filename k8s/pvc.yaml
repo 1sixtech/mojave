@@ -10,7 +10,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: mojave-rwx
   hostPath:
-    path: /data/k8s-data
+    path: /Users/Shared/mojave
     type: DirectoryOrCreate
 ---
 apiVersion: v1
