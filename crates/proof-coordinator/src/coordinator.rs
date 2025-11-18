@@ -4,7 +4,7 @@ use crate::{
 };
 use mojave_client::{
     MojaveClient,
-    types::{ProofResponse, ProofResult, ProverData, Strategy},
+    types::{ProofResponse, ProofResult, ProverData},
 };
 use mojave_node_lib::types::{MojaveNode, NodeOptions};
 
@@ -17,27 +17,25 @@ use guest_program::input::ProgramInput;
 
 use std::sync::Arc;
 
+// TODO: replace client or use smthing else
+#[allow(dead_code)]
 pub struct ProofCoordinator {
     client: MojaveClient,
-    sequencer_address: String,
     rollup_store: StoreRollup,
     store: Store,
     blockchain: Arc<Blockchain>,
     elasticity_multiplier: u64,
 }
 
+#[allow(dead_code)]
 impl ProofCoordinator {
+    #[allow(unused)]
     pub fn new(
         node: MojaveNode,
         node_options: &NodeOptions,
         options: &ProofCoordinatorOptions,
     ) -> Result<Self> {
         const DEFAULT_ELASTICITY: u64 = 2;
-
-        let sequencer_address = format!(
-            "http://{}:{}",
-            node_options.http_addr, node_options.http_port
-        );
 
         let prover_url = vec![options.prover_address.clone()];
         let client = MojaveClient::builder()
@@ -47,7 +45,6 @@ impl ProofCoordinator {
 
         Ok(Self {
             client,
-            sequencer_address,
             rollup_store: node.rollup_store,
             store: node.store,
             blockchain: node.blockchain,
@@ -158,20 +155,22 @@ impl mojave_task::Task for ProofCoordinator {
     type Response = Response;
     type Error = Error;
 
+    #[allow(unused_variables)]
     async fn handle_request(&mut self, request: Self::Request) -> Result<Self::Response> {
         match request {
             Request::ProcessBatch(batch_number) => {
-                let input = match self.create_prover_input(batch_number).await {
-                    Ok(input) => input,
-                    Err(e) => return Err(e),
-                };
+                //let input = match self.create_prover_input(batch_number).await {
+                //    Ok(input) => input,
+                //    Err(e) => return Err(e),
+                //};
 
-                self.client
-                    .request()
-                    .with_strategy(Strategy::Sequential)
-                    .send_proof_input(&input, &self.sequencer_address)
-                    .await
-                    .map_err(|e| Error::Custom(e.to_string()))?;
+                // TODO: find a new way to send the proof
+                //self.client
+                //    .request()
+                //    .with_strategy(Strategy::Sequential)
+                //    .send_proof_input(&input, &self.sequencer_address)
+                //    .await
+                //    .map_err(|e| Error::Custom(e.to_string()))?;
 
                 Ok(Response::Ack)
             }
