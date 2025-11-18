@@ -73,8 +73,16 @@ impl Task for BatchProducer {
 }
 
 impl BatchProducer {
-    pub fn new(node: MojaveNode, batch_counter: u64) -> Self {
+    pub fn new(node: MojaveNode) -> Self {
         let (broadcast, _) = tokio::sync::broadcast::channel(MAX_BATCH_TO_BROADCAST);
+
+        let batch_counter = mojave_utils::block_on::block_on_current_thread(async || {
+            if let Some(batch_number) = node.rollup_store.get_batch_number().await? {
+                return Ok(batch_number);
+            }
+            Ok(0)
+        })
+        .unwrap_or(0);
 
         BatchProducer {
             batch_counter,

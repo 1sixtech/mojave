@@ -4439,6 +4439,7 @@ dependencies = [
  "ethrex-vm",
  "mojave-node-lib",
  "mojave-task",
+ "mojave-utils",
  "thiserror 2.0.17",
  "tokio",
  "tracing",

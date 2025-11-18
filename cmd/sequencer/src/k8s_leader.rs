@@ -129,7 +129,7 @@ pub async fn start_leader_tasks(
     // TODO: replace by implementation backed by a real queue
     let q = mojave_msgio::dummy::Dummy;
 
-    let batch_producer = BatchProducer::new(node.clone(), 0);
+    let batch_producer = BatchProducer::new(node.clone());
     let block_producer = BlockProducer::new(node.clone());
     let proof_coordinator =
         ProofCoordinator::new(node.clone(), node_options, proof_coordinator_options)?;
