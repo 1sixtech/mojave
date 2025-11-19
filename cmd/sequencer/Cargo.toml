@@ -25,10 +25,10 @@ k8s-openapi = { workspace = true }
 kube = { workspace = true }
 kube-leader-election = { workspace = true }
 tokio = { workspace = true, features = [
-    "macros",
-    "rt",
-    "sync",
-    "time",
-    "signal",
+  "macros",
+  "rt",
+  "sync",
+  "time",
+  "signal",
 ] }
 tracing = { workspace = true }
