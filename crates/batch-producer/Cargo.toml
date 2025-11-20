@@ -11,6 +11,7 @@ documentation = { workspace = true }
 [dependencies]
 mojave-node-lib = { workspace = true }
 mojave-task = { workspace = true }
+mojave-utils = { workspace = true }
 
 ethrex-blockchain = { workspace = true, default-features = false }
 ethrex-common = { workspace = true }
