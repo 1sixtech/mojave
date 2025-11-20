@@ -74,7 +74,7 @@ sequencer:
     export $(cat .env | xargs) && \
     mkdir -p {{home-dir}}/.mojave/sequencer && \
     echo "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" > {{home-dir}}/.mojave/sequencer/node.key && \
-    if [ -z "$SKIP_BUILD" ]; then cargo build --bin mojave-sequencer; fi && \
+    cargo build --bin mojave-sequencer && \
     ( \
     "${BIN_DIR:-target/debug}"/mojave-sequencer init \
         --private_key 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
