@@ -23,7 +23,6 @@ clean:
 full: 
 	./scripts/start.sh
 
-
 node:
     export $(cat .env | xargs) && \
     NODE_IP=$(if command -v ip >/dev/null 2>&1; then \
@@ -179,21 +178,21 @@ doc:
 doc-watch:
 	cargo watch -x "doc --no-deps"
 
-image-prefix := "1sixtech"
+registry := "ghcr.io/1sixtech"
 
 # Build the docker image for a specific binary
 # Binary name should be one of: mojave-node, mojave-sequencer, mojave-prover
-docker-build bin:
+docker-build bin registry=registry:
     role="{{bin}}"; \
     role="${role#mojave-}"; \
-    docker build \
-        -f "docker/Dockerfile.$role" \
-        -t "{{image-prefix}}/{{bin}}" \
+    docker build --platform=linux/amd64,linux/arm64 \
+        -f "docker/Dockerfile.target" \
+        -t "{{registry}}/{{bin}}" \
         --build-arg "TARGET_BIN={{bin}}" \
         .
 
 docker-run bin *ARGS:
-	docker run -p 8545:8545 -p 1739:1739 -p 30304:30304 "{{image-prefix}}/{{bin}}" {{ARGS}}
+	docker run -p 8545:8545 -p 1739:1739 -p 30304:30304 "{{registry}}/{{bin}}" {{ARGS}}
 
 test: clean
 	bash tests/tests-e2e.sh
