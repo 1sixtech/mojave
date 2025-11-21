@@ -23,6 +23,9 @@ clean:
 full: 
 	./scripts/start.sh
 
+lint:
+    cargo fmt -- --check
+    cargo clippy --all-targets --all-features -- -D warnings
 
 node:
     export $(cat .env | xargs) && \
