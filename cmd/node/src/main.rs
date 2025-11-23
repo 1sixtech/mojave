@@ -16,13 +16,14 @@ const PID_FILE_NAME: &str = "node.pid";
 const LOG_FILE_NAME: &str = "node.log";
 
 fn main() -> Result<()> {
-    mojave_utils::logging::init();
-    let cli = cli::Cli::run();
+    let cli::Cli {
+        command,
+        datadir,
+        log_level,
+    } = cli::Cli::run();
 
-    if let Some(log_level) = cli.log_level {
-        mojave_utils::logging::change_level(log_level);
-    }
-    match cli.command {
+    mojave_utils::logging::init(log_level);
+    match command {
         Command::Start { options } => {
             let mut node_options: mojave_node_lib::types::NodeOptions = (&options).into();
             let rt = tokio::runtime::Builder::new_multi_thread()
@@ -36,11 +37,11 @@ fn main() -> Result<()> {
                 std::process::exit(1);
             }
 
-            node_options.datadir = cli.datadir.clone();
+            node_options.datadir = datadir.clone();
             let daemon_opts = DaemonOptions {
                 no_daemon: options.no_daemon,
-                pid_file_path: PathBuf::from(cli.datadir.clone()).join(PID_FILE_NAME),
-                log_file_path: PathBuf::from(cli.datadir).join(LOG_FILE_NAME),
+                pid_file_path: PathBuf::from(datadir.clone()).join(PID_FILE_NAME),
+                log_file_path: PathBuf::from(datadir).join(LOG_FILE_NAME),
             };
             run_daemonized(daemon_opts, || async move {
                 let node = MojaveNode::init(&node_options)
@@ -65,10 +66,10 @@ fn main() -> Result<()> {
                 error!(error = %err, "Failed to start daemonized node");
             });
         }
-        Command::Stop => stop_daemonized(PathBuf::from(cli.datadir.clone()).join(PID_FILE_NAME))?,
+        Command::Stop => stop_daemonized(PathBuf::from(datadir.clone()).join(PID_FILE_NAME))?,
         Command::GetPubKey => {
             let signer = block_on_current_thread(|| async move {
-                get_signer(&cli.datadir).await.map_err(anyhow::Error::from)
+                get_signer(&datadir).await.map_err(anyhow::Error::from)
             })?;
             let public_key = public_key_from_signing_key(&signer);
             let public_key = hex::encode(public_key);

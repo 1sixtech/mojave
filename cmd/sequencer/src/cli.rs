@@ -1,9 +1,19 @@
+use std::path::PathBuf;
+
 use clap::{ArgAction, ArgGroup, Parser, Subcommand};
 use mojave_block_producer::types::BlockProducerOptions;
-use mojave_node_lib::types::{Node, SyncMode};
+use mojave_node_lib::{
+    initializers::get_signer,
+    types::{Node, SyncMode},
+};
 use mojave_proof_coordinator::types::ProofCoordinatorOptions;
-use mojave_utils::network::Network;
+use mojave_utils::{
+    block_on::block_on_current_thread, daemon::stop_daemonized, network::Network,
+    p2p::public_key_from_signing_key,
+};
 use tracing::Level;
+
+use crate::PID_FILE_NAME;
 
 #[derive(Parser)]
 pub struct Options {
@@ -195,12 +205,6 @@ pub struct Cli {
     pub command: Command,
 }
 
-impl Cli {
-    pub fn run() -> Self {
-        Self::parse()
-    }
-}
-
 #[allow(clippy::large_enum_variant)]
 #[derive(Subcommand)]
 pub enum Command {
@@ -215,6 +219,24 @@ pub enum Command {
     Stop,
     #[command(name = "get-pub-key", about = "Display the public key of the node")]
     GetPubKey,
+}
+
+impl Command {
+    pub async fn run(self, datadir: String) -> anyhow::Result<()> {
+        match self {
+            Command::Start { .. } => Ok(()),
+            Command::Stop => stop_daemonized(PathBuf::from(datadir).join(PID_FILE_NAME)),
+            Command::GetPubKey => {
+                let signer = block_on_current_thread(|| async move {
+                    get_signer(&datadir).await.map_err(anyhow::Error::from)
+                })?;
+                let public_key = public_key_from_signing_key(&signer);
+                let public_key = hex::encode(public_key);
+                println!("{public_key}");
+                Ok(())
+            }
+        }
+    }
 }
 
 #[derive(Parser)]

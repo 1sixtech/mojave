@@ -3,6 +3,7 @@ pub mod cli;
 use crate::cli::Command;
 use anyhow::Result;
 
+use clap::Parser;
 use mojave_batch_producer::{BatchProducer, types::Request as BatchProducerRequest};
 use mojave_batch_submitter::committer::Committer;
 use mojave_block_producer::{
@@ -29,19 +30,21 @@ const LOG_FILE_NAME: &str = "sequencer.log";
 const BLOCK_PRODUCER_CAPACITY: usize = 100;
 
 fn main() -> Result<()> {
-    mojave_utils::logging::init();
-    let cli = cli::Cli::run();
+    let cli::Cli {
+        command,
+        log_level,
+        datadir,
+    } = cli::Cli::parse();
 
-    if let Some(log_level) = cli.log_level {
-        mojave_utils::logging::change_level(log_level);
-    }
-    match cli.command {
+    mojave_utils::logging::init(log_level);
+
+    match command {
         Command::Start {
             options,
             sequencer_options,
         } => {
             let mut node_options: mojave_node_lib::types::NodeOptions = (&options).into();
-            node_options.datadir = cli.datadir.clone();
+            node_options.datadir = datadir.clone();
             let rt = tokio::runtime::Builder::new_multi_thread()
                 .enable_all()
                 .build()?;
@@ -57,8 +60,8 @@ fn main() -> Result<()> {
             let proof_coordinator_options: ProofCoordinatorOptions = (&sequencer_options).into();
             let daemon_opts = DaemonOptions {
                 no_daemon: options.no_daemon,
-                pid_file_path: PathBuf::from(cli.datadir.clone()).join(PID_FILE_NAME),
-                log_file_path: PathBuf::from(cli.datadir).join(LOG_FILE_NAME),
+                pid_file_path: PathBuf::from(datadir.clone()).join(PID_FILE_NAME),
+                log_file_path: PathBuf::from(datadir).join(LOG_FILE_NAME),
             };
 
             run_daemonized(daemon_opts, || async move {
@@ -112,10 +115,10 @@ fn main() -> Result<()> {
             })
                 .unwrap_or_else(|err| error!("Failed to start daemonized sequencer: {}", err));
         }
-        Command::Stop => stop_daemonized(PathBuf::from(cli.datadir.clone()).join(PID_FILE_NAME))?,
+        Command::Stop => stop_daemonized(PathBuf::from(datadir.clone()).join(PID_FILE_NAME))?,
         Command::GetPubKey => {
             let signer = block_on_current_thread(|| async move {
-                get_signer(&cli.datadir).await.map_err(anyhow::Error::from)
+                get_signer(&datadir).await.map_err(anyhow::Error::from)
             })?;
             let public_key = public_key_from_signing_key(&signer);
             let public_key = hex::encode(public_key);
