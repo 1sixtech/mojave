@@ -26,7 +26,7 @@ All manifests live under `k8s/`:
   - `ServiceAccount` (`sequencer-sa`).
   - `Role` and `RoleBinding` that grant access to `coordination.k8s.io/v1` `Lease` objects.
 - `k8s/pvc.yaml`:
-  - `PersistentVolume` (`sequencer-pv`) that uses a `hostPath` directory **inside the Minikube node** at `/Users/Shared/mojave`.
+  - `PersistentVolume` (`sequencer-pv`) that uses a `hostPath` directory **inside the Minikube node** at `/data/mojave`.
   - `PersistentVolumeClaim` (`sequencer-pvc`) bound to that PV.
 - `k8s/setup.sh`: Helper script that deletes everything under `k8s/` and then re-applies the core resources (PVC, RBAC, Service, Deployment).
 
@@ -50,9 +50,9 @@ The Sequencer binary detects a Kubernetes environment by checking the `KUBERNETE
 
 The data directory is backed by the PVC:
 
-- The PV on the Minikube node uses the host path `/Users/Shared/mojave`.
-- Inside the container, this PV is mounted at `/Users/Shared/mojave`.
-- The Sequencer is started with `--datadir /Users/Shared/mojave/sequencer`, so the effective data directory is `/Users/Shared/mojave/sequencer` on the Minikube node.
+- The PV on the Minikube node uses the host path `/data/mojave`.
+- Inside the container, this PV is mounted at `/data/mojave`.
+- The Sequencer is started with `--datadir /data/mojave/sequencer`, so the effective data directory is `/data/mojave/sequencer` on the Minikube node.
 
 ---
 
@@ -85,16 +85,16 @@ You only need to do this once per Minikube profile.
 
 #### 2.3 Prepare persistent storage inside Minikube
 
-The `k8s/pvc.yaml` manifest expects a hostPath directory at `/Users/Shared/mojave` on the Minikube node. Create it and make it writable:
+The `k8s/pvc.yaml` manifest expects a hostPath directory at `/data/mojave` on the Minikube node. Create it and make it writable:
 
 ```bash
-minikube ssh "sudo mkdir -p /Users/Shared/mojave && sudo chmod 777 /Users/Shared/mojave"
+minikube ssh "sudo mkdir -p /data/mojave && sudo chmod 777 /data/mojave"
 ```
 
 Notes:
 
-- This directory lives **inside the Minikube VM/container**, not on your macOS host filesystem.
-- The PV (`sequencer-pv`) references `/Users/Shared/mojave`, and the Sequencer pod mounts that PV at `/Users/Shared/mojave` inside the container.
+- This directory lives **inside the Minikube VM/container**, not on your host filesystem.
+- The PV (`sequencer-pv`) references `/data/mojave`, and the Sequencer pod mounts that PV at `/data/mojave` inside the container.
 
 #### 2.4 Choose a Sequencer Docker image
 

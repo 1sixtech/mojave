@@ -17,45 +17,48 @@ spec:
       serviceAccountName: sequencer-sa
       terminationGracePeriodSeconds: 30
       containers:
-      - name: mojave-sequencer
-        image: starkgiwook/mojave-sequencer:v0.1.9
-        imagePullPolicy: Always
-        env:
-          - name: POD_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.name
-          - name: POD_NAMESPACE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.namespace
-          - name: LEASE_NAME
-            value: sequencer-leader
-          - name: LEASE_TTL_SECONDS
-            value: "15"
-        args:
-          - "init"
-          - "--private_key"
-          - "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-          - "--network"
-          - "/data/testnet-genesis.json"
-          - "--datadir"
-          - "/Users/Shared/mojave/sequencer"
-          - "--p2p.port"
-          - "30305"
-          - "--discovery.port"
-          - "30305"
-          - "--no-daemon"
-        volumeMounts:
-          - name: sequencer-datadir
-            mountPath: /Users/Shared/mojave
-        ports:
-          - name: p2p
-            containerPort: 30305
-            protocol: TCP
-          - name: p2p-udp
-            containerPort: 30305
-            protocol: UDP
+        - name: mojave-sequencer
+          image: starkgiwook/mojave-sequencer:v0.1.9
+          imagePullPolicy: Always
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: LEASE_NAME
+              value: sequencer-leader
+            - name: LEASE_TTL_SECONDS
+              value: "15"
+            - name: PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sequencer-secrets
+                  key: private-key
+          args:
+            - "init"
+            - "--network"
+            - "/data/testnet-genesis.json"
+            - "--datadir"
+            - "/data/mojave/sequencer"
+            - "--p2p.port"
+            - "30305"
+            - "--discovery.port"
+            - "30305"
+            - "--no-daemon"
+          volumeMounts:
+            - name: sequencer-datadir
+              mountPath: /data/mojave
+          ports:
+            - name: p2p
+              containerPort: 30305
+              protocol: TCP
+            - name: p2p-udp
+              containerPort: 30305
+              protocol: UDP
       volumes:
         - name: sequencer-datadir
           persistentVolumeClaim:
