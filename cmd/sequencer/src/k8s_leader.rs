@@ -129,11 +129,7 @@ pub async fn start_leader_tasks(
     // TODO: replace by implementation backed by a real queue
     let q = mojave_msgio::dummy::Dummy;
 
-    let batch_counter = match node.rollup_store.get_batch_number().await? {
-        Some(batch_number) => batch_number,
-        _ => 0,
-    };
-
+    let batch_counter = node.rollup_store.get_batch_number().await?.unwrap_or(0);
     let batch_producer = BatchProducer::new(node.clone(), batch_counter);
     let block_producer = BlockProducer::new(node.clone());
     let proof_coordinator =
