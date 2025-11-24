@@ -1,6 +1,6 @@
 use kube::Client;
 use kube_leader_election::{LeaseLock, LeaseLockParams};
-use std::{env, result::Result::*, time::Duration};
+use std::{env, time::Duration};
 use tokio::time::sleep;
 
 use mojave_batch_producer::{BatchProducer, types::Request as BatchProducerRequest};
@@ -167,7 +167,7 @@ pub async fn stop_leader_tasks(lt: LeaderTasks) -> Result<(), Box<dyn std::error
     lt.batch.shutdown().await?;
     lt.block.shutdown().await?;
     lt.proof.shutdown().await?;
-    let _ = lt.committer.await?;
+    lt.committer.await??;
     Ok(())
 }
 
