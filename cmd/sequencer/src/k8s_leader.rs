@@ -1,4 +1,5 @@
-use kube::Client;
+use k8s_openapi::api::coordination::v1::Lease;
+use kube::{Api, Client};
 use kube_leader_election::{LeaseLock, LeaseLockParams};
 use std::{env, time::Duration};
 use tokio::time::sleep;
@@ -33,6 +34,7 @@ pub async fn run_with_k8s_coordination(
     proof_coordinator_options: ProofCoordinatorOptions,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let client = Client::try_default().await?;
+    let lease_client = client.clone();
     let identity = env::var("POD_NAME").unwrap_or_else(|_| "sequencer-pod".to_string());
     let namespace = env::var("POD_NAMESPACE").unwrap_or_else(|_| "default".to_string());
 
@@ -44,11 +46,11 @@ pub async fn run_with_k8s_coordination(
     let renew_every_secs = lease_ttl_sec / 5; // 1/5 of TTL
 
     let lease_lock = LeaseLock::new(
-        client,
+        lease_client,
         &namespace,
         LeaseLockParams {
-            lease_name,
-            holder_id: identity,
+            lease_name: lease_name.clone(),
+            holder_id: identity.clone(),
             lease_ttl: Duration::from_secs(lease_ttl_sec),
         },
     );
@@ -80,13 +82,16 @@ pub async fn run_with_k8s_coordination(
             }
             res = lease_lock.try_acquire_or_renew() => {
                 match res {
-                    Ok(res) => {
-                        let became_leader = res.acquired_lease;
+                    Ok(_) => {
+                        let currently_leader = match is_current_leader(&client, &namespace, &lease_name, &identity).await {
+                            Ok(is_leader) => is_leader,
+                            Err(err) => {
+                                error!("Could not verify lease holder stepping down: {err:?}");
+                                false
+                            }
+                        };
 
-                        if !am_i_leader && became_leader {
-                            // GW - Do I need to add Sleep here to wait all the leader task stop?
-                            sleep(Duration::from_secs(2)).await;
-
+                        if !am_i_leader && currently_leader {
                             info!("Became a leader. Start leader tasks");
                             leader_tasks = Some(
                                 start_leader_tasks(
@@ -98,10 +103,13 @@ pub async fn run_with_k8s_coordination(
                                 .await?,
                             );
                             am_i_leader = true;
-                        } else if !became_leader && am_i_leader {
-                            info!("Became a follower. Stop leader tasks");
+                        } else if am_i_leader && !currently_leader {
+                            info!("Lost leadership. Stop leader tasks");
                             if let Some(lt) = leader_tasks.take() {
                                 stop_leader_tasks(lt).await?;
+                            }
+                            if let Err(err) = lease_lock.step_down().await {
+                                error!("Error while stepping down from leader: {err:?}");
                             }
                             am_i_leader = false;
                         }
@@ -179,4 +187,19 @@ pub fn is_k8s_env() -> bool {
         }
         _ => false,
     }
+}
+
+async fn is_current_leader(
+    client: &Client,
+    namespace: &str,
+    lease_name: &str,
+    identity: &str,
+) -> Result<bool, kube::Error> {
+    let leases: Api<Lease> = Api::namespaced(client.clone(), namespace);
+    let lease = leases.get(lease_name).await?;
+    let holder = lease
+        .spec
+        .as_ref()
+        .and_then(|spec| spec.holder_identity.clone());
+    Ok(holder.as_deref() == Some(identity))
 }
