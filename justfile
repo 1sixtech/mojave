@@ -74,7 +74,7 @@ sequencer:
     export $(cat .env | xargs) && \
     mkdir -p {{home-dir}}/.mojave/sequencer && \
     echo "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" > {{home-dir}}/.mojave/sequencer/node.key && \
-    if [ -z "$SKIP_BUILD" ]; then cargo build --bin mojave-sequencer; fi && \
+    cargo build --bin mojave-sequencer && \
     ( \
     "${BIN_DIR:-target/debug}"/mojave-sequencer init \
         --private_key 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
@@ -182,16 +182,16 @@ doc:
 doc-watch:
 	cargo watch -x "doc --no-deps"
 
-registry := "ghcr.io/1sixtech"
+registry := "1sixtech"
 
 # Build the docker image for a specific binary
 # Binary name should be one of: mojave-node, mojave-sequencer, mojave-prover
 docker-build bin registry=registry:
     role="{{bin}}"; \
     role="${role#mojave-}"; \
-    docker build --platform=linux/amd64,linux/arm64 \
+    docker build --platform=linux/arm64 \
         -f "docker/Dockerfile.target" \
-        -t "{{registry}}/{{bin}}" \
+        -t {{ if registry == '' { bin } else { registry + '/' + bin } }} \
         --build-arg "TARGET_BIN={{bin}}" \
         .
 
@@ -200,3 +200,6 @@ docker-run bin *ARGS:
 
 test: clean
 	bash tests/tests-e2e.sh
+
+run-k8s:
+    bash k8s/setup.sh

@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mojave-node-deployment
+  namespace: 1sixtech
+  labels:
+    app: mojave-node
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mojave-node
+  template:
+    metadata:
+      labels:
+        app: mojave-node
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: mojave-node
+          image: mojave-node:latest
+          imagePullPolicy: IfNotPresent
+          args:
+            - "init"
+            - "--datadir"
+            - "/data/mojave/node"
+            - "--http.addr"
+            - "0.0.0.0"
+            - "--http.port"
+            - "8545"
+            - "--authrpc.addr"
+            - "0.0.0.0"
+            - "--network"
+            - "/data/testnet-genesis.json"
+            - "--authrpc.port"
+            - "8551"
+            - "--authrpc.jwtsecret"
+            - "/data/mojave/node/jwt.hex"
+            - "--p2p.addr"
+            - "0.0.0.0"
+            - "--discovery.addr"
+            - "0.0.0.0"
+            - "--bootnodes=enode://3e9c8a6bc193671ef87ea714ba2bcc979ae820672d5c93ff0ed265129b22180264eecebeae70ba947a6ffad76ab47eef41031838039f8f0ba84ea98b4d8734e5@mojave-sequencer-0.mojave-sequencer.1sixtech.svc.cluster.local:30303"
+            - "--no-daemon"
+          volumeMounts:
+            - name: node-datadir
+              mountPath: /data/mojave
+          ports:
+            - name: http
+              containerPort: 8545
+              protocol: TCP
+            - name: authrpc
+              containerPort: 8551
+              protocol: TCP
+            - name: p2p
+              containerPort: 30303
+              protocol: TCP
+            - name: p2p-udp
+              containerPort: 30303
+              protocol: UDP
+      volumes:
+        - name: node-datadir
+          emptyDir: {}
