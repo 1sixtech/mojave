@@ -23,6 +23,10 @@ clean:
 full: 
 	./scripts/start.sh
 
+lint:
+    cargo fmt -- --check
+    cargo clippy --all-targets --all-features -- -D warnings
+
 node:
     export $(cat .env | xargs) && \
     NODE_IP=$(if command -v ip >/dev/null 2>&1; then \
