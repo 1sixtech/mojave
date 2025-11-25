@@ -10,7 +10,7 @@ This document explains:
 #### 1.1 Scope
 
 - Kubernetes is currently used for **highly-available Sequencer deployment**.
-- The provided manifests run **3 Sequencer pods** behind a `ClusterIP` service.
+- The provided manifests run **multiple Sequencer pods** (2 by default) behind Services.
 - At any moment, **only one pod is the leader** and runs the "leader tasks"; the other pods stay ready to take over if the leader fails.
 - Other components (Node, Prover, etc.) can be run as regular processes or containers; this repository does not currently ship production-ready Kubernetes manifests for them.
 
@@ -18,17 +18,18 @@ This document explains:
 
 All manifests live under `k8s/`:
 
-- `k8s/deploy.sequencer.yaml`: `Deployment` with 3 replicas of `mojave-sequencer`, configured for Kubernetes leader election and persistent storage.
-- `k8s/service.sequencer.yaml`: `ClusterIP` `Service` exposing:
+- `k8s/namespace.yaml`: Namespace definition (`1sixtech`) for the Sequencer resources.
+- `k8s/deploy.sequencer.yaml`: `StatefulSet` (2 replicas by default) of `mojave-sequencer`, with leader election and a `volumeClaimTemplate` (20Gi) per pod mounted at `/data/mojave`.
+- `k8s/deploy.node.yaml`: `Deployment` (1 replica by default) of `mojave-node` with an init container that prepares `/data/mojave/node` and writes a random JWT secret for `authrpc`.
+- `k8s/service.sequencer.yaml`:
+  - Headless `Service` (`mojave-sequencer-headless`) for the StatefulSet `serviceName`.
+  - `ClusterIP` `Service` exposing:
   - HTTP JSON-RPC on port `18545` (Currently not using).
   - P2P networking on port `30305` (TCP and UDP).
 - `k8s/rbac.sequencer.yaml`:
   - `ServiceAccount` (`sequencer-sa`).
   - `Role` and `RoleBinding` that grant access to `coordination.k8s.io/v1` `Lease` objects.
-- `k8s/pvc.yaml`:
-  - `PersistentVolume` (`sequencer-pv`) that uses a `hostPath` directory **inside the Minikube node** at `/data/mojave`.
-  - `PersistentVolumeClaim` (`sequencer-pvc`) bound to that PV.
-- `k8s/setup.sh`: Helper script that deletes everything under `k8s/` and then re-applies the core resources (PVC, RBAC, Service, Deployment).
+- `k8s/setup.sh`: Helper script that deletes everything under `k8s/` and then re-applies the core resources (Namespace, Secret, RBAC, Services, StatefulSet).
 
 #### 1.3 Sequencer behavior on Kubernetes
 
@@ -48,11 +49,12 @@ The Sequencer binary detects a Kubernetes environment by checking the `KUBERNETE
   - If the pod **loses** the lease, it steps down and stops the leader tasks.
 - On shutdown, the Sequencer writes a `node_config.json` under its data directory so that state can be reused on restart.
 
-The data directory is backed by the PVC:
+The data directory is backed by a per-pod `PersistentVolumeClaim` generated from the StatefulSet's `volumeClaimTemplate`:
 
-- The PV on the Minikube node uses the host path `/data/mojave`.
-- Inside the container, this PV is mounted at `/data/mojave`.
-- The Sequencer is started with `--datadir /data/mojave/sequencer`, so the effective data directory is `/data/mojave/sequencer` on the Minikube node.
+- Each pod gets its own 20Gi claim (using the cluster's default `StorageClass` unless you override `storageClassName`).
+- The claim is mounted at `/data/mojave` in the container.
+- The Sequencer is started with `--datadir /data/mojave/sequencer`, so each pod writes to its own `/data/mojave/sequencer`.
+- An init container writes `/data/mojave/statefulset-ordinal` with the pod's ordinal (0, 1, …) and `/data/mojave/role` with `primary` for ordinal 0 and `secondary` otherwise. Adjust this script in `k8s/deploy.sequencer.yaml` if you want different per-pod config files.
 
 ---
 
@@ -83,20 +85,7 @@ minikube addons enable metrics-server
 
 You only need to do this once per Minikube profile.
 
-#### 2.3 Prepare persistent storage inside Minikube
-
-The `k8s/pvc.yaml` manifest expects a hostPath directory at `/data/mojave` on the Minikube node. Create it and make it writable:
-
-```bash
-minikube ssh "sudo mkdir -p /data/mojave && sudo chmod 777 /data/mojave"
-```
-
-Notes:
-
-- This directory lives **inside the Minikube VM/container**, not on your host filesystem.
-- The PV (`sequencer-pv`) references `/data/mojave`, and the Sequencer pod mounts that PV at `/data/mojave` inside the container.
-
-#### 2.4 Choose a Sequencer Docker image
+#### 2.3 Choose a Sequencer Docker image
 
 For this HA test you need a Docker image that contains the `mojave-sequencer` binary. There are two main options:
 
@@ -124,7 +113,7 @@ For this HA test you need a Docker image that contains the `mojave-sequencer` bi
    docker push <your-docker-username>/mojave-sequencer:latest
    ```
 
-3. Update the Deployment to use your image instead of the default:
+3. Update the StatefulSet to use your image instead of the default:
 
    - Option 1: Edit `k8s/deploy.sequencer.yaml`:
 
@@ -136,22 +125,24 @@ For this HA test you need a Docker image that contains the `mojave-sequencer` bi
          imagePullPolicy: IfNotPresent
      ```
 
-   - Option 2: Patch the live Deployment after applying the manifests:
+   - Option 2: Patch the live StatefulSet after applying the manifests:
 
      ```bash
-     kubectl set image deployment/mojave-sequencer-deployment \
+     kubectl set image statefulset/mojave-sequencer-deployment -n 1sixtech \
        mojave-sequencer=<your-docker-username>/mojave-sequencer:latest
      ```
 
-#### 2.6 Apply the core Kubernetes resources
+#### 2.4 Apply the core Kubernetes resources
 
 You can apply the manifests one by one:
 
 ```bash
-kubectl apply -f k8s/pvc.yaml
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/secret.sequencer.yaml
 kubectl apply -f k8s/rbac.sequencer.yaml
 kubectl apply -f k8s/service.sequencer.yaml
 kubectl apply -f k8s/deploy.sequencer.yaml
+kubectl apply -f k8s/deploy.node.yaml
 ```
 
 Or use the helper script (note: this **first deletes** all manifests under `k8s/`):
@@ -160,76 +151,83 @@ Or use the helper script (note: this **first deletes** all manifests under `k8s/
 bash k8s/setup.sh
 ```
 
-#### 2.7 Verify the deployment
+If you hit `pod has unbound immediate PersistentVolumeClaims` errors, make sure your cluster has a default `StorageClass` or set `storageClassName` in `k8s/deploy.sequencer.yaml` to one that exists in your cluster (e.g., `local-path` on k3d/k3s, `standard` on many managed clusters).
+
+#### 2.5 Verify the deployment
 
 Check that all resources are created:
 
 ```bash
-kubectl get pods
-kubectl get svc mojave-sequencer-service
-kubectl get pvc sequencer-pvc
-kubectl get lease sequencer-leader -o yaml
+kubectl get sts mojave-sequencer-deployment -n 1sixtech
+kubectl get pods -n 1sixtech
+kubectl get svc mojave-sequencer-service -n 1sixtech
+kubectl get pvc -n 1sixtech
+kubectl get lease sequencer-leader -n 1sixtech -o yaml
 ```
 
 You should see:
 
-- 3 pods with `app=mojave-sequencer`.
+- 2 pods (or however many replicas you configured) with `app=mojave-sequencer`.
+- A StatefulSet `mojave-sequencer-deployment` reporting ready replicas.
+- Per-pod PVCs named like `sequencer-datadir-mojave-sequencer-deployment-0`.
 - A single `Lease` named `sequencer-leader` with one of the pods listed as the current holder.
 
-#### 2.8 Check that the current leader is producing blocks (via logs)
+#### 2.6 Check that the current leader is producing blocks (via logs)
 
 Before testing failover, confirm that the current leader pod is actively producing blocks.
 
 1. **Identify the current leader pod** (via the `Lease` holder identity):
 
    ```bash
-   LEADER_POD=$(kubectl get lease sequencer-leader -o jsonpath='{.spec.holderIdentity}')
+   LEADER_POD=$(kubectl get lease sequencer-leader -n 1sixtech -o jsonpath='{.spec.holderIdentity}')
    echo "Current leader pod: $LEADER_POD"
    ```
 
 2. **Print the last 100 log lines from the leader pod**:
 
    ```bash
-   kubectl logs "$LEADER_POD" -c mojave-sequencer | tail -n 100
+   kubectl logs "$LEADER_POD" -c mojave-sequencer -n 1sixtech | tail -n 100
    ```
 
 Review the logs and confirm that the leader is producing blocks (or whatever periodic work you expect the Sequencer leader to perform).
 
-#### 2.9 Leader failover test
+#### 2.7 Leader failover test
 
 To see Kubernetes-based HA in action:
 
 1. **Delete the current leader pod** (identified in the previous step):
 
    ```bash
-   kubectl delete pod "$LEADER_POD"
+   kubectl delete pod "$LEADER_POD" -n 1sixtech
    ```
 
 2. **Wait for a new leader to be elected and identify it**:
 
    ```bash
    # After some time (up to LEASE_TTL_SECONDS), check which pod is the new leader
-   NEW_LEADER_POD=$(kubectl get lease sequencer-leader -o jsonpath='{.spec.holderIdentity}')
+   NEW_LEADER_POD=$(kubectl get lease sequencer-leader -n 1sixtech -o jsonpath='{.spec.holderIdentity}')
    echo "New leader pod: $NEW_LEADER_POD"
 
    # (Optional) list all sequencer pods
-   kubectl get pods -l app=mojave-sequencer
+   kubectl get pods -l app=mojave-sequencer -n 1sixtech
    ```
 
 3. **Print the last 100 log lines from the new leader pod**:
 
    ```bash
-   kubectl logs "$NEW_LEADER_POD" -c mojave-sequencer | tail -n 100
+   kubectl logs "$NEW_LEADER_POD" -c mojave-sequencer -n 1sixtech | tail -n 100
    ```
 
 Within approximately the lease TTL window (`LEASE_TTL_SECONDS`, default 15s), another pod should acquire the lease and start the leader tasks. By comparing the logs before and after the failover, you can verify that block production (or other leader activity) continues on the new leader.
 
-#### 2.10 Cleanup
+#### 2.8 Cleanup
 
 To remove all Mojave-related Kubernetes resources created from `k8s/`:
 
 ```bash
 kubectl delete -f k8s/
+# Delete the per-pod PVCs created by the StatefulSet
+kubectl delete pvc -l app=mojave-sequencer -n 1sixtech
 ```
 
 ---
@@ -243,4 +241,4 @@ The manifests in this repository are designed for **local development and testin
 - Add liveness and readiness probes for the Sequencer container to improve reliability and rollout behavior.
 - Consider a `Headless Service` or separate Services if you need stable pod identities or direct pod-to-pod communication.
 - Configure `imagePullSecrets` if you use private container registries.
-- Use a production-grade storage class instead of `hostPath` volumes.
+- Use a production-grade storage class appropriate for your cluster/storage backend.
