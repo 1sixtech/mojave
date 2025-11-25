@@ -1,4 +1,4 @@
-use std::{fmt::format, str::FromStr};
+use std::str::FromStr;
 
 use clap::{ArgAction, Parser, Subcommand};
 use mojave_node_lib::types::{Node, SyncMode};
@@ -6,16 +6,14 @@ use mojave_utils::network::Network;
 use std::net::ToSocketAddrs;
 use tracing::Level;
 
-fn resolve_dns_host_port(addr: &str) -> Result<String, mojave_node_lib::error::Error> {
-    let mut iter = addr.to_socket_addrs().map_err(|e| {
-        mojave_node_lib::error::Error::Custom(format!("to_socket failed {}", e).to_string())
-    })?;
+fn resolve_dns_host_port(addr: &str) -> Result<String, anyhow::Error> {
+    let mut iter = addr
+        .to_socket_addrs()
+        .map_err(|e| anyhow::anyhow!("Failed to resolve DNS for `{addr}`: {e}"))?;
 
-    let socket_addr = iter.next().ok_or_else(|| {
-        mojave_node_lib::error::Error::Custom(format!(
-            "DNS resolution for `{addr}` returned no addresses"
-        ))
-    })?;
+    let socket_addr = iter
+        .next()
+        .ok_or_else(|| anyhow::anyhow!("DNS resolution for `{addr}` returned no addresses"))?;
 
     // This will be something like "10.42.0.12:3030"
     Ok(socket_addr.to_string())
@@ -27,7 +25,7 @@ pub struct DNSNode {
 }
 
 impl FromStr for DNSNode {
-    type Err = mojave_node_lib::error::Error;
+    type Err = anyhow::Error;
 
     fn from_str(enode: &str) -> Result<Self, Self::Err> {
         let at_pos = enode.find('@').ok_or_else(|| {
