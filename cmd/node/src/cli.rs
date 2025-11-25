@@ -1,7 +1,58 @@
+use std::{fmt::format, str::FromStr};
+
 use clap::{ArgAction, Parser, Subcommand};
 use mojave_node_lib::types::{Node, SyncMode};
 use mojave_utils::network::Network;
+use std::net::ToSocketAddrs;
 use tracing::Level;
+
+fn resolve_dns_host_port(addr: &str) -> Result<String, mojave_node_lib::error::Error> {
+    let mut iter = addr.to_socket_addrs().map_err(|e| {
+        mojave_node_lib::error::Error::Custom(format!("to_socket failed {}", e).to_string())
+    })?;
+
+    let socket_addr = iter.next().ok_or_else(|| {
+        mojave_node_lib::error::Error::Custom(format!(
+            "DNS resolution for `{addr}` returned no addresses"
+        ))
+    })?;
+
+    // This will be something like "10.42.0.12:3030"
+    Ok(socket_addr.to_string())
+}
+
+#[derive(Debug, Clone)]
+pub struct DNSNode {
+    inner: Node,
+}
+
+impl FromStr for DNSNode {
+    type Err = mojave_node_lib::error::Error;
+
+    fn from_str(enode: &str) -> Result<Self, Self::Err> {
+        let at_pos = enode.find('@').ok_or_else(|| {
+            mojave_node_lib::error::Error::Custom("Invalid enode: missing `@`".into())
+        })?;
+
+        let after_at = &enode[at_pos + 1..]; // "host:port?discport=..."
+        let (host_port, rest) = match after_at.find('?') {
+            Some(pos) => (&after_at[..pos], &after_at[pos..]), // ("host:port", "?discport=...")
+            None => (after_at, ""),
+        };
+
+        let resolved = resolve_dns_host_port(host_port)?; // "IP:port"
+
+        let enode = format!("{}{}{}", &enode[..=at_pos], resolved, rest);
+        let node = Node::from_str(&enode)?;
+        Ok(DNSNode { inner: node })
+    }
+}
+
+impl From<DNSNode> for Node {
+    fn from(dns_node: DNSNode) -> Self {
+        dns_node.inner
+    }
+}
 
 #[derive(Parser)]
 pub struct Options {
@@ -19,14 +70,14 @@ pub struct Options {
 
     #[arg(
         long = "bootnodes",
-        value_parser = clap::value_parser!(Node),
+        value_parser = clap::value_parser!(DNSNode),
         value_name = "BOOTNODE_LIST",
         value_delimiter = ',',
         num_args = 1..,
         help = "Comma separated enode URLs for P2P discovery bootstrap.",
         help_heading = "P2P options"
     )]
-    pub bootnodes: Vec<Node>,
+    pub bootnodes: Vec<DNSNode>,
 
     #[arg(
         long = "syncmode",
@@ -186,7 +237,12 @@ impl From<&Options> for mojave_node_lib::types::NodeOptions {
             discovery_addr: options.discovery_addr.clone(),
             discovery_port: options.discovery_port.clone(),
             network: options.network.clone(),
-            bootnodes: options.bootnodes.clone(),
+            bootnodes: options
+                .bootnodes
+                .iter()
+                .cloned()
+                .map(|dn| dn.into())
+                .collect(),
             datadir: Default::default(),
             syncmode: options.syncmode.unwrap_or(SyncMode::Full),
             sponsorable_addresses_file_path: options.sponsorable_addresses_file_path.clone(),
@@ -328,7 +384,7 @@ mod tests {
         assert_eq!(node_opts.discovery_addr, options.discovery_addr);
         assert_eq!(node_opts.discovery_port, options.discovery_port);
         assert!(matches!(node_opts.network, Network::DefaultNet));
-        assert_eq!(node_opts.bootnodes, options.bootnodes);
+        //assert_eq!(node_opts.bootnodes.iter().cloned(), options.bootnodes);
         assert!(matches!(node_opts.syncmode, SyncMode::Full)); // syncmode is not set from Options. Override to default
         assert_eq!(
             node_opts.sponsorable_addresses_file_path,

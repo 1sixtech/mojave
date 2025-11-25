@@ -1,11 +1,13 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
-  name: mojave-sequencer-deployment
+  name: mojave-sequencer
+  namespace: 1sixtech
   labels:
     app: mojave-sequencer
 spec:
-  replicas: 3
+  serviceName: mojave-sequencer
+  replicas: 2
   selector:
     matchLabels:
       app: mojave-sequencer
@@ -16,10 +18,29 @@ spec:
     spec:
       serviceAccountName: sequencer-sa
       terminationGracePeriodSeconds: 30
+      initContainers:
+        - name: init-ordinal-file
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              ordinal="${HOSTNAME##*-}"
+              echo "${ordinal}" > /data/mojave/statefulset-ordinal
+              mkdir -p /data/mojave/sequencer
+              if [ "${ordinal}" = "0" ]; then
+                echo "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" > /data/mojave/sequencer/node.key
+              else
+                echo "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaab" > /data/mojave/sequencer/node.key
+              fi
+          volumeMounts:
+            - name: sequencer-datadir
+              mountPath: /data/mojave
       containers:
         - name: mojave-sequencer
-          image: starkgiwook/mojave-sequencer:v0.1.9
-          imagePullPolicy: Always
+          image: mojave-sequencer:latest
+          imagePullPolicy: IfNotPresent
           env:
             - name: POD_NAME
               valueFrom:
@@ -44,22 +65,27 @@ spec:
             - "/data/testnet-genesis.json"
             - "--datadir"
             - "/data/mojave/sequencer"
-            - "--p2p.port"
-            - "30305"
             - "--discovery.port"
-            - "30305"
+            - "30303"
             - "--no-daemon"
           volumeMounts:
             - name: sequencer-datadir
               mountPath: /data/mojave
           ports:
             - name: p2p
-              containerPort: 30305
+              containerPort: 30303
               protocol: TCP
             - name: p2p-udp
-              containerPort: 30305
+              containerPort: 30303
               protocol: UDP
-      volumes:
-        - name: sequencer-datadir
-          persistentVolumeClaim:
-            claimName: sequencer-pvc
+  volumeClaimTemplates:
+    - metadata:
+        name: sequencer-datadir
+        labels:
+          app: mojave-sequencer
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 20Gi
