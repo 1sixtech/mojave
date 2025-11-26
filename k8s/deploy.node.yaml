@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://kubernetesjsonschema.dev/v1.14.0/deployment-apps-v1.json
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -58,6 +59,13 @@ spec:
             - name: p2p-udp
               containerPort: 30303
               protocol: UDP
+          resources:
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
       volumes:
         - name: node-datadir
           emptyDir: {}

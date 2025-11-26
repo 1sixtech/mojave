@@ -3,6 +3,7 @@ pub mod constants;
 pub mod convert;
 pub mod daemon;
 pub mod error;
+pub mod health;
 pub mod hash;
 pub mod logging;
 pub mod network;
