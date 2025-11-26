@@ -1,9 +1,6 @@
 pub mod cli;
 mod k8s_leader;
 
-use crate::k8s_leader::{
-    is_k8s_env, run_with_k8s_coordination, start_leader_tasks, stop_leader_tasks,
-};
 use anyhow::Result;
 
 use mojave_block_producer::types::BlockProducerOptions;
@@ -52,50 +49,48 @@ fn main() -> Result<()> {
     };
 
     run_daemonized(daemon_opts, || async move {
-        let node = MojaveNode::init(&node_options)
-            .await
-            .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
+        //let node = MojaveNode::init(&node_options)
+        //    .await
+        //    .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
 
-        let use_k8s = is_k8s_env();
+        //let use_k8s = is_k8s_env();
 
+        //if use_k8s {
+        //    run_with_k8s_coordination(
+        //        node.clone(),
+        //        node_options.clone(),
+        //        block_producer_options,
+        //        proof_coordinator_options,
+        //    )
+        //    .await?;
+        //} else {
+        //    let lt = start_leader_tasks(
+        //        node.clone(),
+        //        &node_options,
+        //        &block_producer_options,
+        //        &proof_coordinator_options,
+        //    )
+        //    .await?;
 
-        if use_k8s {
-            run_with_k8s_coordination(
-                node.clone(),
-                node_options.clone(),
-                block_producer_options,
-                proof_coordinator_options,
-            )
-            .await?;
-        } else {
-            let lt = start_leader_tasks(
-                node.clone(),
-                &node_options,
-                &block_producer_options,
-                &proof_coordinator_options,
-            )
-            .await?;
+        //    tokio::select! {
+        //        _ = mojave_utils::signal::wait_for_shutdown_signal() => {
+        //            info!("Termination signal received, shutting down sequencer..");
+        //            stop_leader_tasks(lt).await?;
 
+        //            let node_config_path = PathBuf::from(node.data_dir).join("node_config.json");
+        //            info!("Storing config at {:?}...", node_config_path);
+        //            let node_config = NodeConfigFile::new(node.peer_table.clone(), node.local_node_record.lock().await.clone()).await;
+        //            store_node_config_file(node_config, node_config_path).await;
 
-            tokio::select! {
-                _ = mojave_utils::signal::wait_for_shutdown_signal() => {
-                    info!("Termination signal received, shutting down sequencer..");
-                    stop_leader_tasks(lt).await?;
+        //            // TODO: wait for api to stop here
+        //            // if let Err(_elapsed) = tokio::time::timeout(std::time::Duration::from_secs(10), api_task).await {
+        //            //     warn!("Timed out waiting for API to stop");
+        //            // }
 
-                    let node_config_path = PathBuf::from(node.data_dir).join("node_config.json");
-                    info!("Storing config at {:?}...", node_config_path);
-                    let node_config = NodeConfigFile::new(node.peer_table.clone(), node.local_node_record.lock().await.clone()).await;
-                    store_node_config_file(node_config, node_config_path).await;
-
-                    // TODO: wait for api to stop here
-                    // if let Err(_elapsed) = tokio::time::timeout(std::time::Duration::from_secs(10), api_task).await {
-                    //     warn!("Timed out waiting for API to stop");
-                    // }
-
-                    info!("Successfully shut down the sequencer.");
-                }
-            }
-        }
+        //            info!("Successfully shut down the sequencer.");
+        //        }
+        //    }
+        //}
         Ok(())
     })
     .unwrap_or_else(|err| error!("Failed to start daemonized sequencer: {}", err));

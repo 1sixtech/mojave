@@ -21,9 +21,6 @@ mojave-utils = { workspace = true }
 anyhow = { workspace = true }
 clap = { workspace = true }
 hex = { workspace = true }
-k8s-openapi = { workspace = true }
-kube = { workspace = true }
-kube-leader-election = { workspace = true }
 tokio = { workspace = true, features = [
   "macros",
   "rt",
