@@ -10,13 +10,9 @@ const PID_FILE_NAME: &str = "prover.pid";
 const LOG_FILE_NAME: &str = "prover.log";
 
 fn main() -> Result<()> {
-    mojave_utils::logging::init();
-
     let cli = cli::Cli::run();
 
-    if let Some(log_level) = cli.log_level {
-        mojave_utils::logging::change_level(log_level);
-    }
+    mojave_utils::logging::init(cli.log_level);
 
     match cli.command {
         Command::Start { prover_options } => {

@@ -1,12 +1,62 @@
+use std::path::PathBuf;
+
 use clap::{ArgAction, ArgGroup, Parser, Subcommand};
 use mojave_block_producer::types::BlockProducerOptions;
-use mojave_node_lib::types::{Node, SyncMode};
+use mojave_node_lib::{
+    initializers::get_signer,
+    types::{Node, SyncMode},
+};
 use mojave_proof_coordinator::types::ProofCoordinatorOptions;
-use mojave_utils::network::Network;
+use mojave_utils::{daemon::stop_daemonized, network::Network, p2p::public_key_from_signing_key};
 use tracing::Level;
+
+use crate::PID_FILE_NAME;
 
 #[derive(Parser)]
 pub struct Options {
+    #[arg(
+        long = "log.level",
+        value_name = "LOG_LEVEL",
+        help = "The verbosity level used for logs.",
+        long_help = "Possible values: info, debug, trace, warn, error",
+        help_heading = "Node options",
+        global = true
+    )]
+    pub log_level: Option<Level>,
+
+    #[arg(
+        long = "datadir",
+        value_name = "DATABASE_DIRECTORY",
+        help = "If the datadir is the word `memory`, ethrex will use the InMemory Engine",
+        default_value = ".mojave/sequencer",
+        help = "Receives the name of the directory where the Database is located.",
+        long_help = "If the datadir is the word `memory`, ethrex will use the `InMemory Engine`.",
+        help_heading = "Node options",
+        env = "ETHREX_DATADIR",
+        global = true
+    )]
+    pub datadir: String,
+
+    #[arg(
+        long = "health.port",
+        value_name = "HEALTH_PORT",
+        default_value = "9595",
+        help = "Port for the health check HTTP server.",
+        help_heading = "Node options",
+        env = "HEALTH_PORT"
+    )]
+    pub health_port: String,
+
+    #[arg(
+        long = "health.addr",
+        value_name = "HEALTH_ADDR",
+        default_value = "0.0.0.0",
+        help = "Address for the health check HTTP server.",
+        help_heading = "Node options",
+        env = "HEALTH_ADDR"
+    )]
+    pub health_addr: String,
+
     #[arg(
         long = "network",
         default_value_t = Network::default(),
@@ -125,6 +175,7 @@ pub struct Options {
         help_heading = "P2P options"
     )]
     pub discovery_port: String,
+
     #[arg(
         long = "no-daemon",
         help = "If set, the sequencer will run in the foreground (not as a daemon). By default, the sequencer runs as a daemon.",
@@ -156,6 +207,8 @@ impl From<&Options> for mojave_node_lib::types::NodeOptions {
             metrics_port: options.metrics_port.clone(),
             metrics_enabled: options.metrics_enabled,
             force: options.force,
+            health_addr: options.health_addr.clone(),
+            health_port: options.health_port.clone(),
         }
     }
 }
@@ -170,29 +223,12 @@ impl From<&Options> for mojave_node_lib::types::NodeOptions {
     arg_required_else_help = true
 )]
 pub struct Cli {
-    #[arg(
-        long = "log.level",
-        value_name = "LOG_LEVEL",
-        help = "The verbosity level used for logs.",
-        long_help = "Possible values: info, debug, trace, warn, error",
-        help_heading = "Node options",
-        global = true
-    )]
-    pub log_level: Option<Level>,
-    #[arg(
-        long = "datadir",
-        value_name = "DATABASE_DIRECTORY",
-        help = "If the datadir is the word `memory`, ethrex will use the InMemory Engine",
-        default_value = ".mojave/sequencer",
-        help = "Receives the name of the directory where the Database is located.",
-        long_help = "If the datadir is the word `memory`, ethrex will use the `InMemory Engine`.",
-        help_heading = "Node options",
-        env = "ETHREX_DATADIR",
-        global = true
-    )]
-    pub datadir: String,
+    #[command(flatten)]
+    pub options: Options,
+    #[command(flatten)]
+    pub sequencer_options: SequencerOptions,
     #[command(subcommand)]
-    pub command: Command,
+    pub command: Option<Command>,
 }
 
 impl Cli {
@@ -204,17 +240,25 @@ impl Cli {
 #[allow(clippy::large_enum_variant)]
 #[derive(Subcommand)]
 pub enum Command {
-    #[command(name = "init", about = "Run the sequencer")]
-    Start {
-        #[command(flatten)]
-        options: Options,
-        #[command(flatten)]
-        sequencer_options: SequencerOptions,
-    },
     #[command(name = "stop", about = "Stop the sequencer")]
     Stop,
     #[command(name = "get-pub-key", about = "Display the public key of the node")]
     GetPubKey,
+}
+
+impl Command {
+    pub async fn run(self, datadir: String) -> anyhow::Result<()> {
+        match self {
+            Command::Stop => stop_daemonized(PathBuf::from(datadir).join(PID_FILE_NAME)),
+            Command::GetPubKey => {
+                let signer = get_signer(&datadir).await.map_err(anyhow::Error::from)?;
+                let public_key = public_key_from_signing_key(&signer);
+                let public_key = hex::encode(public_key);
+                println!("{public_key}");
+                Ok(())
+            }
+        }
+    }
 }
 
 #[derive(Parser)]
@@ -236,7 +280,8 @@ pub struct SequencerOptions {
     #[arg(
         long = "private_key",
         help = "Private key used for signing blocks",
-        env = "PRIVATE_KEY"
+        env = "PRIVATE_KEY",
+        default_value = "0xabc"
     )]
     pub private_key: String,
 }
@@ -287,19 +332,18 @@ mod tests {
 
     #[test]
     fn parse_start_minimal_uses_defaults() {
-        let cli =
-            Cli::try_parse_from(["mojave-sequencer", "init", "--private_key", "0xabc"]).unwrap();
+        let Cli {
+            command,
+            options,
+            sequencer_options,
+        } = Cli::try_parse_from(["mojave-sequencer", "--private_key", "0xabc"]).unwrap();
 
-        assert_eq!(cli.datadir, ".mojave/sequencer");
-        assert!(cli.log_level.is_none());
+        assert_eq!(options.datadir, ".mojave/sequencer");
+        assert!(options.log_level.is_none());
 
-        let Command::Start {
-            ref options,
-            ref sequencer_options,
-        } = cli.command
-        else {
+        if command.is_some() {
             panic!("expected Start")
-        };
+        }
 
         // Node Options defaults
         //assert_eq!(options.http_addr, "0.0.0.0");
@@ -324,9 +368,12 @@ mod tests {
 
     #[test]
     fn parse_start_with_overrides() {
-        let cli = Cli::try_parse_from([
+        let Cli {
+            command,
+            options,
+            sequencer_options,
+        } = Cli::try_parse_from([
             "mojave-sequencer",
-            "init",
             "--log.level",
             "debug",
             "--datadir",
@@ -357,35 +404,31 @@ mod tests {
         ])
         .unwrap();
 
-        match cli.command {
-            Command::Start {
-                options,
-                sequencer_options,
-            } => {
-                assert_eq!(cli.log_level, Some(Level::DEBUG));
-                assert_eq!(cli.datadir, "/tmp/sequencer");
-
-                assert_eq!(sequencer_options.prover_address, "http://127.0.0.1:3909");
-                assert_eq!(sequencer_options.block_time, 2500);
-                assert_eq!(sequencer_options.private_key, "0xmojave");
-
-                //assert_eq!(options.http_addr, "127.0.0.1");
-                //assert_eq!(options.http_port, "9000");
-                //assert_eq!(options.authrpc_addr, "127.0.0.1");
-                //assert_eq!(options.authrpc_port, "9001");
-                //assert_eq!(options.authrpc_jwtsecret, "custom.jwt");
-                assert_eq!(options.p2p_addr, "127.0.0.1");
-                assert_eq!(options.p2p_port, "30304");
-                assert_eq!(options.discovery_addr, "127.0.0.1");
-                assert_eq!(options.discovery_port, "30305");
-                assert_eq!(options.metrics_addr, "0.0.0.0");
-                assert_eq!(options.metrics_port, "9393");
-                assert!(options.metrics_enabled);
-                assert!(options.force);
-                assert!(matches!(options.syncmode, Some(SyncMode::Snap)));
-            }
-            _ => panic!("expected Start"),
+        if command.is_some() {
+            panic!("expected Start");
         }
+
+        assert_eq!(options.log_level, Some(Level::DEBUG));
+        assert_eq!(options.datadir, "/tmp/sequencer");
+
+        assert_eq!(sequencer_options.prover_address, "http://127.0.0.1:3909");
+        assert_eq!(sequencer_options.block_time, 2500);
+        assert_eq!(sequencer_options.private_key, "0xmojave");
+
+        //assert_eq!(options.http_addr, "127.0.0.1");
+        //assert_eq!(options.http_port, "9000");
+        //assert_eq!(options.authrpc_addr, "127.0.0.1");
+        //assert_eq!(options.authrpc_port, "9001");
+        //assert_eq!(options.authrpc_jwtsecret, "custom.jwt");
+        assert_eq!(options.p2p_addr, "127.0.0.1");
+        assert_eq!(options.p2p_port, "30304");
+        assert_eq!(options.discovery_addr, "127.0.0.1");
+        assert_eq!(options.discovery_port, "30305");
+        assert_eq!(options.metrics_addr, "0.0.0.0");
+        assert_eq!(options.metrics_port, "9393");
+        assert!(options.metrics_enabled);
+        assert!(options.force);
+        assert!(matches!(options.syncmode, Some(SyncMode::Snap)));
     }
 
     // #[test]
@@ -425,9 +468,12 @@ mod tests {
     #[test]
     fn conversions_to_runtime_options_work() {
         // Options -> NodeOptions
-        let cli = Cli::try_parse_from([
+        let Cli {
+            command,
+            options,
+            sequencer_options,
+        } = Cli::try_parse_from([
             "mojave-sequencer",
-            "init",
             "--private_key",
             "0xabc",
             "--p2p.addr",
@@ -448,16 +494,11 @@ mod tests {
         ])
         .unwrap();
 
-        let (node_opts, seq_opts) = match cli.command {
-            Command::Start {
-                options,
-                sequencer_options,
-            } => (
-                mojave_node_lib::types::NodeOptions::from(&options),
-                sequencer_options,
-            ),
-            _ => panic!("expected Start"),
-        };
+        if command.is_some() {
+            panic!("expected None");
+        }
+
+        let node_opts = mojave_node_lib::types::NodeOptions::from(&options);
 
         //assert_eq!(node_opts.http_addr, "1.2.3.4");
         //assert_eq!(node_opts.http_port, "9999");
@@ -474,13 +515,13 @@ mod tests {
         assert!(matches!(node_opts.syncmode, SyncMode::Full));
 
         // SequencerOptions -> BlockProducerOptions
-        let bp: BlockProducerOptions = (&seq_opts).into();
-        assert_eq!(bp.block_time, seq_opts.block_time);
-        assert_eq!(bp.private_key, seq_opts.private_key);
+        let bp: BlockProducerOptions = (&sequencer_options).into();
+        assert_eq!(bp.block_time, sequencer_options.block_time);
+        assert_eq!(bp.private_key, sequencer_options.private_key);
 
         // SequencerOptions -> ProofCoordinatorOptions
-        let pc: ProofCoordinatorOptions = (&seq_opts).into();
-        assert_eq!(pc.prover_address, seq_opts.prover_address);
+        let pc: ProofCoordinatorOptions = (&sequencer_options).into();
+        assert_eq!(pc.prover_address, sequencer_options.prover_address);
     }
 
     #[test]
@@ -500,15 +541,15 @@ mod tests {
     #[test]
     fn parse_stop_and_get_pub_key() {
         let cli = Cli::try_parse_from(["mojave-sequencer", "stop"]).unwrap();
-        matches!(cli.command, Command::Stop);
+        matches!(cli.command, Some(Command::Stop));
 
         let cli = Cli::try_parse_from(["mojave-sequencer", "get-pub-key"]).unwrap();
-        matches!(cli.command, Command::GetPubKey);
+        matches!(cli.command, Some(Command::GetPubKey));
     }
 
     #[test]
     fn invalid_bootnodes_string_rejected() {
-        let res = Cli::try_parse_from(["mojave-sequencer", "init", "--bootnodes", "not-enode-url"]);
+        let res = Cli::try_parse_from(["mojave-sequencer", "--bootnodes", "not-enode-url"]);
         assert!(res.is_err());
     }
 
@@ -518,12 +559,11 @@ mod tests {
             "mojave-sequencer",
             "--log.level",
             "debug",
-            "init",
             "--private_key",
             "0xabc",
         ])
         .unwrap();
 
-        assert!(cli.log_level.is_some());
+        assert!(cli.options.log_level.is_some());
     }
 }

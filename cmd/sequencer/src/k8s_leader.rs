@@ -1,6 +1,7 @@
 use k8s_openapi::api::coordination::v1::Lease;
 use kube::{Api, Client};
 use kube_leader_election::{LeaseLock, LeaseLockParams};
+use mojave_utils::network::get_http_socket_addr;
 use std::{env, time::Duration};
 use tokio::time::sleep;
 
@@ -128,7 +129,7 @@ pub async fn run_with_k8s_coordination(
 
 pub async fn start_leader_tasks(
     node: MojaveNode,
-    node_options: &mojave_node_lib::types::NodeOptions,
+    options: &mojave_node_lib::types::NodeOptions,
     block_producer_options: &BlockProducerOptions,
     proof_coordinator_options: &ProofCoordinatorOptions,
 ) -> Result<LeaderTasks, Box<dyn std::error::Error>> {
@@ -141,7 +142,7 @@ pub async fn start_leader_tasks(
     let batch_producer = BatchProducer::new(node.clone(), batch_counter);
     let block_producer = BlockProducer::new(node.clone());
     let proof_coordinator =
-        ProofCoordinator::new(node.clone(), node_options, proof_coordinator_options)?;
+        ProofCoordinator::new(node.clone(), options, proof_coordinator_options)?;
 
     let batch = batch_producer
         .clone()
@@ -162,6 +163,14 @@ pub async fn start_leader_tasks(
     .spawn();
 
     let proof = proof_coordinator.spawn();
+
+    let health_socket_addr =
+        get_http_socket_addr(&options.health_addr, &options.health_port).await?;
+    let (_, _) = mojave_utils::health::spawn_health_probe(
+        health_socket_addr,
+        cancel_token.clone().cancelled_owned(),
+    )
+    .await?;
 
     Ok(LeaderTasks {
         batch,

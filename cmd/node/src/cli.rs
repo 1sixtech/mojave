@@ -1,10 +1,15 @@
-use std::str::FromStr;
+use std::{path::PathBuf, str::FromStr};
 
 use clap::{ArgAction, Parser, Subcommand};
-use mojave_node_lib::types::{Node, SyncMode};
-use mojave_utils::network::Network;
+use mojave_node_lib::{
+    initializers::get_signer,
+    types::{Node, SyncMode},
+};
+use mojave_utils::{daemon::stop_daemonized, network::Network, p2p::public_key_from_signing_key};
 use std::net::ToSocketAddrs;
 use tracing::Level;
+
+use crate::PID_FILE_NAME;
 
 fn resolve_dns_host_port(addr: &str) -> Result<String, anyhow::Error> {
     let mut iter = addr
@@ -15,7 +20,6 @@ fn resolve_dns_host_port(addr: &str) -> Result<String, anyhow::Error> {
         .next()
         .ok_or_else(|| anyhow::anyhow!("DNS resolution for `{addr}` returned no addresses"))?;
 
-    // This will be something like "10.42.0.12:3030"
     Ok(socket_addr.to_string())
 }
 
@@ -54,6 +58,49 @@ impl From<DNSNode> for Node {
 
 #[derive(Parser)]
 pub struct Options {
+    #[arg(
+        long = "log.level",
+        value_name = "LOG_LEVEL",
+        help = "The verbosity level used for logs.",
+        long_help = "Possible values: info, debug, trace, warn, error",
+        help_heading = "Node options",
+        global = true
+    )]
+    pub log_level: Option<Level>,
+
+    #[arg(
+        long = "datadir",
+        value_name = "DATABASE_DIRECTORY",
+        help = "If the datadir is the word `memory`, ethrex will use the InMemory Engine",
+        default_value = ".mojave/node",
+        help = "Receives the name of the directory where the Database is located.",
+        long_help = "If the datadir is the word `memory`, ethrex will use the `InMemory Engine`.",
+        help_heading = "Node options",
+        env = "ETHREX_DATADIR",
+        global = true
+    )]
+    pub datadir: String,
+
+    #[arg(
+        long = "health.port",
+        value_name = "HEALTH_PORT",
+        default_value = "9595",
+        help = "Port for the health check HTTP server.",
+        help_heading = "Node options",
+        env = "HEALTH_PORT"
+    )]
+    pub health_port: String,
+
+    #[arg(
+        long = "health.addr",
+        value_name = "HEALTH_ADDR",
+        default_value = "0.0.0.0",
+        help = "Address for the health check HTTP server.",
+        help_heading = "Node options",
+        env = "HEALTH_ADDR"
+    )]
+    pub health_addr: String,
+
     #[arg(
         long = "network",
         default_value_t = Network::default(),
@@ -241,13 +288,15 @@ impl From<&Options> for mojave_node_lib::types::NodeOptions {
                 .cloned()
                 .map(|dn| dn.into())
                 .collect(),
-            datadir: Default::default(),
+            datadir: options.datadir.clone(),
             syncmode: options.syncmode.unwrap_or(SyncMode::Full),
             sponsorable_addresses_file_path: options.sponsorable_addresses_file_path.clone(),
             metrics_addr: options.metrics_addr.clone(),
             metrics_port: options.metrics_port.clone(),
             metrics_enabled: options.metrics_enabled,
             force: options.force,
+            health_addr: options.health_addr.clone(),
+            health_port: options.health_port.clone(),
         }
     }
 }
@@ -258,33 +307,13 @@ impl From<&Options> for mojave_node_lib::types::NodeOptions {
     name = "mojave-node",
     author,
     version,
-    about = "mojave-node is the node implementation for the Mojave network.",
-    arg_required_else_help = true
+    about = "mojave-node is the node implementation for the Mojave network."
 )]
 pub struct Cli {
-    #[arg(
-        long = "log.level",
-        value_name = "LOG_LEVEL",
-        help = "The verbosity level used for logs.",
-        long_help = "Possible values: info, debug, trace, warn, error",
-        help_heading = "Node options",
-        global = true
-    )]
-    pub log_level: Option<Level>,
-    #[arg(
-        long = "datadir",
-        value_name = "DATABASE_DIRECTORY",
-        help = "If the datadir is the word `memory`, ethrex will use the InMemory Engine",
-        default_value = ".mojave/node",
-        help = "Receives the name of the directory where the Database is located.",
-        long_help = "If the datadir is the word `memory`, ethrex will use the `InMemory Engine`.",
-        help_heading = "Node options",
-        env = "ETHREX_DATADIR",
-        global = true
-    )]
-    pub datadir: String,
+    #[command(flatten)]
+    pub options: Options,
     #[command(subcommand)]
-    pub command: Command,
+    pub command: Option<Command>,
 }
 
 impl Cli {
@@ -296,17 +325,26 @@ impl Cli {
 #[allow(clippy::large_enum_variant)]
 #[derive(Subcommand)]
 pub enum Command {
-    #[command(name = "init", about = "Run the node")]
-    Start {
-        #[command(flatten)]
-        options: Options,
-    },
     #[command(name = "stop", about = "Stop the node")]
     Stop,
     #[command(name = "get-pub-key", about = "Display the public key of the node")]
     GetPubKey,
 }
 
+impl Command {
+    pub async fn run(self, datadir: String) -> anyhow::Result<()> {
+        match self {
+            Command::Stop => stop_daemonized(PathBuf::from(datadir).join(PID_FILE_NAME)),
+            Command::GetPubKey => {
+                let signer = get_signer(&datadir).await.map_err(anyhow::Error::from)?;
+                let public_key = public_key_from_signing_key(&signer);
+                let public_key = hex::encode(public_key);
+                println!("{public_key}");
+                Ok(())
+            }
+        }
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -331,14 +369,14 @@ mod tests {
 
     #[test]
     fn parse_start_with_defaults() {
-        let cli = Cli::try_parse_from(["mojave-node", "init"]).unwrap();
+        let Cli { command, options } = Cli::try_parse_from(["mojave-node"]).unwrap();
 
-        assert_eq!(cli.datadir, ".mojave/node");
-        assert!(cli.log_level.is_none());
+        assert_eq!(options.datadir, ".mojave/node");
+        assert!(options.log_level.is_none());
 
-        let Command::Start { ref options } = cli.command else {
-            panic!("expected Start")
-        };
+        if command.is_some() {
+            panic!("expected None");
+        }
 
         assert!(matches!(options.network, Network::DefaultNet));
         assert!(options.bootnodes.is_empty());
@@ -365,9 +403,9 @@ mod tests {
         assert_eq!(options.metrics_port, "9090");
         assert!(!options.metrics_enabled);
         assert!(!options.force);
-        assert_eq!(cli.datadir, ".mojave/node");
+        assert_eq!(options.datadir, ".mojave/node");
 
-        let node_opts: NodeOptions = options.into();
+        let node_opts: NodeOptions = (&options).into();
         assert_eq!(node_opts.http_addr, Some(options.http_addr.clone()));
         assert_eq!(node_opts.http_port, Some(options.http_port.clone()));
         assert_eq!(node_opts.authrpc_addr, Some(options.authrpc_addr.clone()));
@@ -392,14 +430,13 @@ mod tests {
         assert_eq!(node_opts.metrics_port, options.metrics_port);
         assert_eq!(node_opts.metrics_enabled, options.metrics_enabled);
         assert_eq!(node_opts.force, options.force);
-        assert_eq!(node_opts.datadir, "".to_string()); // datadir is not set from Options. Override to default
+        assert_eq!(node_opts.datadir, ".mojave/node".to_string());
     }
 
     #[test]
     fn parse_start_with_overrides() {
         let cli = Cli::try_parse_from([
             "mojave-node",
-            "init",
             "--log.level",
             "debug",
             "--datadir",
@@ -434,37 +471,34 @@ mod tests {
         ])
         .unwrap();
 
-        match cli.command {
-            Command::Start { options } => {
-                assert_eq!(cli.log_level, Some(Level::DEBUG));
-                assert_eq!(cli.datadir, "/tmp/mojave-node");
-                assert_eq!(options.http_addr, "127.0.0.1");
-                assert_eq!(options.http_port, "18545");
-                assert_eq!(options.authrpc_addr, "127.0.0.1");
-                assert_eq!(options.authrpc_port, "18551");
-                assert_eq!(options.authrpc_jwtsecret, "custom.jwt");
-                assert_eq!(options.metrics_addr, "127.0.0.1");
-                assert_eq!(options.metrics_port, "19090");
-                assert!(options.metrics_enabled);
-                assert_eq!(options.p2p_addr, "0.0.0.0");
-                assert_eq!(options.p2p_port, "30304");
-                assert_eq!(options.discovery_addr, "0.0.0.0");
-                assert_eq!(options.discovery_port, "30305");
-                assert!(matches!(options.syncmode, Some(SyncMode::Snap)));
-                assert!(options.force);
-                assert!(options.no_daemon);
-            }
-            _ => panic!("expected Start"),
-        }
+        let options = cli.options;
+
+        assert_eq!(options.log_level, Some(Level::DEBUG));
+        assert_eq!(options.datadir, "/tmp/mojave-node");
+        assert_eq!(options.http_addr, "127.0.0.1");
+        assert_eq!(options.http_port, "18545");
+        assert_eq!(options.authrpc_addr, "127.0.0.1");
+        assert_eq!(options.authrpc_port, "18551");
+        assert_eq!(options.authrpc_jwtsecret, "custom.jwt");
+        assert_eq!(options.metrics_addr, "127.0.0.1");
+        assert_eq!(options.metrics_port, "19090");
+        assert!(options.metrics_enabled);
+        assert_eq!(options.p2p_addr, "0.0.0.0");
+        assert_eq!(options.p2p_port, "30304");
+        assert_eq!(options.discovery_addr, "0.0.0.0");
+        assert_eq!(options.discovery_port, "30305");
+        assert!(matches!(options.syncmode, Some(SyncMode::Snap)));
+        assert!(options.force);
+        assert!(options.no_daemon);
     }
 
     #[test]
     fn parse_stop_and_get_pub_key() {
         let cli = Cli::try_parse_from(["mojave-node", "stop"]).unwrap();
-        assert!(matches!(cli.command, Command::Stop));
+        assert!(matches!(cli.command, Some(Command::Stop)));
 
         let cli = Cli::try_parse_from(["mojave-node", "get-pub-key"]).unwrap();
-        assert!(matches!(cli.command, Command::GetPubKey));
+        assert!(matches!(cli.command, Some(Command::GetPubKey)));
     }
 
     #[test]
@@ -475,8 +509,8 @@ mod tests {
 
     #[test]
     fn parse_log_level() {
-        let cli = Cli::try_parse_from(["mojave-node", "--log.level", "debug", "init"]).unwrap();
+        let cli = Cli::try_parse_from(["mojave-node", "--log.level", "debug"]).unwrap();
 
-        assert!(cli.log_level.is_some());
+        assert!(cli.options.log_level.is_some());
     }
 }

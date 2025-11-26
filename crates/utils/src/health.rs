@@ -1,17 +1,14 @@
 use std::{future::Future, net::SocketAddr};
 
 use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt},
+    io::AsyncWriteExt,
     net::{TcpListener, TcpStream},
     task::JoinHandle,
-    time::{Duration, timeout},
 };
 use tracing::info;
 
 /// Background task handle for the health probe server.
 pub type HealthProbeHandle = JoinHandle<std::io::Result<()>>;
-
-const READ_TIMEOUT: Duration = Duration::from_secs(1);
 
 /// Spawn a lightweight HTTP server exposing a `/health` endpoint.
 ///
@@ -51,8 +48,10 @@ where
 }
 
 async fn respond_ok(stream: &mut TcpStream) -> std::io::Result<()> {
-    // here we don't even read as this shall only be used for health checks. And so we shall be safe
-    // to not read anything and just respond OK. If we experience some ECONNRESET from clients closing we could try to read with a timeout, to avoid RST error.
+    let mut buf = [0u8; 1024];
+    let _ = stream.readable().await;
+    let _ = stream.try_read(&mut buf);
+
     const RESPONSE: &[u8] = b"HTTP/1.1 200 OK\r\ncontent-length: 2\r\ncontent-type: text/plain\r\nconnection: close\r\n\r\nOK";
     stream.write_all(RESPONSE).await?;
     stream.shutdown().await
@@ -61,7 +60,7 @@ async fn respond_ok(stream: &mut TcpStream) -> std::io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tokio::sync::oneshot;
+    use tokio::{io::AsyncReadExt, sync::oneshot};
 
     #[tokio::test]
     async fn health_probe_serves_ok() {
