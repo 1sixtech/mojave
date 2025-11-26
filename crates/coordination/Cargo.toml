@@ -1,0 +1,23 @@
+[package]
+name = "coordination"
+version = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+license = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+documentation = { workspace = true }
+
+[dependencies]
+mojave-node-lib = { workspace = true }
+mojave-block-producer = { workspace = true }
+mojave-proof-coordinator = { workspace = true }
+mojave-utils = { workspace = true }
+
+k8s-openapi = { workspace = true }
+kube = { workspace = true }
+kube-leader-election = { workspace = true }
+tracing = { workspace = true }
+
+tokio = {workspace = true}
+tokio-util = { workspace = true }
