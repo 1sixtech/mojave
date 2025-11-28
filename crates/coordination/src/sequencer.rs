@@ -8,7 +8,11 @@ use mojave_block_producer::{
 use mojave_node_lib::types::{MojaveNode, NodeOptions};
 use mojave_proof_coordinator::{ProofCoordinator, types::ProofCoordinatorOptions};
 use mojave_task::{Task, TaskHandle};
-use mojave_utils::{network::get_http_socket_addr, signal::wait_for_shutdown_signal};
+use mojave_utils::{
+    health::HealthProbeHandle,
+    network::get_http_socket_addr,
+    signal::wait_for_shutdown_signal,
+};
 use tokio::select;
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info};
@@ -19,6 +23,7 @@ pub struct LeaderTasks {
     batch: TaskHandle<BatchProducer>,
     block: TaskHandle<BlockProducer>,
     proof: TaskHandle<ProofCoordinator>,
+    health: HealthProbeHandle,
 }
 
 const BLOCK_PRODUCER_CAPACITY: usize = 100;
@@ -141,7 +146,7 @@ async fn start_leader_tasks(
     // Health probe HTTP endpoint.
     let health_socket_addr =
         get_http_socket_addr(&options.health_addr, &options.health_port).await?;
-    let _ = mojave_utils::health::spawn_health_probe(
+    let (_, health) = mojave_utils::health::spawn_health_probe(
         health_socket_addr,
         cancel_token.cancelled_owned(),
     )
@@ -151,12 +156,21 @@ async fn start_leader_tasks(
         batch,
         block,
         proof,
+        health,
     })
 }
 
 async fn stop_leader_tasks(lt: LeaderTasks) -> Result<(), Box<dyn std::error::Error>> {
-    lt.batch.shutdown().await?;
-    lt.block.shutdown().await?;
-    lt.proof.shutdown().await?;
+    let LeaderTasks {
+        batch,
+        block,
+        proof,
+        health,
+    } = lt;
+
+    batch.shutdown().await?;
+    block.shutdown().await?;
+    proof.shutdown().await?;
+    health.await??;
     Ok(())
 }
