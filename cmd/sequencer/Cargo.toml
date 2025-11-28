@@ -9,13 +9,10 @@ repository = { workspace = true }
 documentation = { workspace = true }
 
 [dependencies]
-mojave-batch-producer = { workspace = true }
-mojave-batch-submitter = { workspace = true }
 mojave-block-producer = { workspace = true }
-mojave-msgio = { workspace = true }
+mojave-coordination = { workspace = true }
 mojave-node-lib = { workspace = true }
 mojave-proof-coordinator = { workspace = true }
-mojave-task = { workspace = true }
 mojave-utils = { workspace = true }
 
 anyhow = { workspace = true }
