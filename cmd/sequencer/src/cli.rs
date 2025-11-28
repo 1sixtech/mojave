@@ -200,7 +200,7 @@ impl From<&Options> for mojave_node_lib::types::NodeOptions {
             discovery_port: options.discovery_port.clone(),
             network: options.network.clone(),
             bootnodes: options.bootnodes.clone(),
-            datadir: Default::default(),
+            datadir: options.datadir.clone(),
             syncmode: options.syncmode.unwrap_or(SyncMode::Full),
             sponsorable_addresses_file_path: options.sponsorable_addresses_file_path.clone(),
             metrics_addr: options.metrics_addr.clone(),
