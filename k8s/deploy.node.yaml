@@ -22,7 +22,6 @@ spec:
           image: mojave-node:latest
           imagePullPolicy: IfNotPresent
           args:
-            - "init"
             - "--datadir"
             - "/data/mojave/node"
             - "--http.addr"
@@ -59,6 +58,15 @@ spec:
             - name: p2p-udp
               containerPort: 30303
               protocol: UDP
+            - name: health
+              containerPort: 9595
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9595
+            initialDelaySeconds: 5
+            periodSeconds: 3
           resources:
             limits:
               memory: "2Gi"
