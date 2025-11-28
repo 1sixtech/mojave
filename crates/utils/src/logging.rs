@@ -6,7 +6,7 @@ use tracing_subscriber::{
 
 static RELOAD_HANDLE: OnceLock<reload::Handle<EnvFilter, Registry>> = OnceLock::new();
 
-pub fn init() {
+pub fn init(log_level: Option<Level>) {
     let base_filter = EnvFilter::builder()
         .with_default_directive(Directive::from(Level::INFO))
         .from_env_lossy();
@@ -21,6 +21,10 @@ pub fn init() {
 
     if let Err(e) = tracing::subscriber::set_global_default(subscriber) {
         eprintln!("Failed to set global tracing subscriber: {e}");
+    }
+
+    if let Some(log_level) = log_level {
+        change_level(log_level);
     }
 }
 

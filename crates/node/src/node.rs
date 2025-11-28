@@ -168,11 +168,25 @@ impl MojaveNode {
             rpc_shutdown.clone(),
             registry,
         );
+
+        let health_socket_addr =
+            get_http_socket_addr(&options.health_addr, &options.health_port).await?;
+        let (_, health_handle) = mojave_utils::health::spawn_health_probe(
+            health_socket_addr,
+            self.cancel_token.clone().cancelled_owned(),
+        )
+        .await?;
+
         tokio::pin!(api_task);
         tokio::select! {
             res = &mut api_task => {
                 if let Err(error) = res {
                     tracing::error!("API task returned error: {}", error);
+                }
+            }
+            res = health_handle => {
+                if let Err(error) = res {
+                    tracing::error!("Health probe server returned error: {}", error);
                 }
             }
             _ = mojave_utils::signal::wait_for_shutdown_signal() => {
@@ -202,6 +216,7 @@ impl MojaveNode {
             ensure_tcp_port_available(addr, port).await?;
         }
         ensure_udp_port_available(&options.discovery_addr, &options.discovery_port).await?;
+        ensure_tcp_port_available(&options.health_addr, &options.health_port).await?;
 
         if options.metrics_enabled {
             ensure_tcp_port_available(&options.metrics_addr, &options.metrics_port).await?;
