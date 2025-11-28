@@ -28,13 +28,15 @@ pub struct LeaderTasks {
 
 const BLOCK_PRODUCER_CAPACITY: usize = 100;
 
+type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
+
 async fn run_sequencer_leader_task(
     node: MojaveNode,
     options: &NodeOptions,
     block_producer_options: &BlockProducerOptions,
     proof_coordinator_options: &ProofCoordinatorOptions,
     cancel_token: CancellationToken,
-) {
+) -> Result<(), BoxError> {
     info!("Starting Sequencer leader task...");
 
     let leader_tasks = start_leader_tasks(
@@ -44,17 +46,15 @@ async fn run_sequencer_leader_task(
         proof_coordinator_options,
         cancel_token.clone(),
     )
-    .await
-    .expect("Failed to start leader tasks");
+    .await?;
 
     cancel_token.cancelled().await;
     info!("Shutdown token triggered, stopping sequencer leader tasks...");
 
-    stop_leader_tasks(leader_tasks)
-        .await
-        .expect("Failed to stop leader tasks");
+    stop_leader_tasks(leader_tasks).await?;
 
     info!("Sequencer leader tasks stopped.");
+    Ok(())
 }
 
 pub async fn run_sequencer(
@@ -62,7 +62,7 @@ pub async fn run_sequencer(
     options: &NodeOptions,
     block_producer_options: &BlockProducerOptions,
     proof_coordinator_options: &ProofCoordinatorOptions,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), BoxError> {
     if is_k8s_env() {
         run_with_k8s_coordination(move |shutdown_token: CancellationToken| {
             let node_task = node.clone();
@@ -71,7 +71,7 @@ pub async fn run_sequencer(
             let proof_coordinator_options_task = proof_coordinator_options.clone();
 
             async move {
-                run_sequencer_leader_task(
+                if let Err(err) = run_sequencer_leader_task(
                     node_task,
                     &options_task,
                     &block_producer_options_task,
@@ -79,6 +79,9 @@ pub async fn run_sequencer(
                     shutdown_token,
                 )
                 .await
+                {
+                    error!("Sequencer leader task failed: {err:?}");
+                }
             }
         })
         .await?;
@@ -92,7 +95,7 @@ pub async fn run_sequencer(
         let block_producer_options_task = block_producer_options.clone();
         let proof_coordinator_options_task = proof_coordinator_options.clone();
 
-        let leader_task = tokio::spawn(async move {
+        let mut leader_task = tokio::spawn(async move {
             run_sequencer_leader_task(
                 node_task,
                 &options_task,
@@ -100,20 +103,37 @@ pub async fn run_sequencer(
                 &proof_coordinator_options_task,
                 shutdown_for_task,
             )
-            .await;
+            .await
         });
 
+        let mut leader_task_result = None;
+
         select! {
+            res = &mut leader_task => {
+                leader_task_result = Some(res);
+            }
             _ = wait_for_shutdown_signal() => {
                 info!("Termination signal received, shutting down sequencer...");
                 shutdown.cancel();
-
-                match leader_task.await {
-                    Ok(_) => info!("Leader task shut down gracefully."),
-                    Err(err) => error!("Error while awaiting leader task shutdown: {err:?}"),
-                }
             }
         }
+
+        let result = match leader_task_result {
+            Some(res) => res,
+            None => leader_task.await,
+        };
+
+        match result {
+            Ok(Ok(())) => info!("Leader task shut down gracefully."),
+            Ok(Err(err)) => {
+                error!("Leader task returned error: {err:?}");
+                return Err(err);
+            }
+            Err(err) => {
+                error!("Error while awaiting leader task shutdown: {err:?}");
+                return Err(Box::new(err));
+            }
+        };
     }
     Ok(())
 }
@@ -124,7 +144,7 @@ async fn start_leader_tasks(
     block_producer_options: &BlockProducerOptions,
     proof_coordinator_options: &ProofCoordinatorOptions,
     cancel_token: CancellationToken,
-) -> Result<LeaderTasks, Box<dyn std::error::Error>> {
+) -> Result<LeaderTasks, BoxError> {
     let batch_counter = node.rollup_store.get_batch_number().await?.unwrap_or(0);
     let batch_producer = BatchProducer::new(node.clone(), batch_counter);
     let block_producer = BlockProducer::new(node.clone());
@@ -160,7 +180,7 @@ async fn start_leader_tasks(
     })
 }
 
-async fn stop_leader_tasks(lt: LeaderTasks) -> Result<(), Box<dyn std::error::Error>> {
+async fn stop_leader_tasks(lt: LeaderTasks) -> Result<(), BoxError> {
     let LeaderTasks {
         batch,
         block,

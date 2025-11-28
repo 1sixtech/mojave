@@ -60,7 +60,6 @@ spec:
                   name: sequencer-secrets
                   key: private-key
           args:
-            - "init"
             - "--network"
             - "/data/testnet-genesis.json"
             - "--datadir"
