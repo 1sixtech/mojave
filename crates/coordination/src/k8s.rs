@@ -7,7 +7,9 @@ use tokio::{
     select,
     time::{MissedTickBehavior, interval},
 };
-use tracing::error;
+use tracing::{error, info};
+
+use crate::utils::is_current_leader;
 
 /// Configuration for Kubernetes-based leader election, loaded from env vars.
 struct K8sLeaderConfig {
@@ -49,17 +51,14 @@ impl K8sLeaderConfig {
         }
     }
 
-    //fn lease_ttl(&self) -> Duration {
-    //    Duration::from_secs(self.lease_lock_params.lease_ttl.as_secs())
-    //}
-
-    fn renew_interval(&self) -> Duration {
-        Duration::from_secs(self.renew_every_secs)
-    }
-
     fn lease_lock(&self) -> &LeaseLock {
         &self.lease_lock
     }
+}
+
+struct LeaderEpoch {
+    cancel_token: tokio_util::sync::CancellationToken,
+    handle: tokio::task::JoinHandle<()>,
 }
 
 /// Run K8s leader election and drive a generic "leader task".
@@ -94,40 +93,83 @@ where
         return Err(Box::new(err));
     }
 
+    let mut am_i_leader = false;
+    let mut epoch: Option<LeaderEpoch> = None;
+
     loop {
         select! {
-                _ = wait_for_shutdown_signal() => {
-                //info!("Termination signal received (K8s). Stopping leader task and exiting...");
-
-                //if let Some((cancel, handle)) = leader_epoch.take() {
-                //    cancel.cancel();
-                //    match handle.await {
-                //        Ok(Ok(())) => {}
-                //        Ok(Err(err)) => error!("Leader task returned error after cancel: {err:?}"),
-                //        Err(join_err) => error!("Leader task panicked: {join_err:?}"),
-                //    }
-                //}
-
-                //if am_i_leader {
-                //    if let Err(err) = lease_lock.step_down().await {
-                //        error!("Error while stepping down from leader: {err:?}");
-                //    }
-                //}
-
-                //info!("K8s coordination loop exiting.");
-                //break Ok(());
+            _ = wait_for_shutdown_signal() => {
+                shutdown(epoch, am_i_leader, lease_lock).await;
+                return Ok(());
             }
 
             _ = renew_interval.tick() => {
                 match lease_lock.try_acquire_or_renew().await {
                     Ok(_) => {
+                        let currently_leader = match is_current_leader(&client, &k8s_config.namespace, &k8s_config.lease_name, &k8s_config.identity).await {
+                            Ok(is_leader) => is_leader,
+                            Err(err) => {
+                                error!("Error while checking leadership: {err:?}");
+                                false
+                            }
+                        };
+
+                        // beacoming the leader
+                        if currently_leader && !am_i_leader {
+                            info!("This pod is now the leader (K8s). Starting leader task...");
+                            let cancel_token = tokio_util::sync::CancellationToken::new();
+                            let fut = spawn_leader_task(cancel_token.clone());
+                            let handle = tokio::spawn(async move {
+                                fut.await;
+                            });
+                            epoch = Some(LeaderEpoch { cancel_token, handle });
+                            am_i_leader = true;
+                        }
+                        // becoming a follower
+                        else if !currently_leader && am_i_leader {
+                            info!("This pod is no longer the leader (K8s). Stopping leader task...");
+
+                            if let Some(LeaderEpoch { cancel_token, handle }) = epoch.take() {
+                                cancel_token.cancel();
+                                match handle.await {
+                                    Ok(()) => {}
+                                    Err(join_err) => error!("Leader task panicked: {join_err:?}"),
+                                }
+                            }
+                            if let Err(err) = lease_lock.step_down().await {
+                                error!("Error while stepping down from leader: {err:?}");
+                            }
+                            am_i_leader = false;
+                        }
                     }
                     Err(err) => {
                         error!("Error while k8s leader election: {err:?}");
+                        return Err(Box::new(err));
                     }
                 }
             }
-
         }
     }
+}
+
+async fn shutdown(epoch: Option<LeaderEpoch>, am_i_leader: bool, lease_lock: &LeaseLock) {
+    info!("Termination signal received (K8s). Stopping leader task and exiting...");
+
+    if let Some(LeaderEpoch {
+        cancel_token,
+        handle,
+    }) = epoch
+    {
+        cancel_token.cancel();
+        match handle.await {
+            Ok(()) => {}
+            Err(join_err) => error!("Leader task panicked: {join_err:?}"),
+        }
+    }
+
+    if am_i_leader && let Err(err) = lease_lock.step_down().await {
+        error!("Error while stepping down from leader: {err:?}");
+    }
+
+    info!("K8s coordination loop exiting.");
 }

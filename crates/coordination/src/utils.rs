@@ -23,7 +23,7 @@ pub fn is_k8s_env() -> bool {
 }
 
 /// Check if the given identity is the current Lease holder.
-async fn is_current_leader(
+pub async fn is_current_leader(
     client: &Client,
     namespace: &str,
     lease_name: &str,
