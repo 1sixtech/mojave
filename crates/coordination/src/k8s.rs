@@ -73,7 +73,7 @@ struct LeaderEpoch {
 /// It only knows how to start/stop some async work via a `CancellationToken`.
 pub async fn run_with_k8s_coordination<F, Fut>(
     spawn_leader_task: F,
-) -> Result<(), Box<dyn std::error::Error>>
+) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>
 where
     F: Fn(tokio_util::sync::CancellationToken) -> Fut,
     Fut: std::future::Future<Output = ()> + Send + 'static,

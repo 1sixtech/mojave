@@ -10,7 +10,7 @@ use tokio::{
 pub trait Task: Sized + 'static {
     type Request: Send + 'static;
     type Response: std::fmt::Debug + Send + 'static;
-    type Error: std::error::Error + Send + 'static;
+    type Error: std::error::Error + Send + Sync + 'static;
 
     fn name(&self) -> &'static str {
         std::any::type_name::<Self>()

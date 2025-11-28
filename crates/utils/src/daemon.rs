@@ -18,6 +18,8 @@ pub struct DaemonOptions {
     pub log_file_path: PathBuf,
 }
 
+type DynError = Box<dyn std::error::Error + Send + Sync + 'static>;
+
 #[derive(Debug, Error)]
 pub enum DaemonError {
     #[error("pid in pid file is already running. pid: {0}")]
@@ -43,13 +45,10 @@ pub enum DaemonError {
     ParsePid(String),
 }
 
-pub fn run_daemonized<F, Fut>(
-    opts: DaemonOptions,
-    proc: F,
-) -> Result<(), Box<dyn std::error::Error>>
+pub fn run_daemonized<F, Fut>(opts: DaemonOptions, proc: F) -> Result<(), DynError>
 where
     F: FnOnce() -> Fut,
-    Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
+    Fut: std::future::Future<Output = Result<(), DynError>>,
 {
     if opts.no_daemon {
         return run_main_task(proc);
@@ -173,10 +172,10 @@ fn is_pid_running(pid: Pid) -> bool {
     System::new_all().process(pid).is_some()
 }
 
-fn run_main_task<F, Fut>(proc: F) -> Result<(), Box<dyn std::error::Error>>
+fn run_main_task<F, Fut>(proc: F) -> Result<(), DynError>
 where
     F: FnOnce() -> Fut,
-    Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
+    Fut: std::future::Future<Output = Result<(), DynError>>,
 {
     let rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
