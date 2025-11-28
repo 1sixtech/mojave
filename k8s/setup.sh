@@ -10,5 +10,5 @@ kubectl apply -f k8s/namespace.yaml
 kubectl apply -f k8s/secret.sequencer.yaml
 kubectl apply -f k8s/rbac.sequencer.yaml
 kubectl apply -f k8s/service.sequencer.yaml
-kubectl apply -f k8s/deploy.sequencer.yaml
+kubectl apply -f k8s/stateful.sequencer.yaml
 kubectl apply -f k8s/deploy.node.yaml

@@ -1,5 +1,5 @@
 [package]
-name = "mojave-sequencer"
+name = "mojave-coordination"
 version = { workspace = true }
 edition = { workspace = true }
 authors = { workspace = true }
@@ -9,20 +9,17 @@ repository = { workspace = true }
 documentation = { workspace = true }
 
 [dependencies]
+mojave-batch-producer = { workspace = true }
 mojave-block-producer = { workspace = true }
-mojave-coordination = { workspace = true }
 mojave-node-lib = { workspace = true }
 mojave-proof-coordinator = { workspace = true }
+mojave-task = { workspace = true }
 mojave-utils = { workspace = true }
 
-anyhow = { workspace = true }
-clap = { workspace = true }
-hex = { workspace = true }
-tokio = { workspace = true, features = [
-  "macros",
-  "rt",
-  "sync",
-  "time",
-  "signal",
-] }
+k8s-openapi = { workspace = true }
+kube = { workspace = true }
+kube-leader-election = { workspace = true }
 tracing = { workspace = true }
+
+tokio = { workspace = true }
+tokio-util = { workspace = true }
