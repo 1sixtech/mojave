@@ -105,14 +105,8 @@ where
 
             _ = renew_interval.tick() => {
                 match lease_lock.try_acquire_or_renew().await {
-                    Ok(_) => {
-                        let currently_leader = match is_current_leader(&client, &k8s_config.namespace, &k8s_config.lease_name, &k8s_config.identity).await {
-                            Ok(is_leader) => is_leader,
-                            Err(err) => {
-                                error!("Error while checking leadership: {err:?}");
-                                false
-                            }
-                        };
+                    Ok(res) => {
+                        let currently_leader = res.acquired_lease;
 
                         // becoming the leader
                         if currently_leader && !am_i_leader {
