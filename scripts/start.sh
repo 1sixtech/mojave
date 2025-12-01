@@ -60,8 +60,11 @@ cleanup() {
   printf "\nCaught Ctrl-C, stopping node and sequencer..." >&2
   # Gracefully stop services via just recipes
   just kill-node kill-sequencer || true
-  # Stop log tailers
+  # Stop log tailers (sed processes)
   kill "$seq_tail" "$node_tail" 2>/dev/null || true
+  # Kill orphaned tail processes watching our log files
+  pkill -f "tail.*\.mojave/sequencer\.log" 2>/dev/null || true
+  pkill -f "tail.*\.mojave/node\.log" 2>/dev/null || true
   # Ensure background jobs are not left running
   kill "$seq_job" "$node_job" 2>/dev/null || true
   wait 2>/dev/null || true
