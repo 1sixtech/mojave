@@ -114,7 +114,7 @@ where
                             }
                         };
 
-                        // beacoming the leader
+                        // becoming the leader
                         if currently_leader && !am_i_leader {
                             info!("This pod is now the leader (K8s). Starting leader task...");
                             let cancel_token = tokio_util::sync::CancellationToken::new();
