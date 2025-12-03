@@ -19,7 +19,7 @@ This document explains:
 All manifests live under `k8s/`:
 
 - `k8s/namespace.yaml`: Namespace definition (`1sixtech`) for the Sequencer resources.
-- `k8s/deploy.sequencer.yaml`: `StatefulSet` (2 replicas by default) of `mojave-sequencer`, with leader election and a `volumeClaimTemplate` (20Gi) per pod mounted at `/data/mojave`.
+- `k8s/stateful.sequencer.yaml`: `StatefulSet` (2 replicas by default) of `mojave-sequencer`, with leader election and a `volumeClaimTemplate` (20Gi) per pod mounted at `/data/mojave`.
 - `k8s/deploy.node.yaml`: `Deployment` (1 replica by default) of `mojave-node` with an init container that prepares `/data/mojave/node` and writes a random JWT secret for `authrpc`.
 - `k8s/service.sequencer.yaml`:
   - Headless `Service` (`mojave-sequencer-headless`) for the StatefulSet `serviceName`.
@@ -35,7 +35,7 @@ All manifests live under `k8s/`:
 
 The Sequencer binary detects a Kubernetes environment by checking the `KUBERNETES_SERVICE_HOST` environment variable. When running in Kubernetes:
 
-- The pod receives the following environment variables from `deploy.sequencer.yaml`:
+- The pod receives the following environment variables from `stateful.sequencer.yaml`:
   - `POD_NAME`: the pod name (from the downward API).
   - `POD_NAMESPACE`: the namespace.
   - `LEASE_NAME`: the name of the `Lease` object used for leader election (default: `sequencer-leader`).
@@ -54,7 +54,7 @@ The data directory is backed by a per-pod `PersistentVolumeClaim` generated from
 - Each pod gets its own 20Gi claim (using the cluster's default `StorageClass` unless you override `storageClassName`).
 - The claim is mounted at `/data/mojave` in the container.
 - The Sequencer is started with `--datadir /data/mojave/sequencer`, so each pod writes to its own `/data/mojave/sequencer`.
-- An init container writes `/data/mojave/statefulset-ordinal` with the pod's ordinal (0, 1, …) and `/data/mojave/role` with `primary` for ordinal 0 and `secondary` otherwise. Adjust this script in `k8s/deploy.sequencer.yaml` if you want different per-pod config files.
+- An init container writes `/data/mojave/statefulset-ordinal` with the pod's ordinal (0, 1, …) and `/data/mojave/role` with `primary` for ordinal 0 and `secondary` otherwise. Adjust this script in `k8s/stateful.sequencer.yaml` if you want different per-pod config files.
 
 ---
 
@@ -91,7 +91,7 @@ For this HA test you need a Docker image that contains the `mojave-sequencer` bi
 
 **Option A (recommended for a quick test): Use the prebuilt Mojave image**
 
-- `k8s/deploy.sequencer.yaml` already references a published image:
+- `k8s/stateful.sequencer.yaml` already references a published image:
   - `starkgiwook/mojave-sequencer:latest`
 - If your Minikube cluster can pull from Docker Hub, you **do not need to build anything**. You can skip to **2.6 Apply the core Kubernetes resources**.
 
@@ -115,10 +115,10 @@ For this HA test you need a Docker image that contains the `mojave-sequencer` bi
 
 3. Update the StatefulSet to use your image instead of the default:
 
-   - Option 1: Edit `k8s/deploy.sequencer.yaml`:
+   - Option 1: Edit `k8s/stateful.sequencer.yaml`:
 
      ```yaml
-     # inside k8s/deploy.sequencer.yaml
+     # inside k8s/stateful.sequencer.yaml
      containers:
        - name: mojave-sequencer
          image: <your-docker-username>/mojave-sequencer:latest
@@ -141,7 +141,7 @@ kubectl apply -f k8s/namespace.yaml
 kubectl apply -f k8s/secret.sequencer.yaml
 kubectl apply -f k8s/rbac.sequencer.yaml
 kubectl apply -f k8s/service.sequencer.yaml
-kubectl apply -f k8s/deploy.sequencer.yaml
+kubectl apply -f k8s/stateful.sequencer.yaml
 kubectl apply -f k8s/deploy.node.yaml
 ```
 
@@ -151,7 +151,7 @@ Or use the helper script (note: this **first deletes** all manifests under `k8s/
 bash k8s/setup.sh
 ```
 
-If you hit `pod has unbound immediate PersistentVolumeClaims` errors, make sure your cluster has a default `StorageClass` or set `storageClassName` in `k8s/deploy.sequencer.yaml` to one that exists in your cluster (e.g., `local-path` on k3d/k3s, `standard` on many managed clusters).
+If you hit `pod has unbound immediate PersistentVolumeClaims` errors, make sure your cluster has a default `StorageClass` or set `storageClassName` in `k8s/stateful.sequencer.yaml` to one that exists in your cluster (e.g., `local-path` on k3d/k3s, `standard` on many managed clusters).
 
 #### 2.5 Verify the deployment
 
