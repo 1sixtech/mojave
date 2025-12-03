@@ -189,7 +189,7 @@ registry := "1sixtech"
 docker-build bin registry=registry:
     role="{{bin}}"; \
     role="${role#mojave-}"; \
-    docker build --platform=linux/arm64 \
+    docker build --platform=linux/arm64,linux/amd64 \
         -f "docker/Dockerfile.target" \
         -t {{ if registry == '' { bin } else { registry + '/' + bin } }} \
         --build-arg "TARGET_BIN={{bin}}" \

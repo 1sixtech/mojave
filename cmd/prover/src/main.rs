@@ -35,7 +35,7 @@ fn main() -> Result<()> {
                     prover_options.queue_capacity,
                 )
                 .await
-                .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
+                .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
             })
             .unwrap_or_else(|err| tracing::error!("Failed to start daemonized prover: {}", err));
         }

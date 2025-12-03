@@ -1,16 +1,10 @@
 pub mod cli;
-mod k8s_leader;
 
-use crate::k8s_leader::{
-    is_k8s_env, run_with_k8s_coordination, start_leader_tasks, stop_leader_tasks,
-};
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 use mojave_block_producer::types::BlockProducerOptions;
-use mojave_node_lib::{
-    types::{MojaveNode, NodeConfigFile},
-    utils::store_node_config_file,
-};
+use mojave_coordination::sequencer::run_sequencer;
+use mojave_node_lib::types::MojaveNode;
 use mojave_proof_coordinator::types::ProofCoordinatorOptions;
 use mojave_utils::daemon::{DaemonOptions, run_daemonized};
 use std::path::PathBuf;
@@ -28,76 +22,86 @@ fn main() -> Result<()> {
 
     mojave_utils::logging::init(options.log_level);
 
-    let rt = tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()?;
+    let rt = build_runtime()?;
 
     if let Some(subcommand) = command {
         return rt.block_on(async { subcommand.run(options.datadir.clone()).await });
     }
 
-    let node_options: mojave_node_lib::types::NodeOptions = (&options).into();
-
-    if let Err(e) = rt.block_on(async { MojaveNode::validate_node_options(&node_options).await }) {
+    let node_options = build_node_options(&options);
+    if let Err(e) = validate_node_options(&rt, &node_options) {
         error!("Failed to validate node options: {}", e);
         std::process::exit(1);
     }
 
+    log_startup_config(&options);
+    info!("Starting Sequencer...");
+
     let block_producer_options: BlockProducerOptions = (&sequencer_options).into();
     let proof_coordinator_options: ProofCoordinatorOptions = (&sequencer_options).into();
-    let daemon_opts = DaemonOptions {
-        no_daemon: options.no_daemon,
-        pid_file_path: PathBuf::from(options.datadir.clone()).join(PID_FILE_NAME),
-        log_file_path: PathBuf::from(options.datadir).join(LOG_FILE_NAME),
-    };
+    let daemon_opts = build_daemon_options(&options.datadir, options.no_daemon);
 
     run_daemonized(daemon_opts, || async move {
         let node = MojaveNode::init(&node_options)
             .await
-            .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
+            .context("initialize sequencer node")
+            .map_err(|e| Box::<dyn std::error::Error + Send + Sync>::from(e))?;
 
-        let use_k8s = is_k8s_env();
-
-
-        if use_k8s {
-            run_with_k8s_coordination(
-                node.clone(),
-                node_options.clone(),
-                block_producer_options,
-                proof_coordinator_options,
-            )
-            .await?;
-        } else {
-            let lt = start_leader_tasks(
-                node.clone(),
-                &node_options,
-                &block_producer_options,
-                &proof_coordinator_options,
-            )
-            .await?;
-
-
-            tokio::select! {
-                _ = mojave_utils::signal::wait_for_shutdown_signal() => {
-                    info!("Termination signal received, shutting down sequencer..");
-                    stop_leader_tasks(lt).await?;
-
-                    let node_config_path = PathBuf::from(node.data_dir).join("node_config.json");
-                    info!("Storing config at {:?}...", node_config_path);
-                    let node_config = NodeConfigFile::new(node.peer_table.clone(), node.local_node_record.lock().await.clone()).await;
-                    store_node_config_file(node_config, node_config_path).await;
-
-                    // TODO: wait for api to stop here
-                    // if let Err(_elapsed) = tokio::time::timeout(std::time::Duration::from_secs(10), api_task).await {
-                    //     warn!("Timed out waiting for API to stop");
-                    // }
-
-                    info!("Successfully shut down the sequencer.");
-                }
-            }
-        }
-        Ok(())
+        run_sequencer(
+            node,
+            &node_options,
+            &block_producer_options,
+            &proof_coordinator_options,
+        )
+        .await
+        .map_err(|e| {
+            error!("Sequencer run failed: {e:?}");
+            Box::<dyn std::error::Error + Send + Sync>::from(e)
+        })
     })
     .unwrap_or_else(|err| error!("Failed to start daemonized sequencer: {}", err));
+
     Ok(())
+}
+
+fn build_runtime() -> Result<tokio::runtime::Runtime> {
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .map_err(Into::into)
+}
+
+fn build_node_options(options: &cli::Options) -> mojave_node_lib::types::NodeOptions {
+    let mut node_options: mojave_node_lib::types::NodeOptions = options.into();
+    node_options.datadir = options.datadir.clone();
+    node_options
+}
+
+fn validate_node_options(
+    rt: &tokio::runtime::Runtime,
+    node_options: &mojave_node_lib::types::NodeOptions,
+) -> Result<()> {
+    rt.block_on(async { MojaveNode::validate_node_options(node_options).await })
+        .context("validate node options")
+}
+
+fn build_daemon_options(datadir: &str, no_daemon: bool) -> DaemonOptions {
+    DaemonOptions {
+        no_daemon,
+        pid_file_path: PathBuf::from(datadir).join(PID_FILE_NAME),
+        log_file_path: PathBuf::from(datadir).join(LOG_FILE_NAME),
+    }
+}
+
+fn log_startup_config(options: &cli::Options) {
+    info!(
+        datadir = %options.datadir,
+        network = %options.network,
+        health = %format!("{}:{}", options.health_addr, options.health_port),
+        metrics = %format!("{}:{}", options.metrics_addr, options.metrics_port),
+        p2p_enabled = options.p2p_enabled,
+        p2p = %format!("{}:{}", options.p2p_addr, options.p2p_port),
+        discovery = %format!("{}:{}", options.discovery_addr, options.discovery_port),
+        "Sequencer startup configuration"
+    );
 }
