@@ -405,7 +405,7 @@ mod tests {
         .unwrap();
 
         if command.is_some() {
-            panic!("expected Start");
+            panic!("expected None (default start)");
         }
 
         assert_eq!(options.log_level, Some(Level::DEBUG));
