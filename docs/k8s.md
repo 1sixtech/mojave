@@ -160,7 +160,7 @@ Check that all resources are created:
 ```bash
 kubectl get sts mojave-sequencer-deployment -n 1sixtech
 kubectl get pods -n 1sixtech
-kubectl get svc mojave-sequencer-service -n 1sixtech
+kubectl get svc mojave-sequencer -n 1sixtech
 kubectl get pvc -n 1sixtech
 kubectl get lease sequencer-leader -n 1sixtech -o yaml
 ```
