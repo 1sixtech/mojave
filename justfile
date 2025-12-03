@@ -97,7 +97,7 @@ sequencer-release:
     echo "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" > {{home-dir}}/.mojave/sequencer/node.key && \
     if [ -z "${SKIP_BUILD:-}" ]; then cargo build --release --bin mojave-sequencer; fi && \
     ( \
-    "${BIN_DIR:-target/release}"/mojave-sequencer  \
+    "${BIN_DIR:-target/release}"/mojave-sequencer \
         --private_key 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
         --network {{current-dir}}/data/testnet-genesis.json \
         --p2p.port 30305 \
