@@ -535,10 +535,10 @@ mod tests {
     #[test]
     fn parse_stop_and_get_pub_key() {
         let cli = Cli::try_parse_from(["mojave-sequencer", "stop"]).unwrap();
-        matches!(cli.command, Some(Command::Stop));
+        assert!(matches!(cli.command, Some(Command::Stop)));
 
         let cli = Cli::try_parse_from(["mojave-sequencer", "get-pub-key"]).unwrap();
-        matches!(cli.command, Some(Command::GetPubKey));
+        assert!(matches!(cli.command, Some(Command::GetPubKey)));
     }
 
     #[test]
