@@ -45,7 +45,7 @@ fn main() -> Result<()> {
         let node = MojaveNode::init(&node_options)
             .await
             .context("initialize sequencer node")
-            .map_err(|e| Box::<dyn std::error::Error + Send + Sync>::from(e))?;
+            .map_err(Box::<dyn std::error::Error + Send + Sync>::from)?;
 
         run_sequencer(
             node,
@@ -56,7 +56,7 @@ fn main() -> Result<()> {
         .await
         .map_err(|e| {
             error!("Sequencer run failed: {e:?}");
-            Box::<dyn std::error::Error + Send + Sync>::from(e)
+            e
         })
     })
     .unwrap_or_else(|err| error!("Failed to start daemonized sequencer: {}", err));

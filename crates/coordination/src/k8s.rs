@@ -100,7 +100,10 @@ where
                 let handle = tokio::spawn(async move {
                     fut.await;
                 });
-                epoch = Some(LeaderEpoch { cancel_token, handle });
+                epoch = Some(LeaderEpoch {
+                    cancel_token,
+                    handle,
+                });
                 am_i_leader = true;
             }
         }

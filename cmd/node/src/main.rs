@@ -37,14 +37,14 @@ fn main() -> Result<()> {
         let node = MojaveNode::init(&node_options)
             .await
             .context("initialize node")
-            .map_err(|e| Box::<dyn std::error::Error + Send + Sync>::from(e))?;
+            .map_err(Box::<dyn std::error::Error + Send + Sync>::from)?;
 
         let registry = build_registry();
 
         node.run(&node_options, registry)
             .await
             .context("run node")
-            .map_err(|e| Box::<dyn std::error::Error + Send + Sync>::from(e))
+            .map_err(Box::<dyn std::error::Error + Send + Sync>::from)
     })
     .unwrap_or_else(|err| {
         error!(error = %err, "Failed to start daemonized node");
