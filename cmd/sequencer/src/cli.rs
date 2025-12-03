@@ -341,9 +341,7 @@ mod tests {
         assert_eq!(options.datadir, ".mojave/sequencer");
         assert!(options.log_level.is_none());
 
-        if command.is_some() {
-            panic!("expected None (default start)")
-        }
+        assert!(command.is_none(), "expected None (default start)");
 
         // Node Options defaults
         //assert_eq!(options.http_addr, "0.0.0.0");
@@ -404,9 +402,7 @@ mod tests {
         ])
         .unwrap();
 
-        if command.is_some() {
-            panic!("expected None (default start)");
-        }
+        assert!(command.is_none(), "expected None (default start)");
 
         assert_eq!(options.log_level, Some(Level::DEBUG));
         assert_eq!(options.datadir, "/tmp/sequencer");
@@ -494,9 +490,7 @@ mod tests {
         ])
         .unwrap();
 
-        if command.is_some() {
-            panic!("expected None");
-        }
+        assert!(command.is_none(), "expected None");
 
         let node_opts = mojave_node_lib::types::NodeOptions::from(&options);
 
