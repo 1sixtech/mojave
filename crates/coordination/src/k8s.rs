@@ -102,6 +102,7 @@ where
         }
         Err(err) => {
             error!("Error while k8s leader election: {err:?}");
+            shutdown(epoch, am_i_leader, lease_lock).await;
             return Err(Box::new(err));
         }
     }
@@ -148,6 +149,7 @@ where
                     }
                     Err(err) => {
                         error!("Error while k8s leader election: {err:?}");
+                        shutdown(epoch, am_i_leader, lease_lock).await;
                         return Err(Box::new(err));
                     }
                 }
