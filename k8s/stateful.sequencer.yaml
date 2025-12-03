@@ -60,7 +60,6 @@ spec:
                   name: sequencer-secrets
                   key: private-key
           args:
-            - "init"
             - "--network"
             - "/data/testnet-genesis.json"
             - "--datadir"
@@ -78,6 +77,16 @@ spec:
             - name: p2p-udp
               containerPort: 30303
               protocol: UDP
+            - name: health
+              containerPort: 9595
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9595
+            initialDelaySeconds: 5
+            periodSeconds: 3
+
   volumeClaimTemplates:
     - metadata:
         name: sequencer-datadir

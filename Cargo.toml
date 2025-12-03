@@ -27,6 +27,7 @@ members = [
   "crates/block-producer",
   "crates/btc-watcher",
   "crates/client",
+  "crates/coordination",
   "crates/msgio",
   "crates/node",
   "crates/proof-coordinator",
@@ -44,9 +45,9 @@ resolver = "2"
 
 [workspace.dependencies]
 mojave-batch-producer = { path = "crates/batch-producer" }
-mojave-batch-submitter = { path = "crates/batch-submitter" }
 mojave-block-producer = { path = "crates/block-producer" }
 mojave-client = { path = "crates/client" }
+mojave-coordination = { path = "crates/coordination" }
 mojave-msgio = { path = "crates/msgio" }
 mojave-node-lib = { path = "crates/node" }
 mojave-proof-coordinator = { path = "crates/proof-coordinator" }
