@@ -30,7 +30,7 @@ fn main() -> Result<()> {
 
     let node_options = build_node_options(&options);
     if let Err(e) = validate_node_options(&rt, &node_options) {
-        error!("Failed to validate node options: {}", e);
+        error!("Failed to validate node options: {e}");
         std::process::exit(1);
     }
 
@@ -80,8 +80,8 @@ fn validate_node_options(
     rt: &tokio::runtime::Runtime,
     node_options: &mojave_node_lib::types::NodeOptions,
 ) -> Result<()> {
-    rt.block_on(async { MojaveNode::validate_node_options(node_options).await })
-        .context("validate node options")
+    rt.block_on(MojaveNode::validate_node_options(node_options))
+        .map_err(|e| anyhow::anyhow!("Node options validation failed: {e}"))
 }
 
 fn build_daemon_options(datadir: &str, no_daemon: bool) -> DaemonOptions {

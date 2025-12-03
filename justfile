@@ -38,6 +38,7 @@ node:
     ( \
     "${BIN_DIR:-target/debug}"/mojave-node \
         --network {{current-dir}}/data/testnet-genesis.json \
+        --health.port 9596 \
         --bootnodes=enode://3e9c8a6bc193671ef87ea714ba2bcc979ae820672d5c93ff0ed265129b22180264eecebeae70ba947a6ffad76ab47eef41031838039f8f0ba84ea98b4d8734e5@$NODE_IP:30305 \
         --no-daemon & \
         pid=$!; \
@@ -60,6 +61,7 @@ node-release:
     ( \
     "${BIN_DIR:-target/release}"/mojave-node \
         --network {{current-dir}}/data/testnet-genesis.json \
+        --health.port 9596 \
         --bootnodes=enode://3e9c8a6bc193671ef87ea714ba2bcc979ae820672d5c93ff0ed265129b22180264eecebeae70ba947a6ffad76ab47eef41031838039f8f0ba84ea98b4d8734e5@$NODE_IP:30305 \
         --no-daemon & \
         pid=$!; \
