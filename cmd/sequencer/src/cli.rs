@@ -342,7 +342,7 @@ mod tests {
         assert!(options.log_level.is_none());
 
         if command.is_some() {
-            panic!("expected Start")
+            panic!("expected None (default start)")
         }
 
         // Node Options defaults
