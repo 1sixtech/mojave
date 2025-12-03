@@ -158,7 +158,7 @@ If you hit `pod has unbound immediate PersistentVolumeClaims` errors, make sure 
 Check that all resources are created:
 
 ```bash
-kubectl get sts mojave-sequencer-deployment -n 1sixtech
+kubectl get sts mojave-sequencer -n 1sixtech
 kubectl get pods -n 1sixtech
 kubectl get svc mojave-sequencer -n 1sixtech
 kubectl get pvc -n 1sixtech
@@ -168,8 +168,8 @@ kubectl get lease sequencer-leader -n 1sixtech -o yaml
 You should see:
 
 - 2 pods (or however many replicas you configured) with `app=mojave-sequencer`.
-- A StatefulSet `mojave-sequencer-deployment` reporting ready replicas.
-- Per-pod PVCs named like `sequencer-datadir-mojave-sequencer-deployment-0`.
+- A StatefulSet `mojave-sequencer` reporting ready replicas.
+- Per-pod PVCs named like `sequencer-datadir-mojave-sequencer-0`.
 - A single `Lease` named `sequencer-leader` with one of the pods listed as the current holder.
 
 #### 2.6 Check that the current leader is producing blocks (via logs)
