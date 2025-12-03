@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mojave-sequencer
+  namespace: 1sixtech
+  labels:
+    app: mojave-sequencer
+spec:
+  serviceName: mojave-sequencer
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mojave-sequencer
+  template:
+    metadata:
+      labels:
+        app: mojave-sequencer
+    spec:
+      serviceAccountName: sequencer-sa
+      terminationGracePeriodSeconds: 30
+      initContainers:
+        - name: init-ordinal-file
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              ordinal="${HOSTNAME##*-}"
+              echo "${ordinal}" > /data/mojave/statefulset-ordinal
+              mkdir -p /data/mojave/sequencer
+              if [ "${ordinal}" = "0" ]; then
+                echo "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" > /data/mojave/sequencer/node.key
+              else
+                echo "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaab" > /data/mojave/sequencer/node.key
+              fi
+          volumeMounts:
+            - name: sequencer-datadir
+              mountPath: /data/mojave
+      containers:
+        - name: mojave-sequencer
+          image: mojave-sequencer:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: LEASE_NAME
+              value: sequencer-leader
+            - name: LEASE_TTL_SECONDS
+              value: "15"
+            - name: PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sequencer-secrets
+                  key: private-key
+          args:
+            - "--network"
+            - "/data/testnet-genesis.json"
+            - "--datadir"
+            - "/data/mojave/sequencer"
+            - "--discovery.port"
+            - "30303"
+            - "--no-daemon"
+          volumeMounts:
+            - name: sequencer-datadir
+              mountPath: /data/mojave
+          ports:
+            - name: p2p
+              containerPort: 30303
+              protocol: TCP
+            - name: p2p-udp
+              containerPort: 30303
+              protocol: UDP
+            - name: health
+              containerPort: 9595
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9595
+            initialDelaySeconds: 5
+            periodSeconds: 3
+
+  volumeClaimTemplates:
+    - metadata:
+        name: sequencer-datadir
+        labels:
+          app: mojave-sequencer
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 20Gi

@@ -34,10 +34,11 @@ node:
     else \
         ifconfig | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | head -n1; \
     fi) && \
-    if [ -z "$SKIP_BUILD" ]; then cargo build --bin mojave-node; fi && \
+    if [ -z "${SKIP_BUILD:-}" ]; then cargo build --bin mojave-node; fi && \
     ( \
-    "${BIN_DIR:-target/debug}"/mojave-node init \
+    "${BIN_DIR:-target/debug}"/mojave-node \
         --network {{current-dir}}/data/testnet-genesis.json \
+        --health.port 9596 \
         --bootnodes=enode://3e9c8a6bc193671ef87ea714ba2bcc979ae820672d5c93ff0ed265129b22180264eecebeae70ba947a6ffad76ab47eef41031838039f8f0ba84ea98b4d8734e5@$NODE_IP:30305 \
         --no-daemon & \
         pid=$!; \
@@ -56,10 +57,11 @@ node-release:
     else \
         ifconfig | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | head -n1; \
     fi) && \
-    if [ -z "$SKIP_BUILD" ]; then cargo build --release --bin mojave-node; fi && \
+    if [ -z "${SKIP_BUILD:-}" ]; then cargo build --release --bin mojave-node; fi && \
     ( \
-    "${BIN_DIR:-target/release}"/mojave-node init \
+    "${BIN_DIR:-target/release}"/mojave-node \
         --network {{current-dir}}/data/testnet-genesis.json \
+        --health.port 9596 \
         --bootnodes=enode://3e9c8a6bc193671ef87ea714ba2bcc979ae820672d5c93ff0ed265129b22180264eecebeae70ba947a6ffad76ab47eef41031838039f8f0ba84ea98b4d8734e5@$NODE_IP:30305 \
         --no-daemon & \
         pid=$!; \
@@ -74,9 +76,9 @@ sequencer:
     export $(cat .env | xargs) && \
     mkdir -p {{home-dir}}/.mojave/sequencer && \
     echo "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" > {{home-dir}}/.mojave/sequencer/node.key && \
-    if [ -z "$SKIP_BUILD" ]; then cargo build --bin mojave-sequencer; fi && \
+    if [ -z "${SKIP_BUILD:-}" ]; then cargo build --bin mojave-sequencer; fi && \
     ( \
-    "${BIN_DIR:-target/debug}"/mojave-sequencer init \
+    "${BIN_DIR:-target/debug}"/mojave-sequencer \
         --private_key 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
         --network {{current-dir}}/data/testnet-genesis.json \
         --p2p.port 30305 \
@@ -95,9 +97,9 @@ sequencer-release:
     export $(cat .env | xargs) && \
     mkdir -p {{home-dir}}/.mojave/sequencer && \
     echo "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" > {{home-dir}}/.mojave/sequencer/node.key && \
-    if [ -z "$SKIP_BUILD" ]; then cargo build --release --bin mojave-sequencer; fi && \
+    if [ -z "${SKIP_BUILD:-}" ]; then cargo build --release --bin mojave-sequencer; fi && \
     ( \
-    "${BIN_DIR:-target/release}"/mojave-sequencer init \
+    "${BIN_DIR:-target/release}"/mojave-sequencer \
         --private_key 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
         --network {{current-dir}}/data/testnet-genesis.json \
         --p2p.port 30305 \
@@ -189,9 +191,9 @@ registry := "ghcr.io/1sixtech"
 docker-build bin registry=registry:
     role="{{bin}}"; \
     role="${role#mojave-}"; \
-    docker build --platform=linux/amd64,linux/arm64 \
+    docker build --platform=linux/arm64,linux/amd64 \
         -f "docker/Dockerfile.target" \
-        -t "{{registry}}/{{bin}}" \
+        -t {{ if registry == '' { bin } else { registry + '/' + bin } }} \
         --build-arg "TARGET_BIN={{bin}}" \
         .
 
@@ -200,3 +202,6 @@ docker-run bin *ARGS:
 
 test: clean
 	bash tests/tests-e2e.sh
+
+run-k8s:
+    bash k8s/setup.sh

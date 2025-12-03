@@ -1,126 +1,106 @@
 pub mod cli;
 
-use crate::cli::Command;
-use anyhow::Result;
+use anyhow::{Context, Result};
 
-use mojave_batch_producer::{BatchProducer, types::Request as BatchProducerRequest};
-use mojave_batch_submitter::committer::Committer;
-use mojave_block_producer::{
-    BlockProducer,
-    types::{BlockProducerOptions, Request as BlockProducerRequest},
-};
-use mojave_node_lib::{
-    initializers::get_signer,
-    types::{MojaveNode, NodeConfigFile},
-    utils::store_node_config_file,
-};
-use mojave_proof_coordinator::{ProofCoordinator, types::ProofCoordinatorOptions};
-use mojave_task::{Runner, Task};
-use mojave_utils::{
-    block_on::block_on_current_thread,
-    daemon::{DaemonOptions, run_daemonized, stop_daemonized},
-    p2p::public_key_from_signing_key,
-};
-use std::{path::PathBuf, time::Duration};
+use mojave_block_producer::types::BlockProducerOptions;
+use mojave_coordination::sequencer::run_sequencer;
+use mojave_node_lib::types::MojaveNode;
+use mojave_proof_coordinator::types::ProofCoordinatorOptions;
+use mojave_utils::daemon::{DaemonOptions, run_daemonized};
+use std::path::PathBuf;
 use tracing::{error, info};
 
 const PID_FILE_NAME: &str = "sequencer.pid";
 const LOG_FILE_NAME: &str = "sequencer.log";
-const BLOCK_PRODUCER_CAPACITY: usize = 100;
 
 fn main() -> Result<()> {
-    mojave_utils::logging::init();
-    let cli = cli::Cli::run();
+    let cli::Cli {
+        command,
+        options,
+        sequencer_options,
+    } = cli::Cli::run();
 
-    if let Some(log_level) = cli.log_level {
-        mojave_utils::logging::change_level(log_level);
+    mojave_utils::logging::init(options.log_level);
+
+    let rt = build_runtime()?;
+
+    if let Some(subcommand) = command {
+        return rt.block_on(async { subcommand.run(options.datadir.clone()).await });
     }
-    match cli.command {
-        Command::Start {
-            options,
-            sequencer_options,
-        } => {
-            let mut node_options: mojave_node_lib::types::NodeOptions = (&options).into();
-            node_options.datadir = cli.datadir.clone();
-            let rt = tokio::runtime::Builder::new_multi_thread()
-                .enable_all()
-                .build()?;
 
-            if let Err(e) =
-                rt.block_on(async { MojaveNode::validate_node_options(&node_options).await })
-            {
-                error!("Failed to validate node options: {}", e);
-                std::process::exit(1);
-            }
-
-            let block_producer_options: BlockProducerOptions = (&sequencer_options).into();
-            let proof_coordinator_options: ProofCoordinatorOptions = (&sequencer_options).into();
-            let daemon_opts = DaemonOptions {
-                no_daemon: options.no_daemon,
-                pid_file_path: PathBuf::from(cli.datadir.clone()).join(PID_FILE_NAME),
-                log_file_path: PathBuf::from(cli.datadir).join(LOG_FILE_NAME),
-            };
-
-            run_daemonized(daemon_opts, || async move {
-                let node = MojaveNode::init(&node_options)
-                    .await
-                    .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
-                let cancel_token = node.cancel_token.clone();
-
-                // TODO: replace by implementation backed by a real queue
-                let q = mojave_msgio::dummy::Dummy;
-
-                let batch_producer = BatchProducer::new(node.clone(), 0);
-                let block_producer = BlockProducer::new(node.clone());
-                let proof_coordinator = ProofCoordinator::new(node.clone(), &node_options, &proof_coordinator_options)?;
-
-                let batch_producer_task = batch_producer.clone()
-                    .spawn_periodic(Duration::from_millis(10_000), || BatchProducerRequest::BuildBatch);
-
-                let block_producer_task = block_producer
-                    .spawn_with_capacity_periodic(BLOCK_PRODUCER_CAPACITY, Duration::from_millis(block_producer_options.block_time), || BlockProducerRequest::BuildBlock);
-
-                let committer_handle = Runner::new(Committer::new(batch_producer.subscribe(), q, node.p2p_context.clone()), cancel_token.clone()).spawn();
-
-                let proof_coordinator_task = proof_coordinator.spawn();
-
-                tokio::select! {
-                    // TODO: replace with api task
-                    _ = mojave_utils::signal::wait_for_shutdown_signal()  => {
-                        info!("Termination signal received, shutting down sequencer..");
-                        cancel_token.cancel();
-                        batch_producer_task.shutdown().await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
-                        block_producer_task.shutdown().await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
-                        proof_coordinator_task.shutdown().await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
-                        let _ = committer_handle.await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
-
-                        let node_config_path = PathBuf::from(node.data_dir).join("node_config.json");
-                        info!("Storing config at {:?}...", node_config_path);
-
-                        let node_config = NodeConfigFile::new(node.peer_table.clone(), node.local_node_record.lock().await.clone()).await;
-                        store_node_config_file(node_config, node_config_path).await;
-
-                        // TODO: wait for api to stop here
-                        // if let Err(_elapsed) = tokio::time::timeout(std::time::Duration::from_secs(10), api_task).await {
-                        //     warn!("Timed out waiting for API to stop");
-                        // }
-
-                        info!("Successfully shut down the sequencer.");
-                        Ok(())
-                    }
-                }
-            })
-                .unwrap_or_else(|err| error!("Failed to start daemonized sequencer: {}", err));
-        }
-        Command::Stop => stop_daemonized(PathBuf::from(cli.datadir.clone()).join(PID_FILE_NAME))?,
-        Command::GetPubKey => {
-            let signer = block_on_current_thread(|| async move {
-                get_signer(&cli.datadir).await.map_err(anyhow::Error::from)
-            })?;
-            let public_key = public_key_from_signing_key(&signer);
-            let public_key = hex::encode(public_key);
-            println!("{public_key}");
-        }
+    let node_options = build_node_options(&options);
+    if let Err(e) = validate_node_options(&rt, &node_options) {
+        error!("Failed to validate node options: {e}");
+        std::process::exit(1);
     }
+
+    log_startup_config(&options);
+    info!("Starting Sequencer...");
+
+    let block_producer_options: BlockProducerOptions = (&sequencer_options).into();
+    let proof_coordinator_options: ProofCoordinatorOptions = (&sequencer_options).into();
+    let daemon_opts = build_daemon_options(&options.datadir, options.no_daemon);
+
+    run_daemonized(daemon_opts, || async move {
+        let node = MojaveNode::init(&node_options)
+            .await
+            .context("initialize sequencer node")
+            .map_err(Box::<dyn std::error::Error + Send + Sync>::from)?;
+
+        run_sequencer(
+            node,
+            &node_options,
+            &block_producer_options,
+            &proof_coordinator_options,
+        )
+        .await
+        .map_err(|e| {
+            error!("Sequencer run failed: {e:?}");
+            e
+        })
+    })
+    .unwrap_or_else(|err| error!("Failed to start daemonized sequencer: {}", err));
+
     Ok(())
+}
+
+fn build_runtime() -> Result<tokio::runtime::Runtime> {
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .map_err(Into::into)
+}
+
+fn build_node_options(options: &cli::Options) -> mojave_node_lib::types::NodeOptions {
+    let node_options: mojave_node_lib::types::NodeOptions = options.into();
+    node_options
+}
+
+fn validate_node_options(
+    rt: &tokio::runtime::Runtime,
+    node_options: &mojave_node_lib::types::NodeOptions,
+) -> Result<()> {
+    rt.block_on(MojaveNode::validate_node_options(node_options))
+        .map_err(|e| anyhow::anyhow!("Node options validation failed: {e}"))
+}
+
+fn build_daemon_options(datadir: &str, no_daemon: bool) -> DaemonOptions {
+    DaemonOptions {
+        no_daemon,
+        pid_file_path: PathBuf::from(datadir).join(PID_FILE_NAME),
+        log_file_path: PathBuf::from(datadir).join(LOG_FILE_NAME),
+    }
+}
+
+fn log_startup_config(options: &cli::Options) {
+    info!(
+        datadir = %options.datadir,
+        network = %options.network,
+        health = %format!("{}:{}", options.health_addr, options.health_port),
+        metrics = %format!("{}:{}", options.metrics_addr, options.metrics_port),
+        p2p_enabled = options.p2p_enabled,
+        p2p = %format!("{}:{}", options.p2p_addr, options.p2p_port),
+        discovery = %format!("{}:{}", options.discovery_addr, options.discovery_port),
+        "Sequencer startup configuration"
+    );
 }

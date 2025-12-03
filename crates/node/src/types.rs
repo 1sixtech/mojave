@@ -61,6 +61,8 @@ pub struct NodeOptions {
     pub p2p_port: String,
     pub discovery_addr: String,
     pub discovery_port: String,
+    pub health_addr: String,
+    pub health_port: String,
 }
 
 impl Default for NodeOptions {
@@ -85,6 +87,8 @@ impl Default for NodeOptions {
             metrics_port: Default::default(),
             metrics_enabled: Default::default(),
             force: false,
+            health_addr: Default::default(),
+            health_port: Default::default(),
         }
     }
 }

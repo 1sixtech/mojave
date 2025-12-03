@@ -1,0 +1,208 @@
+use std::{path::PathBuf, time::Duration};
+
+use mojave_batch_producer::{BatchProducer, types::Request as BatchRequest};
+use mojave_block_producer::{
+    BlockProducer,
+    types::{BlockProducerOptions, Request as BlockRequest},
+};
+use mojave_node_lib::{
+    types::{MojaveNode, NodeConfigFile, NodeOptions},
+    utils::store_node_config_file,
+};
+use mojave_proof_coordinator::{ProofCoordinator, types::ProofCoordinatorOptions};
+use mojave_task::{Task, TaskHandle};
+use mojave_utils::{
+    health::HealthProbeHandle, network::get_http_socket_addr, signal::wait_for_shutdown_signal,
+};
+use tokio::select;
+use tokio_util::sync::CancellationToken;
+use tracing::{error, info};
+
+use crate::{k8s::run_with_k8s_coordination, utils::is_k8s_env};
+
+pub struct LeaderTasks {
+    batch: TaskHandle<BatchProducer>,
+    block: TaskHandle<BlockProducer>,
+    proof: TaskHandle<ProofCoordinator>,
+    health: HealthProbeHandle,
+}
+
+const BLOCK_PRODUCER_CAPACITY: usize = 100;
+
+type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
+
+async fn run_sequencer_leader_task(
+    node: MojaveNode,
+    options: &NodeOptions,
+    block_producer_options: &BlockProducerOptions,
+    proof_coordinator_options: &ProofCoordinatorOptions,
+    cancel_token: CancellationToken,
+) -> Result<(), BoxError> {
+    info!("Starting Sequencer leader task...");
+
+    let leader_tasks = start_leader_tasks(
+        node,
+        options,
+        block_producer_options,
+        proof_coordinator_options,
+        cancel_token.clone(),
+    )
+    .await?;
+
+    cancel_token.cancelled().await;
+    info!("Shutdown token triggered, stopping sequencer leader tasks...");
+
+    stop_leader_tasks(leader_tasks).await?;
+
+    info!("Sequencer leader tasks stopped.");
+    Ok(())
+}
+
+pub async fn run_sequencer(
+    node: MojaveNode,
+    options: &NodeOptions,
+    block_producer_options: &BlockProducerOptions,
+    proof_coordinator_options: &ProofCoordinatorOptions,
+) -> Result<(), BoxError> {
+    let node_clone = node.clone();
+    if is_k8s_env() {
+        run_with_k8s_coordination(move |shutdown_token: CancellationToken| {
+            let node_task = node.clone();
+            let options_task = options.clone();
+            let block_producer_options_task = block_producer_options.clone();
+            let proof_coordinator_options_task = proof_coordinator_options.clone();
+
+            async move {
+                if let Err(err) = run_sequencer_leader_task(
+                    node_task,
+                    &options_task,
+                    &block_producer_options_task,
+                    &proof_coordinator_options_task,
+                    shutdown_token,
+                )
+                .await
+                {
+                    error!("Sequencer leader task failed: {err:?}");
+                }
+            }
+        })
+        .await?;
+    } else {
+        info!("Starting Sequencer in standalone mode...");
+
+        let shutdown = CancellationToken::new();
+        let shutdown_for_task = shutdown.clone();
+        let node_task = node.clone();
+        let options_task = options.clone();
+        let block_producer_options_task = block_producer_options.clone();
+        let proof_coordinator_options_task = proof_coordinator_options.clone();
+
+        let mut leader_task = tokio::spawn(async move {
+            run_sequencer_leader_task(
+                node_task,
+                &options_task,
+                &block_producer_options_task,
+                &proof_coordinator_options_task,
+                shutdown_for_task,
+            )
+            .await
+        });
+
+        let mut leader_task_result = None;
+
+        select! {
+            res = &mut leader_task => {
+                leader_task_result = Some(res);
+            }
+            _ = wait_for_shutdown_signal() => {
+                info!("Termination signal received, shutting down sequencer...");
+                shutdown.cancel();
+            }
+        }
+
+        let result = match leader_task_result {
+            Some(res) => res,
+            None => leader_task.await,
+        };
+
+        match result {
+            Ok(Ok(())) => info!("Leader task shut down gracefully."),
+            Ok(Err(err)) => {
+                error!("Leader task returned error: {err:?}");
+                return Err(err);
+            }
+            Err(err) => {
+                error!("Error while awaiting leader task shutdown: {err:?}");
+                return Err(Box::new(err));
+            }
+        };
+    }
+    let node_config_path = PathBuf::from(node_clone.data_dir).join("node_config.json");
+    info!("Storing config at {:?}...", node_config_path);
+
+    let node_config = NodeConfigFile::new(
+        node_clone.peer_table.clone(),
+        node_clone.local_node_record.lock().await.clone(),
+    )
+    .await;
+    store_node_config_file(node_config, node_config_path).await;
+
+    Ok(())
+}
+
+async fn start_leader_tasks(
+    node: MojaveNode,
+    options: &NodeOptions,
+    block_producer_options: &BlockProducerOptions,
+    proof_coordinator_options: &ProofCoordinatorOptions,
+    cancel_token: CancellationToken,
+) -> Result<LeaderTasks, BoxError> {
+    let batch_counter = node.rollup_store.get_batch_number().await?.unwrap_or(0);
+    let batch_producer = BatchProducer::new(node.clone(), batch_counter);
+    let block_producer = BlockProducer::new(node.clone());
+    let proof_coordinator =
+        ProofCoordinator::new(node.clone(), options, proof_coordinator_options)?;
+
+    let batch = batch_producer
+        .clone()
+        .spawn_periodic(Duration::from_millis(100_000), || BatchRequest::BuildBatch);
+
+    let block = block_producer.spawn_with_capacity_periodic(
+        BLOCK_PRODUCER_CAPACITY,
+        Duration::from_millis(block_producer_options.block_time),
+        || BlockRequest::BuildBlock,
+    );
+
+    let proof = proof_coordinator.spawn();
+
+    // Health probe HTTP endpoint.
+    let health_socket_addr =
+        get_http_socket_addr(&options.health_addr, &options.health_port).await?;
+    let (_, health) = mojave_utils::health::spawn_health_probe(
+        health_socket_addr,
+        cancel_token.cancelled_owned(),
+    )
+    .await?;
+
+    Ok(LeaderTasks {
+        batch,
+        block,
+        proof,
+        health,
+    })
+}
+
+async fn stop_leader_tasks(lt: LeaderTasks) -> Result<(), BoxError> {
+    let LeaderTasks {
+        batch,
+        block,
+        proof,
+        health,
+    } = lt;
+
+    batch.shutdown().await?;
+    block.shutdown().await?;
+    proof.shutdown().await?;
+    health.await??;
+    Ok(())
+}

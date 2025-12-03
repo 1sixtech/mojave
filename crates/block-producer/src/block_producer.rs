@@ -83,7 +83,10 @@ impl Task for BlockProducer {
 
                         Ok(block)
                     }
-                    Err(e) => Err(e),
+                    Err(e) => {
+                        error!(error = %e, "Error while producing block:");
+                        Err(e)
+                    }
                 }
             }
         }

@@ -27,6 +27,7 @@ members = [
   "crates/block-producer",
   "crates/btc-watcher",
   "crates/client",
+  "crates/coordination",
   "crates/msgio",
   "crates/node",
   "crates/proof-coordinator",
@@ -44,9 +45,9 @@ resolver = "2"
 
 [workspace.dependencies]
 mojave-batch-producer = { path = "crates/batch-producer" }
-mojave-batch-submitter = { path = "crates/batch-submitter" }
 mojave-block-producer = { path = "crates/block-producer" }
 mojave-client = { path = "crates/client" }
+mojave-coordination = { path = "crates/coordination" }
 mojave-msgio = { path = "crates/msgio" }
 mojave-node-lib = { path = "crates/node" }
 mojave-proof-coordinator = { path = "crates/proof-coordinator" }
@@ -83,6 +84,9 @@ daemonize = "0.5"
 ed25519-dalek = { version = "2.1.1", features = ["rand_core", "serde"] }
 futures = "0.3"
 hex = "0.4.3"
+k8s-openapi = { version = "0.26.0", features = ["v1_34"] }
+kube = { version = "2.0.1", features = ["client"] }
+kube-leader-election = "0.42"
 lazy_static = "1.5.0"
 local-ip-address = { version = "0.6" }
 proc-macro2 = "1"
