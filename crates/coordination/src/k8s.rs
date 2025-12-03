@@ -9,19 +9,15 @@ use tokio::{
 };
 use tracing::{error, info};
 
-use crate::utils::is_current_leader;
-
 /// Configuration for Kubernetes-based leader election, loaded from env vars.
 struct K8sLeaderConfig {
-    identity: String,
-    namespace: String,
     lease_lock: LeaseLock,
-    lease_name: String,
     renew_every_secs: u64,
 }
 
 impl K8sLeaderConfig {
     fn from_env(client: Client) -> Self {
+        // TODO: make this flags from NodeOptions or something similar
         let identity = env::var("POD_NAME").unwrap_or_else(|_| "sequencer-pod".to_string());
         let namespace = env::var("POD_NAMESPACE").unwrap_or_else(|_| "default".to_string());
         let lease_name = env::var("LEASE_NAME").unwrap_or_else(|_| "sequencer-leader".to_string());
@@ -43,9 +39,6 @@ impl K8sLeaderConfig {
         let lease_lock = LeaseLock::new(client, &namespace, lease_lock_params);
 
         Self {
-            identity,
-            namespace,
-            lease_name,
             renew_every_secs,
             lease_lock,
         }
