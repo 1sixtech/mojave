@@ -182,7 +182,7 @@ doc:
 doc-watch:
 	cargo watch -x "doc --no-deps"
 
-registry := "1sixtech"
+registry := "ghcr.io/1sixtech"
 
 # Build the docker image for a specific binary
 # Binary name should be one of: mojave-node, mojave-sequencer, mojave-prover
