@@ -87,14 +87,28 @@ where
     let mut renew_interval = interval(Duration::from_secs(k8s_config.renew_every_secs));
     renew_interval.set_missed_tick_behavior(MissedTickBehavior::Delay);
 
-    // initial attempt to acquire leadership
-    if let Err(err) = lease_lock.try_acquire_or_renew().await {
-        error!("Error while k8s leader election: {err:?}");
-        return Err(Box::new(err));
-    }
-
     let mut am_i_leader = false;
     let mut epoch: Option<LeaderEpoch> = None;
+
+    // initial attempt to acquire leadership
+    match lease_lock.try_acquire_or_renew().await {
+        Ok(res) => {
+            if res.acquired_lease {
+                info!("This pod is now the leader (K8s). Starting leader task...");
+                let cancel_token = tokio_util::sync::CancellationToken::new();
+                let fut = spawn_leader_task(cancel_token.clone());
+                let handle = tokio::spawn(async move {
+                    fut.await;
+                });
+                epoch = Some(LeaderEpoch { cancel_token, handle });
+                am_i_leader = true;
+            }
+        }
+        Err(err) => {
+            error!("Error while k8s leader election: {err:?}");
+            return Err(Box::new(err));
+        }
+    }
 
     loop {
         select! {
