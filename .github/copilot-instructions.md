@@ -30,7 +30,7 @@ The repository follows a strict structure:
 cmd/                  # All runnable binaries (node, sequencer, prover)
 crates/               # Reusable libraries (no top-level binaries)
 data/                 # Chain configs and genesis files
-tests/                # E2E test fixtures and scripts
+tests/                # E2E test fixtures and scripts (actual directory name)
 scripts/              # Utility scripts
 justfile              # Common development tasks
 ```
@@ -115,7 +115,7 @@ just fix          # Auto-fix issues (fmt, clippy, etc.)
 
 - Unit tests: Colocated with code using `#[cfg(test)]`
 - Integration tests: In `crates/tests/tests/*.rs`
-- E2E tests: In `/tests/` directory with bash scripts
+- E2E tests: In `/tests/` directory with bash scripts (note: some docs reference `test_data/` but actual directory is `tests/`)
 
 ### CI Requirements
 
