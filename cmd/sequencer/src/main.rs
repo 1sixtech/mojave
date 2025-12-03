@@ -72,8 +72,7 @@ fn build_runtime() -> Result<tokio::runtime::Runtime> {
 }
 
 fn build_node_options(options: &cli::Options) -> mojave_node_lib::types::NodeOptions {
-    let mut node_options: mojave_node_lib::types::NodeOptions = options.into();
-    node_options.datadir = options.datadir.clone();
+    let node_options: mojave_node_lib::types::NodeOptions = options.into();
     node_options
 }
 
