@@ -374,9 +374,7 @@ mod tests {
         assert_eq!(options.datadir, ".mojave/node");
         assert!(options.log_level.is_none());
 
-        if command.is_some() {
-            panic!("expected None");
-        }
+        assert!(command.is_none(), "expected None");
 
         assert!(matches!(options.network, Network::DefaultNet));
         assert!(options.bootnodes.is_empty());
