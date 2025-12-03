@@ -1,17 +1,18 @@
-use std::time::Duration;
+use std::{path::PathBuf, time::Duration};
 
 use mojave_batch_producer::{BatchProducer, types::Request as BatchRequest};
 use mojave_block_producer::{
     BlockProducer,
     types::{BlockProducerOptions, Request as BlockRequest},
 };
-use mojave_node_lib::types::{MojaveNode, NodeOptions};
+use mojave_node_lib::{
+    types::{MojaveNode, NodeConfigFile, NodeOptions},
+    utils::store_node_config_file,
+};
 use mojave_proof_coordinator::{ProofCoordinator, types::ProofCoordinatorOptions};
 use mojave_task::{Task, TaskHandle};
 use mojave_utils::{
-    health::HealthProbeHandle,
-    network::get_http_socket_addr,
-    signal::wait_for_shutdown_signal,
+    health::HealthProbeHandle, network::get_http_socket_addr, signal::wait_for_shutdown_signal,
 };
 use tokio::select;
 use tokio_util::sync::CancellationToken;
@@ -63,6 +64,7 @@ pub async fn run_sequencer(
     block_producer_options: &BlockProducerOptions,
     proof_coordinator_options: &ProofCoordinatorOptions,
 ) -> Result<(), BoxError> {
+    let node_clone = node.clone();
     if is_k8s_env() {
         run_with_k8s_coordination(move |shutdown_token: CancellationToken| {
             let node_task = node.clone();
@@ -135,6 +137,16 @@ pub async fn run_sequencer(
             }
         };
     }
+    let node_config_path = PathBuf::from(node_clone.data_dir).join("node_config.json");
+    info!("Storing config at {:?}...", node_config_path);
+
+    let node_config = NodeConfigFile::new(
+        node_clone.peer_table.clone(),
+        node_clone.local_node_record.lock().await.clone(),
+    )
+    .await;
+    store_node_config_file(node_config, node_config_path).await;
+
     Ok(())
 }
 
