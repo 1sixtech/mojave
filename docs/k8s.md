@@ -128,7 +128,7 @@ For this HA test you need a Docker image that contains the `mojave-sequencer` bi
    - Option 2: Patch the live StatefulSet after applying the manifests:
 
      ```bash
-     kubectl set image statefulset/mojave-sequencer-deployment -n 1sixtech \
+     kubectl set image statefulset/mojave-sequencer -n 1sixtech \
        mojave-sequencer=<your-docker-username>/mojave-sequencer:latest
      ```
 
