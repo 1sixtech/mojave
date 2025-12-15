@@ -1,0 +1,26 @@
+# Foundry
+out/
+cache/
+broadcast/
+lib/
+*.gas-snapshot
+
+# Node modules (for tools)
+node_modules/
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

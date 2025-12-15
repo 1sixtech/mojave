@@ -65,6 +65,45 @@ cargo test --workspace
 bash test_data/tests-e2e.sh
 ```
 
+---
+
+## Bitcoin Bridge
+
+Mojave includes a trustless Bitcoin bridge that enables secure BTC deposits and withdrawals between Bitcoin and the Mojave L2.
+
+### Features
+
+- **Trustless BTC Deposits** - Uses OP_RETURN commitments and SPV proofs
+- **Multi-Signature Withdrawals** - Threshold signatures for secure withdrawals
+- **UTXO Tracking** - Efficient indexer for fund management
+- **Bitcoin SPV Verification** - Light client implementation (BtcRelay)
+
+### Quick Start
+
+```bash
+# Build bridge contracts
+./scripts/bridge/build.sh
+
+# Run unit tests
+./scripts/bridge/test.sh
+
+# Run E2E tests (requires Bitcoin Core)
+./scripts/bridge/test-e2e.sh
+
+# Start UTXO indexer
+./scripts/bridge/indexer.sh install
+./scripts/bridge/indexer.sh start
+```
+
+### Components
+
+- **Smart Contracts** - `contracts/bridge/` - Solidity contracts for bridge logic
+- **UTXO Indexer** - `contracts/bridge/tools/indexer/` - TypeScript service with REST API
+- **Bridge Types** - `crates/bridge-types/` - Shared Rust types for future integration
+- **Scripts** - `scripts/bridge/` - Convenient wrapper scripts
+
+---
+
 ## License
 
 Mojave is licensed under the MIT License. See [LICENSE](LICENSE) for details.

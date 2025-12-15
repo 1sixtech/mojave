@@ -1,0 +1,25 @@
+{
+  "name": "@mojave/bridge-indexer",
+  "version": "0.1.0",
+  "description": "Off-chain UTXO indexer for Mojave Bridge",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "viem": "^2.21.0",
+    "dotenv": "^16.4.0",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/cors": "^2.8.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.0.0"
+  }
+}
