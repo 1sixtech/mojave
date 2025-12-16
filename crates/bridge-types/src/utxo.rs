@@ -1,15 +1,11 @@
-use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
 /// UTXO source type
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum UtxoSource {
-    /// UTXO from deposit
     Deposit,
-    /// UTXO from change output
     Change,
-    /// UTXO for collateral
     Collateral,
 }
 
@@ -27,25 +23,16 @@ impl std::fmt::Display for UtxoSource {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Utxo {
-    /// Unique UTXO identifier (bytes32)
     pub utxo_id: String,
-    /// Bitcoin transaction ID
     pub txid: String,
-    /// Output index
     pub vout: u32,
-    /// Amount in satoshis (as string for JSON compatibility)
     pub amount: String,
-    /// UTXO source
     pub source: UtxoSource,
-    /// Whether the UTXO has been spent
     pub spent: bool,
-    /// Creation timestamp
     #[serde(with = "chrono::serde::ts_milliseconds")]
     pub created_at: chrono::DateTime<chrono::Utc>,
-    /// Withdrawal ID if spent
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub spent_in_withdrawal: Option<String>,
-    /// Spent timestamp
     #[serde(skip_serializing_if = "Option::is_none", default)]
     #[serde(with = "ts_milliseconds_option_default")]
     pub spent_at: Option<chrono::DateTime<chrono::Utc>>,
@@ -76,7 +63,6 @@ mod ts_milliseconds_option_default {
 }
 
 impl Utxo {
-    /// Get amount as u64
     pub fn amount_sats(&self) -> Result<u64, std::num::ParseIntError> {
         self.amount.parse()
     }
@@ -86,13 +72,9 @@ impl Utxo {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum UtxoPolicy {
-    /// Largest UTXOs first
     Largest,
-    /// Smallest UTXOs first  
     Smallest,
-    /// Oldest UTXOs first
     Oldest,
-    /// Best fit (closest to amount needed)
     BestFit,
 }
 
@@ -100,21 +82,17 @@ pub enum UtxoPolicy {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UtxoStats {
-    /// Total number of UTXOs
     pub total: usize,
-    /// Number of available UTXOs
     pub available: usize,
-    /// Number of spent UTXOs
     pub spent: usize,
-    /// Total amount in satoshis
     pub total_amount: String,
-    /// Available amount in satoshis
     pub available_amount: String,
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::Utc;
 
     #[test]
     fn test_utxo_serialization() {

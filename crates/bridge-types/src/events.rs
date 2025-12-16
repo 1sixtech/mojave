@@ -7,13 +7,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum BridgeEvent {
-    /// UTXO registered event
     UtxoRegistered(UtxoRegisteredEvent),
-    /// UTXO spent event
     UtxoSpent(UtxoSpentEvent),
-    /// Withdrawal requested event
     WithdrawalRequested(WithdrawalRequestedEvent),
-    /// Withdrawal finalized event
     WithdrawalFinalized(WithdrawalFinalizedEvent),
 }
 
@@ -21,21 +17,13 @@ pub enum BridgeEvent {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UtxoRegisteredEvent {
-    /// UTXO ID
     pub utxo_id: String,
-    /// Transaction ID
     pub txid: String,
-    /// Output index
     pub vout: u32,
-    /// Amount in satoshis
     pub amount: u64,
-    /// UTXO source
     pub source: UtxoSource,
-    /// Block timestamp
     pub timestamp: u64,
-    /// Block number
     pub block_number: u64,
-    /// Transaction hash
     pub transaction_hash: String,
 }
 
@@ -61,15 +49,10 @@ impl From<UtxoRegisteredEvent> for Utxo {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UtxoSpentEvent {
-    /// UTXO ID
     pub utxo_id: String,
-    /// Withdrawal ID
     pub withdrawal_id: String,
-    /// Block timestamp
     pub timestamp: u64,
-    /// Block number
     pub block_number: u64,
-    /// Transaction hash
     pub transaction_hash: String,
 }
 
@@ -77,17 +60,11 @@ pub struct UtxoSpentEvent {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WithdrawalRequestedEvent {
-    /// Withdrawal ID
     pub withdrawal_id: String,
-    /// Recipient address
     pub recipient: String,
-    /// Amount in satoshis
     pub amount: u64,
-    /// Bitcoin destination address
     pub bitcoin_address: String,
-    /// Block timestamp
     pub timestamp: u64,
-    /// Block number
     pub block_number: u64,
 }
 
@@ -95,13 +72,9 @@ pub struct WithdrawalRequestedEvent {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WithdrawalFinalizedEvent {
-    /// Withdrawal ID
     pub withdrawal_id: String,
-    /// Bitcoin transaction ID
     pub bitcoin_txid: String,
-    /// Block timestamp
     pub timestamp: u64,
-    /// Block number
     pub block_number: u64,
 }
 

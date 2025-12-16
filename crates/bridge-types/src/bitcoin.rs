@@ -27,50 +27,35 @@ pub enum AddressType {
 }
 
 /// Bitcoin network types
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Network {
-    /// Bitcoin mainnet
-    Mainnet,
-    /// Bitcoin testnet
     Testnet,
-    /// Bitcoin regtest (local testing)
+    #[default]
+    Mainnet,
     Regtest,
-    /// Bitcoin signet
     Signet,
-}
-
-impl Default for Network {
-    fn default() -> Self {
-        Network::Mainnet
-    }
 }
 
 /// Bitcoin transaction output
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TxOut {
-    /// Amount in satoshis
     pub value: u64,
-    /// Script pubkey
     pub script_pubkey: ScriptPubKey,
 }
 
 /// Bitcoin UTXO reference
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct OutPoint {
-    /// Transaction ID
     pub txid: Txid,
-    /// Output index
     pub vout: u32,
 }
 
 impl OutPoint {
-    /// Create new outpoint
     pub fn new(txid: Txid, vout: u32) -> Self {
         Self { txid, vout }
     }
 
-    /// Get unique identifier
     pub fn to_id(&self) -> String {
         format!("{}:{}", self.txid, self.vout)
     }
