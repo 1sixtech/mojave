@@ -23,6 +23,7 @@ members = [
   "cmd/prover",
   "cmd/sequencer",
   "crates/batch-producer",
+  "crates/bridge-types",
   "crates/batch-submitter",
   "crates/block-producer",
   "crates/btc-watcher",

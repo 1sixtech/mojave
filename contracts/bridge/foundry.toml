@@ -1,0 +1,23 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+solc_version = "0.8.30"
+optimizer = true
+optimizer_runs = 1
+via_ir = true
+
+remappings = [
+  "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+  "forge-std/=lib/forge-std/src/",
+]
+
+[rpc_endpoints]
+mojave = "${MOJAVE_RPC_URL}"
+
+[fmt]
+line_length = 100
+tab_width = 4
+bracket_spacing = true
+
+# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
